@@ -1,0 +1,21 @@
+{
+  "name": "melodifyplayer",
+  "version": "1.0.0",
+  "description": "A desktop music player application with playlists, search, and favorites features.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "build": "echo Build step not configured yet"
+  },
+  "keywords": [
+    "music-player",
+    "desktop-app",
+    "melodify-player"
+  ],
+  "author": "Tuna Rasim OCAK",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^40.8.0"
+  }
+}

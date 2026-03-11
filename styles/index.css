@@ -9,9 +9,6 @@ body {
     user-select: none;
 }
 
-.app {
-    -webkit-app-region: drag;
-}
 
 button, a, input {
     -webkit-app-region: no-drag;
@@ -168,6 +165,13 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+}
+
+#page-container {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .top-bar {

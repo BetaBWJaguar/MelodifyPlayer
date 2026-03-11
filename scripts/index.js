@@ -1,4 +1,53 @@
+const pageContainer = document.getElementById("page-container");
+
+async function loadPage(page) {
+
+    const html = await fetch(`../pages/${page}/${page}.html`)
+        .then(res => res.text());
+
+    pageContainer.innerHTML = html;
+
+    loadCSS(page);
+    loadJS(page);
+
+}
+
+function loadCSS(page) {
+
+    const existing = document.getElementById("page-css");
+
+    if (existing) existing.remove();
+
+    const link = document.createElement("link");
+
+    link.rel = "stylesheet";
+    link.href = `../pages/${page}/${page}.css`;
+    link.id = "page-css";
+
+    document.head.appendChild(link);
+
+}
+
+async function loadJS(page) {
+
+    const module = await import(`../pages/${page}/${page}.js`);
+
+    const initFunction = `init${capitalize(page)}Page`;
+
+    if (module[initFunction]) {
+        module[initFunction]();
+    }
+
+}
+
+function capitalize(text) {
+    return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
+    const { ipcRenderer } = require('electron');
+    
     const startBtn = document.getElementById('startBtn');
     
     const closeBtn = document.getElementById('closeBtn');
@@ -7,21 +56,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (closeBtn) {
         closeBtn.addEventListener('click', () => {
-            const { ipcRenderer } = require('electron');
             ipcRenderer.send('window-close');
         });
     }
 
     if (minimizeBtn) {
         minimizeBtn.addEventListener('click', () => {
-            const { ipcRenderer } = require('electron');
             ipcRenderer.send('window-minimize');
         });
     }
 
     if (maximizeBtn) {
         maximizeBtn.addEventListener('click', () => {
-            const { ipcRenderer } = require('electron');
             ipcRenderer.send('window-maximize');
         });
     }
@@ -39,6 +85,8 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             navItems.forEach(nav => nav.classList.remove('active'));
             item.classList.add('active');
+            const page = item.dataset.page;
+            loadPage(page);
         });
     });
 

@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const { searchTrack } = require('./backend/utils/searchModule');
 
 let mainWindow;
 
@@ -71,5 +72,15 @@ ipcMain.on('window-maximize', () => {
 ipcMain.on('window-close', () => {
     if (mainWindow) {
         mainWindow.close();
+    }
+});
+
+ipcMain.handle('search-track', async (event, query) => {
+    try {
+        const results = await searchTrack(query, 24);
+        return results;
+    } catch (error) {
+        console.error('Search error:', error);
+        throw error;
     }
 });

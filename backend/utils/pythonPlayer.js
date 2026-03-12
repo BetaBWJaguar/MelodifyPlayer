@@ -1,247 +1,214 @@
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
 const path = require('path');
 const os = require('os');
 
 class PythonPlayer {
     constructor() {
-        this.currentProcess = null;
+        this.process = null;
+
         this.isPlaying = false;
         this.isPaused = false;
         this.currentUrl = null;
-        this.playbackStartTime = 0;
-        this.pausedAt = 0;
-        this.totalPausedTime = 0;
-        this.isManualStop = false;
+        this.basePosition = 0;
+        this.playStartTime = 0;
+
         this.listeners = [];
-        this.currentPosition = 0;
     }
 
+    getCurrentPosition() {
+        if (this.isPaused) return this.basePosition;
+        if (!this.isPlaying) return this.basePosition;
 
-    async play(youtubeUrl, useVlc = false, startTime = 0) {
-        if (this.isPlaying) {
-            this.stop();
+        const elapsed = (Date.now() - this.playStartTime) / 1000;
+        return this.basePosition + elapsed;
+    }
+
+    async play(url, startTime = 0) {
+        if (this.process) {
+            console.log('[PythonPlayer] Killing previous player');
+
+            try {
+                const oldProc = this.process;
+                oldProc._exitReason = 'replace';
+
+                if (os.platform() === 'win32') {
+                    execSync(`taskkill /F /PID ${oldProc.pid} /T`, { stdio: 'ignore' });
+                } else {
+                    oldProc.kill('SIGKILL');
+                }
+            } catch (e) {}
+
+            this.process = null;
+            this.isPlaying = false;
+            this.isPaused = false;
         }
 
         return new Promise((resolve, reject) => {
-            try {
-                const pythonCmd = this.getPythonCommand();
-                
-                const scriptPath = path.join(__dirname, 'youtubePlayer.py');
-                
-                const args = [scriptPath, youtubeUrl];
-                if (useVlc) {
-                    args.push('--vlc');
-                }
-                if (startTime > 0) {
-                    args.push('--start-time', startTime.toString());
-                }
+            const pythonCmd = os.platform() === 'win32' ? 'python' : 'python3';
+            const scriptPath = path.join(__dirname, 'youtubePlayer.py');
 
-                console.log('[Python Player] Spawning:', pythonCmd, args.join(' '));
-
-                this.currentProcess = spawn(pythonCmd, args, {
-                    cwd: __dirname,
-                    stdio: ['ignore', 'pipe', 'pipe'],
-                    shell: false,
-                    detached: false
-                });
-
-                let outputBuffer = '';
-                let errorBuffer = '';
-
-                this.currentProcess.stdout.on('data', (data) => {
-                    const output = data.toString();
-                    outputBuffer += output;
-                });
-
-                this.currentProcess.stderr.on('data', (data) => {
-                    const error = data.toString();
-                    errorBuffer += error;
-                    if (error && !error.includes('Warning') && !error.includes('warning')) {
-                        console.error('[Python Player Error]', error.trim());
-                    }
-                });
-
-                this.currentProcess.on('close', (code, signal) => {
-                    this.isPlaying = false;
-                    this.currentProcess = null;
- 
-                    if (!this.isManualStop) {
-                        this.notifyListeners('stop', { reason: 'finished', code, signal });
-                    }
-                    this.isManualStop = false;
-                });
-
-                this.currentProcess.on('error', (error) => {
-                    this.isPlaying = false;
-                    this.currentProcess = null;
-                    reject(error);
-                });
-
-                setTimeout(() => {
-                    if (this.currentProcess && !this.currentProcess.killed) {
-                        if (this.currentProcess.exitCode === null) {
-                            this.isPlaying = true;
-                            this.isPaused = false;
-                            this.currentUrl = youtubeUrl;
-                            if (startTime === 0) {
-                                this.playbackStartTime = Date.now();
-                                this.pausedAt = 0;
-                                this.totalPausedTime = 0;
-                                this.currentPosition = 0;
-                            } else {
-                                this.currentPosition = startTime;
-                                this.playbackStartTime = Date.now();
-                                this.pausedAt = 0;
-                                this.totalPausedTime = 0;
-                            }
-                            console.log('[Python Player] Process started successfully');
-                            resolve(true);
-                        } else {
-                            const errorMsg = errorBuffer || outputBuffer || 'Process exited immediately';
-                            reject(new Error(`Python player exited: ${errorMsg}`));
-                        }
-                    } else {
-                        reject(new Error('Failed to start Python player'));
-                    }
-                }, 1000);
-
-            } catch (error) {
-                reject(error);
+            const args = [scriptPath, url];
+            if (startTime > 0) {
+                args.push('--start-time', startTime.toFixed(3));
             }
+
+            console.log('[PythonPlayer] Spawn:', pythonCmd, args.join(' '));
+
+            const proc = spawn(pythonCmd, args, {
+                cwd: __dirname,
+                stdio: ['ignore', 'pipe', 'pipe']
+            });
+
+            proc._exitReason = null;
+            this.process = proc;
+
+            let errorBuffer = '';
+            let resolvedOrRejected = false;
+
+            proc.stdout.on('data', d => {
+                console.log('[Python stdout]', d.toString().trim());
+            });
+
+            proc.stderr.on('data', d => {
+                const msg = d.toString();
+                errorBuffer += msg;
+                console.error('[Python stderr]', msg.trim());
+            });
+
+            proc.on('close', (code, signal) => {
+                console.log(`[PythonPlayer] Process closed. code=${code}, signal=${signal}, pid=${proc.pid}, reason=${proc._exitReason}`);
+
+                const wasCurrent = this.process === proc;
+                const reason = proc._exitReason;
+
+                if (wasCurrent) {
+                    this.process = null;
+                    this.isPlaying = false;
+                }
+
+                if (reason === 'pause') {
+                    return;
+                }
+
+                if (reason === 'replace') {
+                    return;
+                }
+
+                if (reason === 'stop') {
+                    this.notifyListeners('stop', { reason: 'manual' });
+                    return;
+                }
+
+                this.notifyListeners('stop', { reason: 'ended' });
+            });
+
+            proc.on('error', err => {
+                if (!resolvedOrRejected) {
+                    resolvedOrRejected = true;
+                    reject(err);
+                }
+            });
+
+            setTimeout(() => {
+                if (resolvedOrRejected) return;
+
+                if (this.process !== proc) {
+                    resolvedOrRejected = true;
+                    reject(new Error(errorBuffer || 'Python process replaced or closed before startup'));
+                    return;
+                }
+
+                if (proc.exitCode !== null) {
+                    resolvedOrRejected = true;
+                    reject(new Error(errorBuffer || `Python process exited early with code ${proc.exitCode}`));
+                    return;
+                }
+
+                this.isPlaying = true;
+                this.isPaused = false;
+                this.currentUrl = url;
+                this.basePosition = startTime;
+                this.playStartTime = Date.now();
+
+                console.log('[PythonPlayer] Started');
+                resolvedOrRejected = true;
+                resolve(true);
+            }, 500);
         });
     }
 
-
     stop() {
-        if (this.currentProcess) {
-            this.isManualStop = true;
-            
-            try {
- 
-                if (os.platform() === 'win32') {
-                    const { execSync } = require('child_process');
-                    try {
-                        execSync(`taskkill /F /PID ${this.currentProcess.pid} /T`, { stdio: 'ignore' });
-                    } catch (e) {
-                        try {
-                            this.currentProcess.kill('SIGTERM');
-                        } catch (killError) {
-                            console.log('[Python Player] Process already terminated');
-                        }
-                    }
-                } else {
-                    try {
-                        this.currentProcess.kill('SIGTERM');
-                    } catch (killError) {
-                        console.log('[Python Player] Process already terminated');
-                    }
-                }
-                
-                const killTimeout = setTimeout(() => {
-                    if (this.currentProcess && !this.currentProcess.killed) {
-                        console.log('[Python Player] Force killing...');
-                        try {
-                            this.currentProcess.kill('SIGKILL');
-                        } catch (e) {
-                            // Already killed
-                        }
-                    }
-                }, 2000);
-                
-                this.currentProcess.once('close', () => {
-                    clearTimeout(killTimeout);
-                });
-                
-                this.isPlaying = false;
-                this.currentProcess = null;
-                this.notifyListeners('stop', { reason: 'manual' });
-            } catch (error) {
-                console.error('[Python Player] Error stopping:', error);
-                this.isPlaying = false;
-                this.currentProcess = null;
+        if (!this.process) return;
+
+        try {
+            const proc = this.process;
+            proc._exitReason = 'stop';
+
+            if (os.platform() === 'win32') {
+                execSync(`taskkill /F /PID ${proc.pid} /T`, { stdio: 'ignore' });
+            } else {
+                proc.kill('SIGTERM');
             }
-        }
+        } catch {}
+
+        this.isPlaying = false;
+        this.isPaused = false;
+        this.basePosition = 0;
     }
 
     pause() {
-        if (this.isPlaying && !this.isPaused && this.currentProcess) {
-            const elapsedSinceLastResume = (Date.now() - this.playbackStartTime) / 1000;
-            this.currentPosition = this.currentPosition + elapsedSinceLastResume;
+        if (!this.isPlaying || !this.process) return;
 
-            this.pausedAt = Date.now();
-            this.isPaused = true;
-            this.isPlaying = false;
-            this.isManualStop = true;
-            
-            try {
-                if (os.platform() === 'win32') {
-                    const { execSync } = require('child_process');
-                    try {
-                        execSync(`taskkill /F /PID ${this.currentProcess.pid} /T`, { stdio: 'ignore' });
-                    } catch (e) {
-                        try {
-                            this.currentProcess.kill('SIGTERM');
-                        } catch (killError) {
-                            console.log('[Python Player] Process already terminated');
-                        }
-                    }
-                } else {
-                    try {
-                        this.currentProcess.kill('SIGTERM');
-                    } catch (killError) {
-                        console.log('[Python Player] Process already terminated');
-                    }
-                }
-                this.currentProcess = null;
-            } catch (error) {
-                console.error('[Python Player] Error pausing:', error);
+        this.basePosition = this.getCurrentPosition();
+        console.log('[PythonPlayer] Pause at', this.basePosition);
+
+        const proc = this.process;
+        proc._exitReason = 'pause';
+
+        this.isPlaying = false;
+        this.isPaused = true;
+
+        try {
+            if (os.platform() === 'win32') {
+                execSync(`taskkill /F /PID ${proc.pid} /T`, { stdio: 'ignore' });
+            } else {
+                proc.kill('SIGTERM');
             }
-            
-            this.notifyListeners('pause', { url: this.currentUrl });
-        }
+        } catch {}
+
+        this.notifyListeners('pause', {});
     }
 
     async resume() {
-        if (this.isPaused && this.currentUrl) {
-            console.log('[Python Player] Resuming playback...');
-            console.log(`[Python Player] Resuming from ${this.currentPosition} seconds`);
-            await this.play(this.currentUrl, false, this.currentPosition);
-            this.notifyListeners('resume', { url: this.currentUrl });
-        }
+        if (!this.isPaused || !this.currentUrl) return;
+
+        const position = this.basePosition;
+        console.log('[PythonPlayer] Resume from', position);
+
+        await this.play(this.currentUrl, position);
+        this.notifyListeners('resume', {});
     }
 
-    getPythonCommand() {
-        const platform = os.platform();
-        
-        if (platform === 'win32') {
-            return 'python';
-        } else {
-            return 'python3';
-        }
+    on(event, cb) {
+        this.listeners.push({ event, cb });
     }
 
+    notifyListeners(event, data) {
+        this.listeners.forEach(l => {
+            if (l.event === event) {
+                l.cb(data);
+            }
+        });
+    }
 
     getStatus() {
         return {
-            isPlaying: this.isPlaying,
-            isPaused: this.isPaused,
-            hasProcess: this.currentProcess !== null,
-            pid: this.currentProcess ? this.currentProcess.pid : null,
-            currentUrl: this.currentUrl
+            playing: this.isPlaying,
+            paused: this.isPaused,
+            position: this.getCurrentPosition(),
+            url: this.currentUrl,
+            pid: this.process ? this.process.pid : null
         };
-    }
-
-    on(event, callback) {
-        this.listeners.push({ event, callback });
-    }
-
-
-    notifyListeners(event, data) {
-        this.listeners.forEach(listener => {
-            if (listener.event === event) {
-                listener.callback(data);
-            }
-        });
     }
 }
 

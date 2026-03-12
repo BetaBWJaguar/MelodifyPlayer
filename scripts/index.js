@@ -183,14 +183,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             updatePlayButton();
         });
         
-        ipcRenderer.on('player-stop', (event, data) => {
-            console.log('Player stopped:', data);
-            playerState.isPlaying = false;
-            playerState.isPaused = false;
-            playerState.currentTrack = null;
-            updatePlayButton();
-        });
-        
         ipcRenderer.on('player-pause', (event, data) => {
                 console.log('Player paused event received:', data);
                 playerState.isPaused = true;

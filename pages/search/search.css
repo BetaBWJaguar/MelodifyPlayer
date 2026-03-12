@@ -1,5 +1,6 @@
 .search-page {
     padding: 32px;
+    padding-bottom: 120px;
     min-height: 100%;
     overflow-y: auto;
     animation: pageFadeIn 0.3s ease-out;
@@ -113,8 +114,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 60px 20px;
+    margin-top: 40px;
     color: var(--text-secondary);
 }
 
@@ -287,15 +287,51 @@
 
 @media (max-width: 600px) {
     .search-page {
-        padding: 20px;
+        padding: 24px 16px;
+        padding-bottom: 110px;
+    }
+
+    .search-header {
+        margin-bottom: 20px;
     }
 
     .search-header h1 {
-        font-size: 24px;
+        font-size: 26px;
+    }
+
+    .search-subtitle {
+        font-size: 14px;
+    }
+
+    .search-container {
+        margin-bottom: 24px;
+    }
+
+    .search-box {
+        padding: 10px 16px;
+    }
+
+    .search-box input {
+        font-size: 14px;
+    }
+
+
+    .empty-state svg {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 16px;
+    }
+
+    .empty-state h2 {
+        font-size: 20px;
+    }
+
+    .empty-state p {
+        font-size: 13px;
     }
 
     .search-results {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
         gap: 16px;
     }
 }

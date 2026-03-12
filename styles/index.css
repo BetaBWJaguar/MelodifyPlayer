@@ -46,9 +46,18 @@ body {
     width: 280px;
     background-color: var(--bg-secondary);
     padding: 24px;
+    padding-bottom: 110px;
     display: flex;
     flex-direction: column;
     gap: 24px;
+    -webkit-app-region: drag;
+    overflow-y: auto;
+}
+
+
+.sidebar::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
 }
 
 .window-controls {
@@ -153,10 +162,36 @@ body {
     padding-top: 16px;
 }
 
-.sidebar-footer {
-    margin-top: auto;
-    font-size: 11px;
+.language-selector {
+    display: flex;
+    gap: 8px;
+    padding: 8px 0;
+    border-top: 1px solid var(--bg-elevated);
+    margin-top: 8px;
+}
+
+.lang-btn {
+    flex: 1;
+    padding: 8px 0;
+    border: 1px solid var(--bg-elevated);
+    background-color: transparent;
     color: var(--text-secondary);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.lang-btn:hover {
+    background-color: var(--bg-elevated);
+    color: var(--text-primary);
+}
+
+.lang-btn.active {
+    background-color: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: var(--text-primary);
 }
 
 .main-content {
@@ -165,6 +200,7 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    -webkit-app-region: drag;
 }
 
 #page-container {
@@ -315,17 +351,25 @@ body {
 .track-info {
     display: flex;
     flex-direction: column;
+    min-width: 0;
+    max-width: 200px;
 }
 
 .track-name {
     font-size: 14px;
     font-weight: 600;
     color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .artist-name {
     font-size: 12px;
     color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .player-center {
@@ -419,17 +463,53 @@ body {
 
 @media (max-width: 900px) {
     .sidebar {
-        width: 72px;
+        width: 80px;
         padding: 24px 12px;
+        align-items: center;
     }
-    
+
+    .logo {
+        justify-content: center;
+        margin-bottom: 12px;
+    }
+
     .logo span,
-    .nav-item span,
-    .sidebar-footer {
+    .nav-item span {
         display: none;
     }
-    
+
+    .sidebar-nav,
+    .sidebar-section {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
     .nav-item {
         justify-content: center;
+        width: 100%;
+        padding: 14px 0;
+        border-radius: 8px;
+    }
+
+    .nav-item svg {
+        margin: 0;
+    }
+
+    .language-selector {
+        flex-direction: column;
+        width: 100%;
+        gap: 8px;
+        border-top: 1px solid var(--bg-elevated);
+        padding-top: 16px;
+        margin-top: auto;
+        margin-bottom: 90px;
+    }
+
+    .lang-btn {
+        width: 100%;
+        padding: 12px 0;
+        font-size: 11px;
     }
 }

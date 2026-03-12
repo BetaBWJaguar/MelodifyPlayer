@@ -1,0 +1,27 @@
+{
+  "sidebar": {
+    "home": "Ana Sayfa",
+    "search": "Ara",
+    "yourLibrary": "Kütüphanen",
+    "createPlaylist": "Çalma Listesi Oluştur",
+    "likedSongs": "Beğenilen Şarkılar",
+    "favorites": "Favoriler"
+  },
+  "search": {
+    "title": "Ara",
+    "subtitle": "Favori parçalarını bul",
+    "placeholder": "Ne dinlemek istiyorsun?",
+    "startSearching": "Aramaya başla",
+    "findFavorites": "Favori şarkılarını, sanatçılarını ve albümlerini bul",
+    "noResults": "Sonuç bulunamadı",
+    "tryDifferent": "Farklı anahtar kelimeler deneyin veya yazımınızı kontrol edin",
+    "searching": "Aranıyor...",
+    "somethingWentWrong": "Bir hata oluştu",
+    "unableToFetch": "Arama sonuçları alınamadı. Lütfen tekrar deneyin.",
+    "tryAgain": "Tekrar Dene"
+  },
+  "player": {
+    "selectSong": "Bir şarkı seç",
+    "startListening": "dinlemeye başlamak için"
+  }
+}

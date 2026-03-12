@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
-const path = require('path');
 const { searchTrack } = require('./backend/utils/searchModule');
+const player = require('./backend/utils/playSongs');
 
 let mainWindow;
 
@@ -37,13 +37,12 @@ function createWindow() {
     });
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
     app.on('browser-window-created', (_, window) => {
         window.webContents.on('context-menu', (e) => {
             e.preventDefault();
         });
     });
-
     createWindow();
 });
 
@@ -83,4 +82,59 @@ ipcMain.handle('search-track', async (event, query) => {
         console.error('Search error:', error);
         throw error;
     }
+});
+
+
+ipcMain.on('request-play', (event, track) => {
+    player.play(track);
+});
+
+ipcMain.on('request-stop', () => {
+    player.stop();
+});
+
+ipcMain.on('request-pause', () => {
+    player.pause();
+});
+
+ipcMain.on('request-resume', () => {
+    player.resume();
+});
+
+ipcMain.handle('get-player-status', () => {
+    return player.getStatus();
+});
+
+player.on('play', (data) => {
+    if (mainWindow) {
+        mainWindow.webContents.send('player-play', data);
+    }
+});
+
+player.on('stop', (data) => {
+    if (mainWindow) {
+        mainWindow.webContents.send('player-stop', data);
+    }
+});
+
+player.on('pause', (data) => {
+    if (mainWindow) {
+        mainWindow.webContents.send('player-pause', data);
+    }
+});
+
+player.on('resume', (data) => {
+    if (mainWindow) {
+        mainWindow.webContents.send('player-resume', data);
+    }
+});
+
+player.on('error', (data) => {
+    if (mainWindow) {
+        mainWindow.webContents.send('player-error', data);
+    }
+});
+
+app.on('before-quit', () => {
+    player.stop();
 });

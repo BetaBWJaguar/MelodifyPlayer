@@ -1,0 +1,27 @@
+{
+  "sidebar": {
+    "home": "Home",
+    "search": "Search",
+    "yourLibrary": "Your Library",
+    "createPlaylist": "Create Playlist",
+    "likedSongs": "Liked Songs",
+    "favorites": "Favorites"
+  },
+  "search": {
+    "title": "Search",
+    "subtitle": "Find your favorite tracks",
+    "placeholder": "What do you want to listen to?",
+    "startSearching": "Start searching",
+    "findFavorites": "Find your favorite songs, artists, and albums",
+    "noResults": "No results found",
+    "tryDifferent": "Try different keywords or check your spelling",
+    "searching": "Searching...",
+    "somethingWentWrong": "Something went wrong",
+    "unableToFetch": "Unable to fetch search results. Please try again.",
+    "tryAgain": "Try Again"
+  },
+  "player": {
+    "selectSong": "Select a song",
+    "startListening": "to start listening"
+  }
+}

@@ -1,6 +1,22 @@
 const { ipcRenderer } = require('electron');
 
 let searchTimeout = null;
+let isPlaying = false;
+
+ipcRenderer.on("player-play", (event, data) => {
+    isPlaying = true;
+    updatePlayerUI(data);
+});
+
+ipcRenderer.on("player-stop", (event, data) => {
+    isPlaying = false;
+});
+
+ipcRenderer.on("player-error", (event, data) => {
+    alert(`Playback error: ${data.error}`);
+    isPlaying = false;
+});
+
 
 function initSearchPage() {
     const searchInput = document.getElementById('searchInput');
@@ -73,10 +89,11 @@ function displayResults(tracks) {
     searchContent.style.display = 'block';
 
     if (!tracks || tracks.length === 0) {
+        const lang = window.language || { t: (k) => k };
         searchContent.innerHTML = `
             <div class="no-results">
-                <h3>No results found</h3>
-                <p>Try different keywords or check your spelling</p>
+                <h3 data-i18n="search.noResults">${lang.t('search.noResults')}</h3>
+                <p data-i18n="search.tryDifferent">${lang.t('search.tryDifferent')}</p>
             </div>
         `;
         return;
@@ -93,7 +110,7 @@ function displayResults(tracks) {
     const trackCards = document.querySelectorAll('.track-card');
     trackCards.forEach((card, index) => {
         card.style.animationDelay = `${index * 0.05}s`;
-        
+
         card.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -149,6 +166,7 @@ function createTrackCard(track, index) {
 function showEmptyState() {
     const searchContent = document.getElementById('searchContent');
     const loadingState = document.getElementById('loadingState');
+    const lang = window.language || { t: (k) => k };
 
     loadingState.style.display = 'none';
     searchContent.style.display = 'block';
@@ -157,8 +175,8 @@ function showEmptyState() {
             <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
             </svg>
-            <h2>Start searching</h2>
-            <p>Find your favorite songs, artists, and albums</p>
+            <h2 data-i18n="search.startSearching">${lang.t('search.startSearching')}</h2>
+            <p data-i18n="search.findFavorites">${lang.t('search.findFavorites')}</p>
         </div>
     `;
 }
@@ -166,19 +184,31 @@ function showEmptyState() {
 function showErrorState() {
     const searchContent = document.getElementById('searchContent');
     const loadingState = document.getElementById('loadingState');
+    const lang = window.language || { t: (k) => k };
 
     loadingState.style.display = 'none';
     searchContent.style.display = 'block';
     searchContent.innerHTML = `
         <div class="error-state">
-            <h3>Something went wrong</h3>
-            <p>Unable to fetch search results. Please try again.</p>
-            <button class="btn btn-primary" onclick="location.reload()">Try Again</button>
+            <h3 data-i18n="search.somethingWentWrong">${lang.t('search.somethingWentWrong')}</h3>
+            <p data-i18n="search.unableToFetch">${lang.t('search.unableToFetch')}</p>
+            <button class="btn btn-primary" onclick="location.reload()">${lang.t('search.tryAgain')}</button>
         </div>
     `;
 }
 
 function playTrack(trackName, artistName, imageUrl) {
+    const track = {
+        name: trackName,
+        artist: artistName,
+        image: imageUrl
+    };
+
+    console.log('[Search] Requesting to play:', track);
+    ipcRenderer.send('request-play', track);
+}
+
+function updatePlayerUI(track) {
     const trackInfoElement = document.querySelector('.track-info');
     const albumArtElement = document.querySelector('.album-art');
 
@@ -187,18 +217,20 @@ function playTrack(trackName, artistName, imageUrl) {
         const artistNameElement = trackInfoElement.querySelector('.artist-name');
 
         if (trackNameElement) {
-            trackNameElement.textContent = trackName;
+            trackNameElement.textContent = track.name;
+            trackNameElement.removeAttribute('data-i18n');
         }
         if (artistNameElement) {
-            artistNameElement.textContent = artistName;
+            artistNameElement.textContent = track.artist;
+            artistNameElement.removeAttribute('data-i18n');
         }
     }
 
     if (albumArtElement) {
         albumArtElement.classList.remove('gradient-1', 'gradient-2', 'gradient-3', 'gradient-4');
 
-        if (imageUrl) {
-            albumArtElement.style.backgroundImage = `url(${imageUrl})`;
+        if (track.image) {
+            albumArtElement.style.backgroundImage = `url(${track.image})`;
             albumArtElement.style.backgroundSize = 'cover';
             albumArtElement.style.backgroundPosition = 'center';
         } else {
@@ -209,7 +241,7 @@ function playTrack(trackName, artistName, imageUrl) {
         }
     }
 
-    console.log(`Playing: ${trackName} by ${artistName}`);
+    console.log(`Playing: ${track.name} by ${track.artist}`);
 }
 
 function escapeHtml(text) {

@@ -17,5 +17,9 @@
   "license": "ISC",
   "devDependencies": {
     "electron": "^40.8.0"
+  },
+  "dependencies": {
+    "play-dl": "^1.9.7",
+    "undici": "^7.22.0"
   }
 }

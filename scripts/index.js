@@ -4,8 +4,37 @@ window.language = language;
 let playerState = {
     isPlaying: false,
     isPaused: false,
-    currentTrack: null
+    currentTrack: null,
+    duration: 0,
+    currentTime: 0
 };
+
+function formatTime(seconds) {
+    if (!seconds || isNaN(seconds)) return '0:00';
+    
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+function updateProgressBar() {
+    const currentTimeEl = document.getElementById('currentTime');
+    const totalTimeEl = document.getElementById('totalTime');
+    const progressFill = document.getElementById('progressFill');
+    
+    if (currentTimeEl) {
+        currentTimeEl.textContent = formatTime(playerState.currentTime);
+    }
+    
+    if (totalTimeEl) {
+        totalTimeEl.textContent = formatTime(playerState.duration);
+    }
+    
+    if (progressFill && playerState.duration > 0) {
+        const percent = (playerState.currentTime / playerState.duration) * 100;
+        progressFill.style.width = `${Math.min(percent, 100)}%`;
+    }
+}
 
 
 async function loadPage(page) {
@@ -166,12 +195,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     const progress = document.querySelector('.progress');
     if (progress) {
         progress.addEventListener('click', (e) => {
+            if (playerState.duration <= 0) return;
+            
             const rect = progress.getBoundingClientRect();
-            const percent = ((e.clientX - rect.left) / rect.width) * 100;
-            const progressFill = progress.querySelector('.progress-fill');
-            if (progressFill) {
-                progressFill.style.width = `${percent}%`;
-            }
+            const actualHeight = 4;
+            const offsetY = (rect.height - actualHeight) / 2;
+            const actualTop = rect.top + offsetY;
+            
+            const percent = (e.clientX - rect.left) / rect.width;
+            
+            const clampedPercent = Math.max(0, Math.min(1, percent));
+            const seekTime = clampedPercent * playerState.duration;
+            
+            ipcRenderer.send('request-seek', seekTime);
         });
     }
 
@@ -180,6 +216,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             playerState.isPlaying = true;
             playerState.isPaused = false;
             playerState.currentTrack = data;
+            playerState.duration = data.actualDuration !== undefined && data.actualDuration !== null
+                ? data.actualDuration
+                : (data.duration || 0);
+
+            
+            const trackNameEl = document.getElementById('trackName');
+            const artistNameEl = document.getElementById('artistName');
+            const albumArtEl = document.getElementById('albumArt');
+            
+            if (trackNameEl && data.name) {
+                trackNameEl.textContent = data.name;
+            }
+            if (artistNameEl && data.artist) {
+                artistNameEl.textContent = data.artist;
+            }
+            if (albumArtEl && data.gradient) {
+                albumArtEl.className = `album-art ${data.gradient}`;
+            }
+            
             updatePlayButton();
         });
         
@@ -213,6 +268,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             playerState.isPlaying = false;
             playerState.isPaused = false;
             updatePlayButton();
+        });
+        
+        ipcRenderer.on('player-progress', (event, data) => {
+            console.log('Progress update:', data);
+            playerState.currentTime = data.currentTime || 0;
+            playerState.duration = data.duration || playerState.duration;
+            updateProgressBar();
         });
         
         function updatePlayButton() {

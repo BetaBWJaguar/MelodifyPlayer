@@ -18,7 +18,8 @@ class YouTubeModule {
 
         return {
             videoId: video.id,
-            videoUrl: video.url
+            videoUrl: video.url,
+            duration: video.durationInSec
         };
 
     }

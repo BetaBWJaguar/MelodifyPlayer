@@ -101,6 +101,10 @@ ipcMain.on('request-resume', () => {
     player.resume();
 });
 
+ipcMain.on('request-seek', (event, position) => {
+    player.seek(position);
+});
+
 ipcMain.handle('get-player-status', () => {
     return player.getStatus();
 });
@@ -126,6 +130,12 @@ player.on('pause', (data) => {
 player.on('resume', (data) => {
     if (mainWindow) {
         mainWindow.webContents.send('player-resume', data);
+    }
+});
+
+player.on('progress', (data) => {
+    if (mainWindow) {
+        mainWindow.webContents.send('player-progress', data);
     }
 });
 

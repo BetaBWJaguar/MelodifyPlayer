@@ -1,4 +1,5 @@
 const https = require("https");
+const youtubeModule = require("./youtubeModule");
 
 const API_KEY = "1b8e4518708251c43d83bb70451f3e28";
 const BASE_URL = "https://ws.audioscrobbler.com/2.0/";
@@ -101,7 +102,17 @@ async function searchTrack(query, limit) {
 
     }));
 
-    return formatted;
+    const tracksWithVideos = [];
+    for (const track of formatted) {
+        try {
+            await youtubeModule.getVideoForTrack(track.name, track.artist);
+            tracksWithVideos.push(track);
+        } catch (error) {
+            console.log(`Skipping track without video: ${track.name} - ${track.artist}`);
+        }
+    }
+
+    return tracksWithVideos;
 }
 
 module.exports = {

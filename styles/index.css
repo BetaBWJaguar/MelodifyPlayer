@@ -437,6 +437,7 @@ body {
     border-radius: 2px;
     cursor: pointer;
     position: relative;
+    -webkit-app-region: no-drag;
 }
 
 .progress:hover .progress-fill {

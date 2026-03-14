@@ -108,38 +108,28 @@ class Player {
             return;
         }
         
-        this.stopProgressUpdates();
-
+        console.log('[Player] Seeking to', position);
         
-        await pythonPlayer.play(this.currentTrack.streamUrl, position);
+        const success = await pythonPlayer.seek(position);
         
-
-        const checkPosition = async (attempt = 0) => {
-            if (attempt > 10) {
-                this.startProgressUpdates();
-                return;
-            }
+        if (success) {
+            const duration = pythonPlayer.getStatus().actualDuration !== null
+                ? pythonPlayer.getStatus().actualDuration
+                : (this.currentTrack.duration || 0);
             
-            const actualPosition = await pythonPlayer.getActualPosition();
+            this.notifyListeners('progress', {
+                currentTime: position,
+                duration: duration
+            });
+        } else {
+            console.log('[Player] IPC seek failed, falling back to restart');
+            this.stopProgressUpdates();
+            await pythonPlayer.play(this.currentTrack.streamUrl, position);
             
-
-            if (actualPosition !== null && Math.abs(actualPosition - position) < 2) {
-                const duration = pythonPlayer.getStatus().actualDuration !== null
-                    ? pythonPlayer.getStatus().actualDuration
-                    : (this.currentTrack.duration || 0);
-                
-                this.notifyListeners('progress', {
-                    currentTime: actualPosition,
-                    duration: duration
-                });
-                
+            setTimeout(() => {
                 this.startProgressUpdates();
-            } else {
-                setTimeout(() => checkPosition(attempt + 1), 500);
-            }
-        };
-        
-        setTimeout(() => checkPosition(), 1000);
+            }, 1000);
+        }
     }
 
 

@@ -2,6 +2,7 @@ const { ipcRenderer } = require('electron');
 
 let searchTimeout = null;
 let isPlaying = false;
+let currentSearchRequest = null;
 
 ipcRenderer.on("player-play", (event, data) => {
     isPlaying = true;
@@ -34,6 +35,10 @@ function initSearchPage() {
 
         clearTimeout(searchTimeout);
 
+        if (currentSearchRequest) {
+            currentSearchRequest = null;
+        }
+
         if (query.length === 0) {
             showEmptyState();
             return;
@@ -48,7 +53,7 @@ function initSearchPage() {
 
         searchTimeout = setTimeout(() => {
             performSearch(query);
-        }, 500);
+        }, 300);
     });
 
     clearBtn.addEventListener('click', () => {
@@ -56,6 +61,10 @@ function initSearchPage() {
         clearBtn.style.display = 'none';
         showEmptyState();
         searchInput.focus();
+        
+        if (currentSearchRequest) {
+            currentSearchRequest = null;
+        }
     });
 
     searchInput.addEventListener('keypress', (e) => {
@@ -72,12 +81,30 @@ function initSearchPage() {
 }
 
 async function performSearch(query) {
+    const requestId = Date.now();
+    currentSearchRequest = requestId;
+
     try {
-        const tracks = await ipcRenderer.invoke('search-track', query);
-        displayResults(tracks);
+        const searchPromise = ipcRenderer.invoke('search-track', query);
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Search timeout')), 15000)
+        );
+
+        const tracks = await Promise.race([searchPromise, timeoutPromise]);
+
+        if (currentSearchRequest === requestId) {
+            displayResults(tracks);
+        }
     } catch (error) {
         console.error('Search error:', error);
-        showErrorState();
+        
+        if (currentSearchRequest === requestId) {
+            showErrorState(error.message);
+        }
+    } finally {
+        if (currentSearchRequest === requestId) {
+            currentSearchRequest = null;
+        }
     }
 }
 
@@ -181,17 +208,24 @@ function showEmptyState() {
     `;
 }
 
-function showErrorState() {
+function showErrorState(errorMessage = '') {
     const searchContent = document.getElementById('searchContent');
     const loadingState = document.getElementById('loadingState');
     const lang = window.language || { t: (k) => k };
 
     loadingState.style.display = 'none';
     searchContent.style.display = 'block';
+    
+    const isTimeout = errorMessage.includes('timeout');
+    const errorTitle = isTimeout ? lang.t('search.timeout') : lang.t('search.somethingWentWrong');
+    const errorDesc = isTimeout 
+        ? (lang.t('search.timeoutMessage'))
+        : (lang.t('search.unableToFetch'));
+
     searchContent.innerHTML = `
         <div class="error-state">
-            <h3 data-i18n="search.somethingWentWrong">${lang.t('search.somethingWentWrong')}</h3>
-            <p data-i18n="search.unableToFetch">${lang.t('search.unableToFetch')}</p>
+            <h3>${escapeHtml(errorTitle)}</h3>
+            <p>${escapeHtml(errorDesc)}</p>
             <button class="btn btn-primary" onclick="location.reload()">${lang.t('search.tryAgain')}</button>
         </div>
     `;

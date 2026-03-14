@@ -18,7 +18,9 @@
     "searching": "Searching...",
     "somethingWentWrong": "Something went wrong",
     "unableToFetch": "Unable to fetch search results. Please try again.",
-    "tryAgain": "Try Again"
+    "tryAgain": "Try Again",
+    "timeout": "Request Timeout",
+    "timeoutMessage": "The search took too long. Please try again."
   },
   "player": {
     "selectSong": "Select a song",

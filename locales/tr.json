@@ -18,7 +18,9 @@
     "searching": "Aranıyor...",
     "somethingWentWrong": "Bir hata oluştu",
     "unableToFetch": "Arama sonuçları alınamadı. Lütfen tekrar deneyin.",
-    "tryAgain": "Tekrar Dene"
+    "tryAgain": "Tekrar Dene",
+    "timeout": "İstek Zaman Aşımı",
+    "timeoutMessage": "Arama çok uzun sürdü. Lütfen tekrar deneyin."
   },
   "player": {
     "selectSong": "Bir şarkı seç",

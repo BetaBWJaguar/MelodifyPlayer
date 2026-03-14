@@ -91,13 +91,16 @@ class YouTubeAudioPlayer:
         try:
             self.ipc_path = r"\\.\pipe\mpv-socket-" + str(int(time.time()*1000))
             ipc_path = self.ipc_path
-            
+
             mpv_cmd = [
                 self.mpv_path,
                 "--no-video",
-                "--quiet",
                 "--ytdl=yes",
                 "--ytdl-format=bestaudio",
+                "--force-window=no",
+                "--idle=no",
+                "--cache=yes",
+                "--cache-secs=20",
                 f"--input-ipc-server={ipc_path}",
             ]
 
@@ -112,8 +115,11 @@ class YouTubeAudioPlayer:
             self.mpv_process = subprocess.Popen(
                 mpv_cmd,
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
+                stderr=subprocess.PIPE,
+                text=True
             )
+
+            time.sleep(0.4)
 
             self.is_playing = True
 
@@ -155,7 +161,7 @@ class YouTubeAudioPlayer:
 
         self.is_playing = False
         self.mpv_process = None
-        print("[Python Player] Playback ended naturally")
+        print("[Python Player] Playback ended")
 
     def _is_valid_youtube_url(self, url):
 

@@ -128,14 +128,22 @@ class PythonPlayer {
 
                 if (resolvedOrRejected) return;
 
-                this.isPlaying = true;
-                this.isPaused = false;
-                this.currentUrl = url;
-                this.basePosition = startTime;
-                this.playStartTime = 0;
-                this.actualDuration = null;
-
                 setTimeout(() => {
+                    if (!proc || proc.killed || proc.exitCode !== null) {
+                        console.log('[PythonPlayer] Process exited immediately after spawn');
+                        if (!resolvedOrRejected) {
+                            resolvedOrRejected = true;
+                        }
+                        return;
+                    }
+
+                    this.isPlaying = true;
+                    this.isPaused = false;
+                    this.currentUrl = url;
+                    this.basePosition = startTime;
+                    this.playStartTime = 0;
+                    this.actualDuration = null;
+
                     console.log('[PythonPlayer] Started');
                     this.playStartTime = Date.now();
                     resolvedOrRejected = true;
@@ -155,7 +163,7 @@ class PythonPlayer {
                             });
                         }, 1000);
                     }
-                }, 500);
+                }, 1000);
             });
         });
     }
@@ -243,6 +251,28 @@ class PythonPlayer {
             console.error('[PythonPlayer] IPC resume failed, falling back to restart:', error);
             await this.play(this.currentUrl, this.basePosition);
             this.notifyListeners('resume', {});
+        }
+    }
+
+    async seek(position) {
+        if (!this.isPlaying || !this.process) {
+            console.log('[PythonPlayer] Cannot seek - not playing');
+            return false;
+        }
+
+        console.log('[PythonPlayer] Seeking to', position, 'via IPC');
+        
+        try {
+            await this._sendMpvCommand({ command: ["seek", position, "absolute"] });
+            
+            this.basePosition = position;
+            this.playStartTime = Date.now();
+            
+            console.log('[PythonPlayer] Seek successful');
+            return true;
+        } catch (error) {
+            console.error('[PythonPlayer] IPC seek failed:', error);
+            return false;
         }
     }
 

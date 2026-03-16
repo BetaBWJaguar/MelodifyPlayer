@@ -96,11 +96,12 @@ class YouTubeAudioPlayer:
                 self.mpv_path,
                 "--no-video",
                 "--ytdl=yes",
-                "--ytdl-format=bestaudio",
+                "--ytdl-format=bestaudio[ext=m4a]",
                 "--force-window=no",
                 "--idle=no",
                 "--cache=yes",
                 "--cache-secs=20",
+                "--demuxer-readahead-secs=30",
                 f"--input-ipc-server={ipc_path}",
             ]
 

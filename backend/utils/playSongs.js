@@ -6,6 +6,8 @@ class Player {
         this.listeners = [];
         this.currentTrack = null;
         this.progressInterval = null;
+        this.isPlayingPromise = false;
+        this.pendingPlayRequest = null;
         
         pythonPlayer.on('play', (data) => {
             this.notifyListeners('play', data);
@@ -32,6 +34,7 @@ class Player {
     startProgressUpdates() {
         this.stopProgressUpdates();
         this.progressInterval = setInterval(async () => {
+            if (!pythonPlayer.process) return;
             const status = pythonPlayer.getStatus();
             if (status.playing && this.currentTrack) {
                 const actualPosition = await pythonPlayer.getActualPosition();
@@ -57,12 +60,22 @@ class Player {
     }
 
     async play(track) {
+        if (this.isPlayingPromise) {
+            this.pendingPlayRequest = track;
+            return;
+        }
+
+        this.isPlayingPromise = true;
+        this.pendingPlayRequest = null;
+
         try {
             console.log('[Player] Requesting to play:', track.name, 'by', track.artist);
             
-            if (pythonPlayer.getStatus().isPlaying) {
+            if (pythonPlayer.getStatus().playing) {
                 pythonPlayer.stop();
-                await new Promise(resolve => setTimeout(resolve, 500));
+                while (pythonPlayer.getStatus().playing) {
+                    await new Promise(r => setTimeout(r, 100));
+                }
             }
             
             const video = await youtubeModule.getVideoForTrack(track.name, track.artist);
@@ -77,21 +90,32 @@ class Player {
 
             this.notifyListeners('play', this.currentTrack);
 
-            await pythonPlayer.play(url, false);
+            await pythonPlayer.play(url, 0);
             
 
             setTimeout(() => {
                 this.startProgressUpdates();
             }, 1500);
+
+            if (this.pendingPlayRequest) {
+                const pendingTrack = this.pendingPlayRequest;
+                this.pendingPlayRequest = null;
+                this.isPlayingPromise = false;
+                await this.play(pendingTrack);
+            }
             
         } catch (error) {
             console.error('[Player] Play error:', error);
             this.notifyListeners('error', { error: error.message });
             this.notifyListeners('stop', { reason: 'error' });
+        } finally {
+            this.isPlayingPromise = false;
         }
     }
 
     stop() {
+        this.pendingPlayRequest = null;
+        this.stopProgressUpdates();
         pythonPlayer.stop();
     }
 

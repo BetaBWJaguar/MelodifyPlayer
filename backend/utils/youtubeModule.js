@@ -4,24 +4,43 @@ class YouTubeModule {
 
     async getVideoForTrack(trackName, artistName) {
 
-        const query = `${trackName} ${artistName}`;
+        const query = `${artistName} ${trackName} official audio`;
 
         const results = await play.search(query, {
-            limit: 1
+            limit: 5
         });
 
-        const video = results[0];
-
-        if (!video) {
+        if (!results || results.length === 0) {
             throw new Error("Video not found");
         }
 
-        return {
-            videoId: video.id,
-            videoUrl: video.url,
-            duration: video.durationInSec
-        };
+        const banned = [
+            "reaction",
+            "interview",
+            "podcast",
+            "cover",
+            "karaoke",
+            "remix",
+            "lyrics"
+        ];
 
+        for (const video of results) {
+
+            const title = video.title.toLowerCase();
+
+            if (banned.some(word => title.includes(word))) {
+                continue;
+            }
+
+            return {
+                videoId: video.id,
+                videoUrl: video.url,
+                duration: video.durationInSec,
+                title: video.title
+            };
+        }
+
+        throw new Error("No valid video found");
     }
 
 }

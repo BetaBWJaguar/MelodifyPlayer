@@ -16,6 +16,8 @@ class PythonPlayer {
         this.actualDuration = null;
 
         this.listeners = [];
+        this.isPlayingPromise = false;
+        this.pendingPlayRequest = null;
     }
 
     getCurrentPosition() {
@@ -29,26 +31,35 @@ class PythonPlayer {
     }
 
     async play(url, startTime = 0) {
-        if (this.process) {
-            console.log('[PythonPlayer] Killing previous player');
-
-            try {
-                const oldProc = this.process;
-                oldProc._exitReason = 'replace';
-
-                if (os.platform() === 'win32') {
-                    execSync(`taskkill /F /PID ${oldProc.pid} /T`, { stdio: 'ignore' });
-                } else {
-                    oldProc.kill('SIGKILL');
-                }
-            } catch (e) {}
-
-            this.process = null;
-            this.isPlaying = false;
-            this.isPaused = false;
+        if (this.isPlayingPromise) {
+            this.pendingPlayRequest = { url, startTime };
+            return true;
         }
 
-        return new Promise((resolve, reject) => {
+        this.isPlayingPromise = true;
+        this.pendingPlayRequest = null;
+
+        try {
+            if (this.process) {
+                console.log('[PythonPlayer] Killing previous player');
+
+                try {
+                    const oldProc = this.process;
+                    oldProc._exitReason = 'replace';
+
+                    if (os.platform() === 'win32') {
+                        execSync(`taskkill /F /PID ${oldProc.pid} /T`, { stdio: 'ignore' });
+                    } else {
+                        oldProc.kill('SIGKILL');
+                    }
+                } catch (e) {}
+
+                this.process = null;
+                this.isPlaying = false;
+                this.isPaused = false;
+            }
+
+            await new Promise((resolve, reject) => {
             const pythonCmd = os.platform() === 'win32' ? 'python' : 'python3';
             const scriptPath = path.join(__dirname, 'youtubePlayer.py');
 
@@ -133,6 +144,7 @@ class PythonPlayer {
                         console.log('[PythonPlayer] Process exited immediately after spawn');
                         if (!resolvedOrRejected) {
                             resolvedOrRejected = true;
+                            reject(new Error('Process exited immediately after spawn'));
                         }
                         return;
                     }
@@ -166,9 +178,23 @@ class PythonPlayer {
                 }, 1000);
             });
         });
+
+        if (this.pendingPlayRequest) {
+            const { url: pendingUrl, startTime: pendingStartTime } = this.pendingPlayRequest;
+            this.pendingPlayRequest = null;
+            this.isPlayingPromise = false;
+            return this.play(pendingUrl, pendingStartTime);
+        }
+        } finally {
+            this.isPlayingPromise = false;
+        }
+
+        return true;
     }
 
     stop() {
+        this.pendingPlayRequest = null;
+
         if (!this.process) return;
 
         try {

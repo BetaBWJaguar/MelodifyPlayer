@@ -105,6 +105,10 @@ ipcMain.on('request-seek', (event, position) => {
     player.seek(position);
 });
 
+ipcMain.on('request-volume', (event, volume) => {
+    player.setVolume(volume);
+});
+
 ipcMain.handle('get-player-status', () => {
     return player.getStatus();
 });

@@ -156,6 +156,12 @@ class Player {
         }
     }
 
+    async setVolume(volume) {
+        console.log('[Player] Setting volume to:', volume);
+        const success = await pythonPlayer.setVolume(volume);
+        return success;
+    }
+
 
     getStatus() {
         return {

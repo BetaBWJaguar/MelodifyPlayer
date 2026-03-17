@@ -14,6 +14,7 @@ class PythonPlayer {
         this.playStartTime = 0;
         this.ipcSocketPath = "\\\\.\\pipe\\mpv-socket";
         this.actualDuration = null;
+        this.volume = 100;
 
         this.listeners = [];
         this.isPlayingPromise = false;
@@ -162,6 +163,10 @@ class PythonPlayer {
                     resolve(true);
                     
                     setTimeout(() => {
+                        this.setVolume(this.volume);
+                    }, 500);
+                    
+                    setTimeout(() => {
                         this.getActualDuration();
                     }, 2000);
                     
@@ -298,6 +303,20 @@ class PythonPlayer {
             return true;
         } catch (error) {
             console.error('[PythonPlayer] IPC seek failed:', error);
+            return false;
+        }
+    }
+
+    async setVolume(volume) {
+        console.log('[PythonPlayer] Setting volume to:', volume);
+        this.volume = volume;
+        
+        try {
+            await this._sendMpvCommand({ command: ["set_property", "volume", volume] });
+            console.log('[PythonPlayer] Volume set successfully');
+            return true;
+        } catch (error) {
+            console.error('[PythonPlayer] Failed to set volume:', error);
             return false;
         }
     }

@@ -9,7 +9,8 @@ let playerState = {
     currentTime: 0,
     volume: 100,
     isMuted: false,
-    previousVolume: 100
+    previousVolume: 100,
+    repeat: false
 };
 
 function formatTime(seconds) {
@@ -260,6 +261,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     if (volumeBtn) {
         updateVolumeIcon();
+    }
+
+    const repeatBtn = document.getElementById('repeatBtn');
+    const updateRepeatButton = () => {
+        if (!repeatBtn) return;
+        
+        if (playerState.repeat) {
+            repeatBtn.classList.add('active', 'repeat-one');
+        } else {
+            repeatBtn.classList.remove('active', 'repeat-one');
+        }
+    };
+    
+    if (repeatBtn) {
+        repeatBtn.addEventListener('click', () => {
+            playerState.repeat = !playerState.repeat;
+            updateRepeatButton();
+            ipcRenderer.send('request-repeat', playerState.repeat);
+            console.log('Repeat mode:', playerState.repeat);
+        });
+        updateRepeatButton();
     }
 
     const progress = document.querySelector('.progress');

@@ -1,48 +1,73 @@
-const play = require("play-dl");
+const yts = require("yt-search");
 
 class YouTubeModule {
-
     async getVideoForTrack(trackName, artistName) {
-
-        const query = `${artistName} ${trackName} official audio`;
-
-        const results = await play.search(query, {
-            limit: 5
-        });
-
-        if (!results || results.length === 0) {
-            throw new Error("Video not found");
-        }
+        const queries = [
+            `${artistName} ${trackName} official audio`,
+            `${artistName} ${trackName} audio`,
+            `${artistName} ${trackName} official`,
+            `${artistName} ${trackName}`,
+            `${trackName} ${artistName}`
+        ];
 
         const banned = [
             "reaction",
             "interview",
             "podcast",
-            "cover",
             "karaoke",
-            "remix",
-            "lyrics"
+            "cover"
         ];
 
-        for (const video of results) {
+        for (const query of queries) {
 
-            const title = video.title.toLowerCase();
-
-            if (banned.some(word => title.includes(word))) {
+            let results;
+            try {
+                results = await yts({ query, pages: 1 });
+            } catch (err) {
+                console.log(`[YouTubeModule] Search failed for query: ${query}`);
+                console.log(`[YouTubeModule] Error: ${err.message}`);
                 continue;
             }
 
-            return {
-                videoId: video.id,
-                videoUrl: video.url,
-                duration: video.durationInSec,
-                title: video.title
-            };
+            const videos = results?.videos || [];
+
+            if (videos.length === 0) {
+                continue;
+            }
+
+            for (const video of videos) {
+                if (!video || !video.title) continue;
+
+
+                const title = video.title.toLowerCase();
+                const channel = (video.author?.name || "").toLowerCase();
+
+                if (banned.some(word => title.includes(word))) {
+                    continue;
+                }
+
+                const artistLower = artistName.toLowerCase();
+                const trackLower = trackName.toLowerCase();
+
+                const titleLooksRelevant =
+                    title.includes(artistLower) || title.includes(trackLower);
+
+                if (!titleLooksRelevant) {
+                    continue;
+                }
+
+                return {
+                    videoId: video.videoId,
+                    videoUrl: video.url,
+                    duration: video.seconds,
+                    title: video.title,
+                    channel: video.author?.name || null
+                };
+            }
         }
 
-        throw new Error("No valid video found");
+        throw new Error(`No valid video found for ${artistName} - ${trackName}`);
     }
-
 }
 
 module.exports = new YouTubeModule();

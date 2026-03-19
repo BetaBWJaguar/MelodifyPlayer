@@ -8,6 +8,7 @@ class Player {
         this.progressInterval = null;
         this.isPlayingPromise = false;
         this.pendingPlayRequest = null;
+        this.repeat = false;
         
         pythonPlayer.on('play', (data) => {
             this.notifyListeners('play', data);
@@ -15,6 +16,13 @@ class Player {
         
         pythonPlayer.on('stop', (data) => {
             this.stopProgressUpdates();
+            
+            if (data.reason === 'ended' && this.repeat && this.currentTrack) {
+                console.log('[Player] Song ended, repeating...');
+                this.play(this.currentTrack);
+                return;
+            }
+            
             this.notifyListeners('stop', data);
         });
 
@@ -160,6 +168,11 @@ class Player {
         console.log('[Player] Setting volume to:', volume);
         const success = await pythonPlayer.setVolume(volume);
         return success;
+    }
+
+    setRepeat(repeat) {
+        this.repeat = repeat;
+        console.log('[Player] Repeat mode set to:', repeat);
     }
 
 

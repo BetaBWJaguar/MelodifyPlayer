@@ -92,20 +92,20 @@ async function searchTrack(query, limit = 20) {
     
     const cachedResults = getFromCache(cacheKey);
     if (cachedResults) {
-        console.log('[Search] Returning cached results for:', query);
+        console.log("[Search] Returning cached results for:", query);
         return cachedResults;
     }
 
     try {
         const url = `${BASE_URL}?method=track.search&track=${encodeURIComponent(query)}&api_key=${API_KEY}&format=json&limit=${limit}`;
-
         const json = await httpGetJson(url, 10000);
 
         if (!json.results || !json.results.trackmatches) {
             return [];
         }
 
-        const tracks = json.results.trackmatches.track;
+        const tracksRaw = json.results.trackmatches.track;
+        const tracks = Array.isArray(tracksRaw) ? tracksRaw : [tracksRaw];
 
         const formatted = await Promise.all(tracks.map(async (track) => {
             let imageUrl = getBestImage(track.image);
@@ -113,7 +113,6 @@ async function searchTrack(query, limit = 20) {
             if (!imageUrl) {
                 imageUrl = await getTrackAlbumImage(track.name, track.artist);
             }
-
 
             return {
                 name: track.name,
@@ -126,30 +125,38 @@ async function searchTrack(query, limit = 20) {
 
         const youtubePromises = formatted.map(async (track) => {
             try {
-                await Promise.race([
+                const video = await Promise.race([
                     youtubeModule.getVideoForTrack(track.name, track.artist),
-                    new Promise((_, reject) => 
-                        setTimeout(() => reject(new Error('YouTube lookup timeout')), 3000)
+                    new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error("YouTube lookup timeout")), 6000)
                     )
                 ]);
-                return { track, hasVideo: true };
+
+                return {
+                    track: {
+                        ...track,
+                        youtube: video
+                    },
+                    hasVideo: true
+                };
             } catch (error) {
-                console.log(`Skipping track without video: ${track.name} - ${track.artist}`);
+                console.log(`[SearchModule] Skipping track without video: ${track.name} - ${track.artist}`);
+                console.log(`[SearchModule] Error details: ${error.message}`);
                 return { track, hasVideo: false };
             }
         });
 
         const results = await Promise.allSettled(youtubePromises);
-        
+
         const tracksWithVideos = results
-            .filter(result => result.status === 'fulfilled' && result.value.hasVideo)
+            .filter(result => result.status === "fulfilled" && result.value.hasVideo)
             .map(result => result.value.track);
 
         setCache(cacheKey, tracksWithVideos);
 
         return tracksWithVideos;
     } catch (error) {
-        console.error('[Search] Error:', error);
+        console.error("[Search] Error:", error);
         return [];
     }
 }

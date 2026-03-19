@@ -109,6 +109,10 @@ ipcMain.on('request-volume', (event, volume) => {
     player.setVolume(volume);
 });
 
+ipcMain.on('request-repeat', (event, repeat) => {
+    player.setRepeat(repeat);
+});
+
 ipcMain.handle('get-player-status', () => {
     return player.getStatus();
 });

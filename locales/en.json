@@ -22,6 +22,14 @@
     "timeout": "Request Timeout",
     "timeoutMessage": "The search took too long. Please try again."
   },
+  "likedSongs": {
+    "title": "Liked Songs",
+    "subtitle": "All the songs you've liked",
+    "loading": "Loading your liked songs...",
+    "noLikedSongs": "No liked songs yet",
+    "startLiking": "Start liking songs to build your collection",
+    "error": "Error loading liked songs"
+  },
   "player": {
     "selectSong": "Select a song",
     "startListening": "to start listening"

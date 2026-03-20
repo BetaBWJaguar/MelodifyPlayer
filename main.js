@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const { searchTrack } = require('./backend/utils/searchModule');
 const player = require('./backend/utils/playSongs');
+const likedSongs = require('./backend/utils/likedSongs');
 
 let mainWindow;
 
@@ -38,6 +39,9 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
+    // Initialize the database
+    likedSongs.initDatabase();
+    
     app.on('browser-window-created', (_, window) => {
         window.webContents.on('context-menu', (e) => {
             e.preventDefault();
@@ -115,6 +119,22 @@ ipcMain.on('request-repeat', (event, repeat) => {
 
 ipcMain.handle('get-player-status', () => {
     return player.getStatus();
+});
+
+ipcMain.on('request-like-song', (event, track) => {
+    likedSongs.addLikedSong(track);
+});
+
+ipcMain.on('request-unlike-song', (event, trackId) => {
+    likedSongs.removeLikedSong(trackId);
+});
+
+ipcMain.handle('check-is-liked', (event, trackId) => {
+    return likedSongs.isLiked(trackId);
+});
+
+ipcMain.handle('get-liked-songs', () => {
+    return likedSongs.getAllLikedSongs();
 });
 
 player.on('play', (data) => {

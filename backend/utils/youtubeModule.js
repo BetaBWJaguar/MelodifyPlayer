@@ -61,7 +61,8 @@ class YouTubeModule {
                     videoUrl: video.url,
                     duration: video.seconds,
                     title: video.title,
-                    channel: video.author?.name || null
+                    channel: video.author?.name || null,
+                    thumbnail: video.thumbnail || null
                 };
             }
         }

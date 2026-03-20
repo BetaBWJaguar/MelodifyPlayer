@@ -3,6 +3,20 @@ const path = require('path');
 const os = require('os');
 const net = require('net');
 
+function killAllMpvProcesses() {
+    try {
+        if (os.platform() === 'win32') {
+            execSync('taskkill /F /IM mpv.exe /T', { stdio: 'ignore' });
+            console.log('[PythonPlayer] Killed all mpv.exe processes');
+        } else {
+            execSync('pkill -9 mpv', { stdio: 'ignore' });
+            console.log('[PythonPlayer] Killed all mpv processes');
+        }
+    } catch (e) {
+        // No mpv processes or error killing them - ignore
+    }
+}
+
 class PythonPlayer {
     constructor() {
         this.process = null;
@@ -41,6 +55,8 @@ class PythonPlayer {
         this.pendingPlayRequest = null;
 
         try {
+            killAllMpvProcesses();
+            
             if (this.process) {
                 console.log('[PythonPlayer] Killing previous player');
 
@@ -200,6 +216,8 @@ class PythonPlayer {
     stop() {
         this.pendingPlayRequest = null;
 
+        killAllMpvProcesses();
+
         if (!this.process) return;
 
         try {
@@ -242,6 +260,7 @@ class PythonPlayer {
             const proc = this.process;
             proc._exitReason = 'pause';
             try {
+                killAllMpvProcesses();
                 if (os.platform() === 'win32') {
                     execSync(`taskkill /F /PID ${proc.pid} /T`, { stdio: 'ignore' });
                 } else {

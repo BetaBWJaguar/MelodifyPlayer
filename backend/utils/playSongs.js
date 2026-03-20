@@ -93,7 +93,8 @@ class Player {
                 ...track,
                 videoId: video.videoId,
                 streamUrl: url,
-                duration: video.duration
+                duration: video.duration,
+                thumbnail: video.thumbnail || track.image || null
             };
 
             this.notifyListeners('play', this.currentTrack);

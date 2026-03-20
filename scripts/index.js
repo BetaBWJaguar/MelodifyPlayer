@@ -284,6 +284,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateRepeatButton();
     }
 
+    const likeBtn = document.getElementById('likeBtn');
+    const updateLikeButton = async () => {
+        if (!likeBtn) return;
+        
+        const trackId = playerState.currentTrack?.id || playerState.currentTrack?.videoId;
+        if (trackId) {
+            const isLiked = await ipcRenderer.invoke('check-is-liked', trackId);
+            if (isLiked) {
+                likeBtn.classList.add('active');
+            } else {
+                likeBtn.classList.remove('active');
+            }
+        } else {
+            likeBtn.classList.remove('active');
+        }
+    };
+    
+    if (likeBtn) {
+        likeBtn.addEventListener('click', async () => {
+            const trackId = playerState.currentTrack?.id || playerState.currentTrack?.videoId;
+            if (!trackId) return;
+            
+            const isLiked = await ipcRenderer.invoke('check-is-liked', trackId);
+            
+            if (isLiked) {
+                ipcRenderer.send('request-unlike-song', trackId);
+                console.log('Removed from liked:', trackId);
+            } else {
+                ipcRenderer.send('request-like-song', playerState.currentTrack);
+                console.log('Added to liked:', trackId);
+            }
+            updateLikeButton();
+        });
+        updateLikeButton();
+    }
+
     const progress = document.querySelector('.progress');
     if (progress) {
         progress.addEventListener('click', (e) => {
@@ -328,6 +364,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             
             updatePlayButton();
+            updateLikeButton();
         });
         
         ipcRenderer.on('player-pause', (event, data) => {

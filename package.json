@@ -19,6 +19,7 @@
     "electron": "^40.8.0"
   },
   "dependencies": {
+    "better-sqlite3": "^12.8.0",
     "undici": "^7.22.0",
     "yt-search": "^2.13.1"
   }

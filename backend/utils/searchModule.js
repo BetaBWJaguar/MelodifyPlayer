@@ -135,7 +135,8 @@ async function searchTrack(query, limit = 20) {
                 return {
                     track: {
                         ...track,
-                        youtube: video
+                        youtube: video,
+                        image: track.image || video.thumbnail || null
                     },
                     hasVideo: true
                 };

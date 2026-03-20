@@ -372,6 +372,35 @@ body {
     white-space: nowrap;
 }
 
+.like-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s, transform 0.2s;
+}
+
+.like-btn:hover {
+    color: var(--text-primary);
+    transform: scale(1.1);
+}
+
+.like-btn.active {
+    color: var(--accent-primary);
+}
+
+.like-btn.active .like-icon {
+    fill: var(--accent-primary);
+}
+
+.like-btn:active {
+    transform: scale(0.95);
+}
+
 .player-center {
     width: 40%;
     display: flex;

@@ -22,6 +22,14 @@
     "timeout": "İstek Zaman Aşımı",
     "timeoutMessage": "Arama çok uzun sürdü. Lütfen tekrar deneyin."
   },
+  "likedSongs": {
+    "title": "Beğenilen Şarkılar",
+    "subtitle": "Beğendiğin tüm şarkılar",
+    "loading": "Beğenilen şarkılar yükleniyor...",
+    "noLikedSongs": "Henüz beğenilen şarkı yok",
+    "startLiking": "Koleksiyonunu oluşturmak için şarkıları beğenmeye başla",
+    "error": "Beğenilen şarkılar yüklenirken hata oluştu"
+  },
   "player": {
     "selectSong": "Bir şarkı seç",
     "startListening": "dinlemeye başlamak için"

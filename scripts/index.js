@@ -263,6 +263,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateVolumeIcon();
     }
 
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    if (fullscreenBtn) {
+        fullscreenBtn.addEventListener('click', () => {
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else {
+                document.documentElement.requestFullscreen();
+            }
+        });
+    }
+
     const repeatBtn = document.getElementById('repeatBtn');
     const updateRepeatButton = () => {
         if (!repeatBtn) return;
@@ -320,6 +331,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateLikeButton();
     }
 
+    const favoriteBtn = document.getElementById('favoriteBtn');
+    const updateFavoriteButton = async () => {
+        if (!favoriteBtn) return;
+        
+        const trackId = playerState.currentTrack?.id || playerState.currentTrack?.videoId;
+        if (trackId) {
+            const isFavorite = await ipcRenderer.invoke('check-is-favorite', trackId);
+            if (isFavorite) {
+                favoriteBtn.classList.add('active');
+            } else {
+                favoriteBtn.classList.remove('active');
+            }
+        } else {
+            favoriteBtn.classList.remove('active');
+        }
+    };
+    
+    if (favoriteBtn) {
+        favoriteBtn.addEventListener('click', async () => {
+            const trackId = playerState.currentTrack?.id || playerState.currentTrack?.videoId;
+            if (!trackId) return;
+            
+            const isFavorite = await ipcRenderer.invoke('check-is-favorite', trackId);
+            
+            if (isFavorite) {
+                ipcRenderer.send('request-unfavorite-song', trackId);
+                console.log('Removed from favorites:', trackId);
+            } else {
+                ipcRenderer.send('request-favorite-song', playerState.currentTrack);
+                console.log('Added to favorites:', trackId);
+            }
+            updateFavoriteButton();
+        });
+        updateFavoriteButton();
+    }
+
     const progress = document.querySelector('.progress');
     if (progress) {
         progress.addEventListener('click', (e) => {
@@ -355,16 +402,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             if (trackNameEl && data.name) {
                 trackNameEl.textContent = data.name;
+                trackNameEl.removeAttribute('data-i18n');
             }
             if (artistNameEl && data.artist) {
                 artistNameEl.textContent = data.artist;
+                artistNameEl.removeAttribute('data-i18n');
             }
-            if (albumArtEl && data.gradient) {
-                albumArtEl.className = `album-art ${data.gradient}`;
+            if (albumArtEl) {
+                albumArtEl.classList.remove('gradient-1', 'gradient-2', 'gradient-3', 'gradient-4');
+                
+                if (data.image) {
+                    albumArtEl.style.backgroundImage = `url(${data.image})`;
+                    albumArtEl.style.backgroundSize = 'cover';
+                    albumArtEl.style.backgroundPosition = 'center';
+                } else {
+                    const gradients = ['gradient-1', 'gradient-2', 'gradient-3', 'gradient-4'];
+                    const randomGradient = gradients[Math.floor(Math.random() * gradients.length)];
+                    albumArtEl.classList.add(randomGradient);
+                    albumArtEl.style.backgroundImage = '';
+                }
             }
             
             updatePlayButton();
             updateLikeButton();
+            updateFavoriteButton();
         });
         
         ipcRenderer.on('player-pause', (event, data) => {

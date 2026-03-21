@@ -30,6 +30,13 @@
     "startLiking": "Koleksiyonunu oluşturmak için şarkıları beğenmeye başla",
     "error": "Beğenilen şarkılar yüklenirken hata oluştu"
   },
+  "favorites": {
+    "title": "Favoriler",
+    "subtitle": "Favori şarkılarından oluşan seçilmiş koleksiyonun",
+    "noFavorites": "Henüz favori şarkı yok",
+    "startFavoriting": "Koleksiyonunu oluşturmak için şarkıları favorilerine ekle",
+    "error": "Favoriler yüklenirken hata oluştu"
+  },
   "player": {
     "selectSong": "Bir şarkı seç",
     "startListening": "dinlemeye başlamak için"

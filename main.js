@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const { searchTrack } = require('./backend/utils/searchModule');
 const player = require('./backend/utils/playSongs');
 const likedSongs = require('./backend/utils/likedSongs');
+const favorites = require('./backend/utils/favorites');
 
 let mainWindow;
 
@@ -37,10 +38,10 @@ function createWindow() {
         mainWindow = null;
     });
 }
-
 app.whenReady().then(async () => {
-    // Initialize the database
     likedSongs.initDatabase();
+    favorites.initDatabase();
+    
     
     app.on('browser-window-created', (_, window) => {
         window.webContents.on('context-menu', (e) => {
@@ -135,6 +136,30 @@ ipcMain.handle('check-is-liked', (event, trackId) => {
 
 ipcMain.handle('get-liked-songs', () => {
     return likedSongs.getAllLikedSongs();
+});
+
+ipcMain.on('request-favorite-song', (event, track) => {
+    favorites.addFavorite(track);
+});
+
+ipcMain.on('request-unfavorite-song', (event, trackId) => {
+    favorites.removeFavorite(trackId);
+});
+
+ipcMain.handle('check-is-favorite', (event, trackId) => {
+    return favorites.isFavorite(trackId);
+});
+
+ipcMain.handle('get-favorites', () => {
+    return favorites.getAllFavorites();
+});
+
+ipcMain.handle('update-favorite-notes', (event, trackId, notes) => {
+    return favorites.updateFavoriteNotes(trackId, notes);
+});
+
+ipcMain.handle('update-favorite-order', (event, trackId, newOrder) => {
+    return favorites.updateFavoriteOrder(trackId, newOrder);
 });
 
 player.on('play', (data) => {

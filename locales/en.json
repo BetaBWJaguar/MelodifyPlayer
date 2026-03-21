@@ -30,6 +30,13 @@
     "startLiking": "Start liking songs to build your collection",
     "error": "Error loading liked songs"
   },
+  "favorites": {
+    "title": "Favorites",
+    "subtitle": "Your curated collection of favorite songs",
+    "noFavorites": "No favorites yet",
+    "startFavoriting": "Add songs to your favorites to build your collection",
+    "error": "Error loading favorites"
+  },
   "player": {
     "selectSong": "Select a song",
     "startListening": "to start listening"

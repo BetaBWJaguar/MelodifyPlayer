@@ -401,6 +401,35 @@ body {
     transform: scale(0.95);
 }
 
+.favorite-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s, transform 0.2s;
+}
+
+.favorite-btn:hover {
+    color: var(--text-primary);
+    transform: scale(1.1);
+}
+
+.favorite-btn.active {
+    color: #ffd700;
+}
+
+.favorite-btn.active .favorite-icon {
+    fill: #ffd700;
+}
+
+.favorite-btn:active {
+    transform: scale(0.95);
+}
+
 .player-center {
     width: 40%;
     display: flex;

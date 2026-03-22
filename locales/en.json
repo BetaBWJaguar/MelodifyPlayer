@@ -28,14 +28,16 @@
     "loading": "Loading your liked songs...",
     "noLikedSongs": "No liked songs yet",
     "startLiking": "Start liking songs to build your collection",
-    "error": "Error loading liked songs"
+    "error": "Error loading liked songs",
+    "removeFromLiked": "Remove from liked"
   },
   "favorites": {
     "title": "Favorites",
     "subtitle": "Your curated collection of favorite songs",
     "noFavorites": "No favorites yet",
     "startFavoriting": "Add songs to your favorites to build your collection",
-    "error": "Error loading favorites"
+    "error": "Error loading favorites",
+    "removeFromFavorites": "Remove from favorites"
   },
   "player": {
     "selectSong": "Select a song",

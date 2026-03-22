@@ -91,6 +91,7 @@ async function loadFavorites() {
 function createTrackCard(song, index) {
     const imageUrl = song.image || '';
     const trackId = song.track_id;
+    const lang = window.language || { t: (k) => k };
 
     if (imageUrl) {
         return `
@@ -108,7 +109,7 @@ function createTrackCard(song, index) {
                     <span class="track-card-artist" title="${escapeHtml(song.artist_name)}">${escapeHtml(song.artist_name)}</span>
                 </div>
                 <div class="track-card-actions">
-                    <button class="remove-favorite-btn" data-track-id="${escapeHtml(trackId)}" title="Remove from favorites">
+                    <button class="remove-favorite-btn" data-track-id="${escapeHtml(trackId)}" title="${lang.t('favorites.removeFromFavorites')}">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
                         </svg>
@@ -134,7 +135,7 @@ function createTrackCard(song, index) {
                     <span class="track-card-artist" title="${escapeHtml(song.artist_name)}">${escapeHtml(song.artist_name)}</span>
                 </div>
                 <div class="track-card-actions">
-                    <button class="remove-favorite-btn" data-track-id="${escapeHtml(trackId)}" title="Remove from favorites">
+                    <button class="remove-favorite-btn" data-track-id="${escapeHtml(trackId)}" title="${lang.t('favorites.removeFromFavorites')}">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
                         </svg>

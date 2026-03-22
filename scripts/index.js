@@ -214,21 +214,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         volumeBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="${iconPath}"/></svg>`;
     };
     
+    const updateVolumeFill = () => {
+        if (!volumeSlider) return;
+        const value = volumeSlider.value;
+        const min = volumeSlider.min || 0;
+        const max = volumeSlider.max || 100;
+        const percentage = ((value - min) / (max - min)) * 100;
+        volumeSlider.style.setProperty('--value', `${percentage}%`);
+    };
+    
+    updateVolumeFill();
+    
     if (volumeSlider) {
-        const updateVolumeFill = () => {
-            const value = volumeSlider.value;
-            const min = volumeSlider.min || 0;
-            const max = volumeSlider.max || 100;
-            const percentage = ((value - min) / (max - min)) * 100;
-            volumeSlider.style.setProperty('--value', `${percentage}%`);
-        };
-        
-        updateVolumeFill();
-        
         volumeSlider.addEventListener('input', (e) => {
             const volume = parseInt(e.target.value);
             playerState.volume = volume;
             playerState.isMuted = volume === 0;
+            if (!playerState.isMuted && volume > 0) {
+                playerState.previousVolume = volume;
+            }
             console.log('Volume changed to:', volume);
             updateVolumeFill();
             updateVolumeIcon();
@@ -246,7 +250,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     updateVolumeFill();
                 }
             } else {
-                playerState.previousVolume = playerState.volume;
+                if (playerState.volume > 0) {
+                    playerState.previousVolume = playerState.volume;
+                }
                 playerState.isMuted = true;
                 playerState.volume = 0;
                 if (volumeSlider) {
@@ -255,6 +261,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
             updateVolumeIcon();
+            console.log('Volume button clicked - Volume:', playerState.volume, 'Muted:', playerState.isMuted);
             ipcRenderer.send('request-volume', playerState.volume);
         });
     }

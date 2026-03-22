@@ -28,14 +28,16 @@
     "loading": "Beğenilen şarkılar yükleniyor...",
     "noLikedSongs": "Henüz beğenilen şarkı yok",
     "startLiking": "Koleksiyonunu oluşturmak için şarkıları beğenmeye başla",
-    "error": "Beğenilen şarkılar yüklenirken hata oluştu"
+    "error": "Beğenilen şarkılar yüklenirken hata oluştu",
+    "removeFromLiked": "Beğenilenlerden kaldır"
   },
   "favorites": {
     "title": "Favoriler",
     "subtitle": "Favori şarkılarından oluşan seçilmiş koleksiyonun",
     "noFavorites": "Henüz favori şarkı yok",
     "startFavoriting": "Koleksiyonunu oluşturmak için şarkıları favorilerine ekle",
-    "error": "Favoriler yüklenirken hata oluştu"
+    "error": "Favoriler yüklenirken hata oluştu",
+    "removeFromFavorites": "Favorilerden kaldır"
   },
   "player": {
     "selectSong": "Bir şarkı seç",

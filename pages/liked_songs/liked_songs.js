@@ -96,6 +96,7 @@ async function loadLikedSongs() {
 function createTrackCard(song, index) {
     const imageUrl = song.image || '';
     const trackId = song.track_id;
+    const lang = window.language || { t: (k) => k };
 
     if (imageUrl) {
         return `
@@ -113,7 +114,7 @@ function createTrackCard(song, index) {
                     <span class="track-card-artist" title="${escapeHtml(song.artist_name)}">${escapeHtml(song.artist_name)}</span>
                 </div>
                 <div class="track-card-actions">
-                    <button class="remove-like-btn" data-track-id="${escapeHtml(trackId)}" title="Remove from liked">
+                    <button class="remove-like-btn" data-track-id="${escapeHtml(trackId)}" title="${lang.t('likedSongs.removeFromLiked')}">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5
                                 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81
@@ -144,7 +145,7 @@ function createTrackCard(song, index) {
                     <span class="track-card-artist" title="${escapeHtml(song.artist_name)}">${escapeHtml(song.artist_name)}</span>
                 </div>
                 <div class="track-card-actions">
-                    <button class="remove-like-btn" data-track-id="${escapeHtml(trackId)}" title="Remove from liked">
+                    <button class="remove-like-btn" data-track-id="${escapeHtml(trackId)}" title="${lang.t('likedSongs.removeFromLiked')}">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5
                                 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81

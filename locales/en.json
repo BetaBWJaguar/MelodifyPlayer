@@ -37,7 +37,8 @@
     "noFavorites": "No favorites yet",
     "startFavoriting": "Add songs to your favorites to build your collection",
     "error": "Error loading favorites",
-    "removeFromFavorites": "Remove from favorites"
+    "removeFromFavorites": "Remove from favorites",
+    "play": "Play"
   },
   "player": {
     "selectSong": "Select a song",

@@ -53,7 +53,7 @@ async function loadFavorites() {
             card.style.animationDelay = `${index * 0.05}s`;
 
             card.addEventListener('click', (e) => {
-                if (e.target.closest('.remove-favorite-btn')) {
+                if (e.target.closest('.remove-favorite-btn') || e.target.closest('.play-overlay-btn')) {
                     return;
                 }
                 e.preventDefault();
@@ -63,6 +63,20 @@ async function loadFavorites() {
                 const image = card.dataset.image;
                 const trackId = card.dataset.trackId;
                 console.log('Track clicked:', trackName, artistName, image);
+                playTrack(trackName, artistName, image, trackId);
+            });
+        });
+
+        const playButtons = document.querySelectorAll('.play-overlay-btn');
+        playButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const card = btn.closest('.track-card');
+                const trackName = card.dataset.trackName;
+                const artistName = card.dataset.artistName;
+                const image = card.dataset.image;
+                const trackId = card.dataset.trackId;
                 playTrack(trackName, artistName, image, trackId);
             });
         });
@@ -103,6 +117,13 @@ function createTrackCard(song, index) {
                  data-index="${index}">
                 <div class="track-card-image">
                     <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(song.track_name)}" loading="lazy">
+                    <div class="play-overlay">
+                        <button class="play-overlay-btn" data-play-track-id="${escapeHtml(trackId)}" title="${lang.t('favorites.play')}">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
                 <div class="track-card-info">
                     <span class="track-card-name" title="${escapeHtml(song.track_name)}">${escapeHtml(song.track_name)}</span>
@@ -110,7 +131,7 @@ function createTrackCard(song, index) {
                 </div>
                 <div class="track-card-actions">
                     <button class="remove-favorite-btn" data-track-id="${escapeHtml(trackId)}" title="${lang.t('favorites.removeFromFavorites')}">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
                         </svg>
                     </button>
@@ -129,6 +150,13 @@ function createTrackCard(song, index) {
                     <svg viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
                     </svg>
+                    <div class="play-overlay">
+                        <button class="play-overlay-btn" data-play-track-id="${escapeHtml(trackId)}" title="${lang.t('favorites.play')}">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
                 <div class="track-card-info">
                     <span class="track-card-name" title="${escapeHtml(song.track_name)}">${escapeHtml(song.track_name)}</span>
@@ -136,7 +164,7 @@ function createTrackCard(song, index) {
                 </div>
                 <div class="track-card-actions">
                     <button class="remove-favorite-btn" data-track-id="${escapeHtml(trackId)}" title="${lang.t('favorites.removeFromFavorites')}">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
                         </svg>
                     </button>

@@ -37,7 +37,8 @@
     "noFavorites": "Henüz favori şarkı yok",
     "startFavoriting": "Koleksiyonunu oluşturmak için şarkıları favorilerine ekle",
     "error": "Favoriler yüklenirken hata oluştu",
-    "removeFromFavorites": "Favorilerden kaldır"
+    "removeFromFavorites": "Favorilerden kaldır",
+    "play": "Oynat"
   },
   "player": {
     "selectSong": "Bir şarkı seç",

@@ -162,6 +162,10 @@ ipcMain.handle('update-favorite-order', (event, trackId, newOrder) => {
     return favorites.updateFavoriteOrder(trackId, newOrder);
 });
 
+ipcMain.handle('reorder-favorites', (event, draggedId, targetId) => {
+    return favorites.reorderFavorites(draggedId, targetId);
+});
+
 player.on('play', (data) => {
     if (mainWindow) {
         mainWindow.webContents.send('player-play', data);

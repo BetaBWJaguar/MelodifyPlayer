@@ -38,7 +38,13 @@
     "startFavoriting": "Add songs to your favorites to build your collection",
     "error": "Error loading favorites",
     "removeFromFavorites": "Remove from favorites",
-    "play": "Play"
+    "play": "Play",
+    "addNote": "Add Note",
+    "notesLabel": "Notes",
+    "notesPlaceholder": "Add notes about this track...",
+    "cancel": "Cancel",
+    "save": "Save",
+    "dragToReorder": "Drag to reorder"
   },
   "player": {
     "selectSong": "Select a song",

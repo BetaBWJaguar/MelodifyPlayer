@@ -115,6 +115,37 @@ function updateFavoriteOrder(trackId, newOrder) {
     return result.changes > 0;
 }
 
+function reorderFavorites(draggedId, targetId) {
+    if (!db) initDatabase();
+    
+    const draggedStmt = db.prepare('SELECT custom_order FROM favorites WHERE track_id = ?');
+    const dragged = draggedStmt.get(draggedId);
+    const targetStmt = db.prepare('SELECT custom_order FROM favorites WHERE track_id = ?');
+    const target = targetStmt.get(targetId);
+    
+    if (!dragged || !target) {
+        console.error('Track not found:', { dragged, target });
+        return false;
+    }
+    
+    const draggedOrder = dragged.custom_order;
+    const targetOrder = target.custom_order;
+    
+    if (draggedOrder < targetOrder) {
+        const shiftStmt = db.prepare('UPDATE favorites SET custom_order = custom_order - 1 WHERE custom_order > ? AND custom_order <= ?');
+        shiftStmt.run(draggedOrder, targetOrder);
+    }
+    else if (draggedOrder > targetOrder) {
+        const shiftStmt = db.prepare('UPDATE favorites SET custom_order = custom_order + 1 WHERE custom_order >= ? AND custom_order < ?');
+        shiftStmt.run(targetOrder, draggedOrder);
+    }
+    
+    const updateStmt = db.prepare('UPDATE favorites SET custom_order = ? WHERE track_id = ?');
+    const result = updateStmt.run(targetOrder, draggedId);
+    
+    return result.changes > 0;
+}
+
 module.exports = {
     initDatabase,
     addFavorite,
@@ -123,5 +154,6 @@ module.exports = {
     getAllFavorites,
     getFavorite,
     updateFavoriteNotes,
-    updateFavoriteOrder
+    updateFavoriteOrder,
+    reorderFavorites
 };

@@ -1,6 +1,8 @@
 const { ipcRenderer } = require('electron');
 
 let isPlaying = false;
+let currentEditingTrackId = null;
+let draggedItem = null;
 
 ipcRenderer.on("player-play", (event, data) => {
     isPlaying = true;
@@ -17,7 +19,95 @@ ipcRenderer.on("player-error", (event, data) => {
 
 async function initFavoritesPage() {
     console.log('Initializing favorites page...');
+    setupNotesModal();
     await loadFavorites();
+}
+
+function setupNotesModal() {
+    const modal = document.getElementById('notesModal');
+    const closeBtn = document.getElementById('closeNotesModal');
+    const cancelBtn = document.getElementById('cancelNotesBtn');
+    const saveBtn = document.getElementById('saveNotesBtn');
+    const notesInput = document.getElementById('notesInput');
+    const charCount = document.getElementById('charCount');
+
+    closeBtn.addEventListener('click', closeNotesModal);
+    cancelBtn.addEventListener('click', closeNotesModal);
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeNotesModal();
+        }
+    });
+
+    notesInput.addEventListener('input', () => {
+        const length = notesInput.value.length;
+        charCount.textContent = length;
+        if (length > 500) {
+            charCount.style.color = '#ef4444';
+        } else {
+            charCount.style.color = '';
+        }
+    });
+
+    saveBtn.addEventListener('click', async () => {
+        const notes = notesInput.value.trim();
+        if (notes.length > 500) {
+            return;
+        }
+        
+        try {
+            await ipcRenderer.invoke('update-favorite-notes', currentEditingTrackId, notes);
+            closeNotesModal();
+            await loadFavorites();
+        } catch (error) {
+            console.error('Error saving notes:', error);
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeNotesModal();
+        }
+    });
+}
+
+function openNotesModal(track) {
+    const modal = document.getElementById('notesModal');
+    const modalTrackName = document.getElementById('modalTrackName');
+    const modalArtistName = document.getElementById('modalArtistName');
+    const modalTrackImage = document.getElementById('modalTrackImage');
+    const notesInput = document.getElementById('notesInput');
+    const charCount = document.getElementById('charCount');
+
+    currentEditingTrackId = track.track_id;
+    modalTrackName.textContent = track.track_name;
+    modalArtistName.textContent = track.artist_name;
+
+    if (track.image) {
+        modalTrackImage.innerHTML = `<img src="${escapeHtml(track.image)}" alt="">`;
+    } else {
+        modalTrackImage.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+            </svg>
+        `;
+    }
+
+    notesInput.value = track.notes || '';
+    charCount.textContent = notesInput.value.length;
+
+    modal.classList.add('active');
+    notesInput.focus();
+}
+
+function closeNotesModal() {
+    const modal = document.getElementById('notesModal');
+    const notesInput = document.getElementById('notesInput');
+    
+    modal.classList.remove('active');
+    notesInput.value = '';
+    currentEditingTrackId = null;
 }
 
 async function loadFavorites() {
@@ -41,19 +131,24 @@ async function loadFavorites() {
         }
 
         const songsHTML = `
-            <div class="favorites-list">
+            <div class="favorites-list" id="favoritesList">
                 ${songs.map((song, index) => createTrackCard(song, index)).join('')}
             </div>
         `;
 
         favoritesContent.innerHTML = songsHTML;
 
+        setupDragAndDrop();
+
         const trackCards = document.querySelectorAll('.track-card');
         trackCards.forEach((card, index) => {
             card.style.animationDelay = `${index * 0.05}s`;
 
             card.addEventListener('click', (e) => {
-                if (e.target.closest('.remove-favorite-btn') || e.target.closest('.play-overlay-btn')) {
+                if (e.target.closest('.remove-favorite-btn') || 
+                    e.target.closest('.play-overlay-btn') ||
+                    e.target.closest('.notes-btn') ||
+                    e.target.closest('.drag-handle')) {
                     return;
                 }
                 e.preventDefault();
@@ -91,6 +186,23 @@ async function loadFavorites() {
             });
         });
 
+        const notesButtons = document.querySelectorAll('.notes-btn');
+        notesButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const card = btn.closest('.track-card');
+                const track = {
+                    track_id: card.dataset.trackId,
+                    track_name: card.dataset.trackName,
+                    artist_name: card.dataset.artistName,
+                    image: card.dataset.image,
+                    notes: card.dataset.notes || ''
+                };
+                openNotesModal(track);
+            });
+        });
+
     } catch (error) {
         console.error('Error loading favorites:', error);
         favoritesContent.innerHTML = `
@@ -105,6 +217,8 @@ async function loadFavorites() {
 function createTrackCard(song, index) {
     const imageUrl = song.image || '';
     const trackId = song.track_id;
+    const notes = song.notes || '';
+    const hasNotes = notes.length > 0;
     const lang = window.language || { t: (k) => k };
 
     if (imageUrl) {
@@ -114,7 +228,14 @@ function createTrackCard(song, index) {
                  data-artist-name="${escapeHtml(song.artist_name)}"
                  data-image="${escapeHtml(imageUrl)}"
                  data-track-id="${escapeHtml(trackId)}"
-                 data-index="${index}">
+                 data-notes="${escapeHtml(notes)}"
+                 data-index="${index}"
+                 draggable="true">
+                <div class="drag-handle" title="${lang.t('favorites.dragToReorder')}">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                    </svg>
+                </div>
                 <div class="track-card-image">
                     <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(song.track_name)}" loading="lazy">
                     <div class="play-overlay">
@@ -128,8 +249,14 @@ function createTrackCard(song, index) {
                 <div class="track-card-info">
                     <span class="track-card-name" title="${escapeHtml(song.track_name)}">${escapeHtml(song.track_name)}</span>
                     <span class="track-card-artist" title="${escapeHtml(song.artist_name)}">${escapeHtml(song.artist_name)}</span>
+                    ${hasNotes ? `<span class="track-card-notes-indicator" title="${escapeHtml(notes)}">📝</span>` : ''}
                 </div>
                 <div class="track-card-actions">
+                    <button class="notes-btn ${hasNotes ? 'has-notes' : ''}" data-track-id="${escapeHtml(trackId)}" title="${lang.t('favorites.addNote')}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                        </svg>
+                    </button>
                     <button class="remove-favorite-btn" data-track-id="${escapeHtml(trackId)}" title="${lang.t('favorites.removeFromFavorites')}">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
@@ -145,7 +272,14 @@ function createTrackCard(song, index) {
                  data-artist-name="${escapeHtml(song.artist_name)}"
                  data-image=""
                  data-track-id="${escapeHtml(trackId)}"
-                 data-index="${index}">
+                 data-notes="${escapeHtml(notes)}"
+                 data-index="${index}"
+                 draggable="true">
+                <div class="drag-handle" title="${lang.t('favorites.dragToReorder')}">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                    </svg>
+                </div>
                 <div class="track-card-image no-image">
                     <svg viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
@@ -161,8 +295,14 @@ function createTrackCard(song, index) {
                 <div class="track-card-info">
                     <span class="track-card-name" title="${escapeHtml(song.track_name)}">${escapeHtml(song.track_name)}</span>
                     <span class="track-card-artist" title="${escapeHtml(song.artist_name)}">${escapeHtml(song.artist_name)}</span>
+                    ${hasNotes ? `<span class="track-card-notes-indicator" title="${escapeHtml(notes)}">📝</span>` : ''}
                 </div>
                 <div class="track-card-actions">
+                    <button class="notes-btn ${hasNotes ? 'has-notes' : ''}" data-track-id="${escapeHtml(trackId)}" title="${lang.t('favorites.addNote')}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                        </svg>
+                    </button>
                     <button class="remove-favorite-btn" data-track-id="${escapeHtml(trackId)}" title="${lang.t('favorites.removeFromFavorites')}">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
@@ -172,6 +312,54 @@ function createTrackCard(song, index) {
             </div>
         `;
     }
+}
+
+function setupDragAndDrop() {
+    const trackCards = document.querySelectorAll('.track-card');
+
+    trackCards.forEach(card => {
+        card.addEventListener('dragstart', (e) => {
+            draggedItem = card;
+            card.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', card.dataset.trackId);
+        });
+
+        card.addEventListener('dragend', () => {
+            card.classList.remove('dragging');
+            draggedItem = null;
+            document.querySelectorAll('.track-card').forEach(c => c.classList.remove('drag-over'));
+        });
+
+        card.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            if (draggedItem && draggedItem !== card) {
+                card.classList.add('drag-over');
+            }
+        });
+
+        card.addEventListener('dragleave', () => {
+            card.classList.remove('drag-over');
+        });
+
+        card.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            card.classList.remove('drag-over');
+
+            if (draggedItem && draggedItem !== card) {
+                const draggedId = draggedItem.dataset.trackId;
+                const targetId = card.dataset.trackId;
+
+                try {
+                    await ipcRenderer.invoke('reorder-favorites', draggedId, targetId);
+                    await loadFavorites();
+                } catch (error) {
+                    console.error('Error reordering favorites:', error);
+                }
+            }
+        });
+    });
 }
 
 function playTrack(trackName, artistName, image, trackId) {

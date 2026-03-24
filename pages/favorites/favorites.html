@@ -12,10 +12,51 @@
             </div>
         </div>
     </div>
-    
     <div class="favorites-content" id="favoritesContent">
         <div class="loading-state">
             <div class="spinner"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="notesModal">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h2 data-i18n="favorites.addNote"></h2>
+            <button class="modal-close-btn" id="closeNotesModal">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="track-info-display">
+                <div class="track-info-image" id="modalTrackImage">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                    </svg>
+                </div>
+                <div class="track-info-text">
+                    <span class="track-info-name" id="modalTrackName"></span>
+                    <span class="track-info-artist" id="modalArtistName"></span>
+                </div>
+            </div>
+            <div class="notes-input-container">
+                <label for="notesInput" data-i18n="favorites.notesLabel"></label>
+                <textarea 
+                    id="notesInput" 
+                    rows="6" 
+                    placeholder="..."
+                    data-i18n-placeholder="favorites.notesPlaceholder"
+                ></textarea>
+                <div class="notes-char-count">
+                    <span id="charCount">0</span> / 500
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="cancelNotesBtn" data-i18n="favorites.cancel"></button>
+            <button class="btn btn-primary" id="saveNotesBtn" data-i18n="favorites.save"></button>
         </div>
     </div>
 </div>

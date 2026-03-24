@@ -38,7 +38,13 @@
     "startFavoriting": "Koleksiyonunu oluşturmak için şarkıları favorilerine ekle",
     "error": "Favoriler yüklenirken hata oluştu",
     "removeFromFavorites": "Favorilerden kaldır",
-    "play": "Oynat"
+    "play": "Oynat",
+    "addNote": "Not Ekle",
+    "notesLabel": "Notlar",
+    "notesPlaceholder": "Bu parça hakkında notlar ekle...",
+    "cancel": "İptal",
+    "save": "Kaydet",
+    "dragToReorder": "Sıralamak için sürükle"
   },
   "player": {
     "selectSong": "Bir şarkı seç",

@@ -44,6 +44,10 @@ class Language {
         return value || key;
     }
 
+    getTranslation(key) {
+        return this.t(key);
+    }
+
     async setLanguage(lang) {
         if (lang !== 'en' && lang !== 'tr') {
             console.warn(`Unsupported language: ${lang}`);

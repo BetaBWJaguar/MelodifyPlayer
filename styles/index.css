@@ -512,6 +512,181 @@ body {
     gap: 8px;
     width: 100%;
     max-width: 500px;
+    position: relative;
+}
+
+.history-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s, transform 0.2s;
+    position: relative;
+}
+
+.history-btn:hover {
+    color: var(--text-primary);
+    transform: scale(1.1);
+}
+
+.history-btn:active {
+    transform: scale(0.95);
+}
+
+.history-btn.has-history::after {
+    content: '';
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 6px;
+    height: 6px;
+    background-color: var(--accent-primary);
+    border-radius: 50%;
+}
+
+.history-dropdown {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    width: 320px;
+    max-height: 400px;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--bg-elevated);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    display: none;
+    flex-direction: column;
+    z-index: 1000;
+    margin-bottom: 10px;
+    pointer-events: auto;
+}
+
+.history-dropdown.show {
+    display: flex;
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    border-bottom: 1px solid var(--bg-elevated);
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.history-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 24px;
+    line-height: 1;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
+
+.history-close:hover {
+    color: var(--text-primary);
+}
+
+.history-list {
+    overflow-y: auto;
+    flex: 1;
+    max-height: 340px;
+    pointer-events: auto;
+    -webkit-app-region: no-drag;
+}
+
+.history-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.history-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.history-list::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+.history-list::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.4);
+}
+
+.history-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    pointer-events: auto;
+    -webkit-app-region: no-drag;
+}
+
+.history-item:hover {
+    background-color: var(--bg-hover);
+    pointer-events: auto;
+    -webkit-app-region: no-drag;
+}
+
+.history-item.current {
+    background-color: rgba(233, 69, 96, 0.1);
+}
+
+.history-item-art {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    background-size: cover;
+    background-position: center;
+    flex-shrink: 0;
+    pointer-events: auto;
+}
+
+.history-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.history-item-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    pointer-events: auto;
+}
+
+.history-item-artist {
+    font-size: 11px;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.history-item.current .history-item-name {
+    color: var(--accent-primary);
+}
+
+.history-empty {
+    padding: 32px 16px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 13px;
 }
 
 .time {

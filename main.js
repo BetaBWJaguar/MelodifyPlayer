@@ -126,6 +126,10 @@ ipcMain.on('request-previous', () => {
     player.playPrevious();
 });
 
+ipcMain.on('request-play-history', (event, index) => {
+    player.playHistoryItem(index);
+});
+
 ipcMain.handle('get-history', () => {
     return player.getHistory();
 });

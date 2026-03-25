@@ -120,6 +120,19 @@ class Player {
                 image: track.image || video.thumbnail || null
             };
 
+            if (this.historyIndex >= 0 && this.historyIndex < this.history.length) {
+                const historyEntry = this.history[this.historyIndex];
+                if (historyEntry) {
+                    historyEntry.image = this.currentTrack.image || this.currentTrack.thumbnail;
+                    historyEntry.thumbnail = this.currentTrack.thumbnail;
+                    historyEntry.id = this.currentTrack.id || this.currentTrack.videoId;
+                }
+            }
+
+            if (addToHistory && !fromHistory) {
+                this.notifyListeners('history-updated', this.getHistory());
+            }
+
             this.notifyListeners('play', this.currentTrack);
 
             await pythonPlayer.play(url, 0);
@@ -135,7 +148,6 @@ class Player {
                 this.isPlayingPromise = false;
                 await this.play(pendingTrack);
             }
-            this.notifyListeners('history-updated', this.getHistory());
 
         } catch (error) {
             console.error('[Player] Play error:', error);
@@ -319,6 +331,18 @@ class Player {
     async playPrevious() {
         if (this.historyIndex > 0) {
             this.historyIndex--;
+            this.history = this.history.slice(0, this.historyIndex + 1);
+            this.notifyListeners('history-updated', this.getHistory());
+            const track = this.history[this.historyIndex];
+            await this.play(track, true, false);
+        }
+    }
+
+    async playHistoryItem(index) {
+        if (index >= 0 && index < this.history.length) {
+            this.historyIndex = index;
+            this.history = this.history.slice(0, this.historyIndex + 1);
+            this.notifyListeners('history-updated', this.getHistory());
             const track = this.history[this.historyIndex];
             await this.play(track, true, false);
         }

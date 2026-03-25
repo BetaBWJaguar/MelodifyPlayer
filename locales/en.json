@@ -49,5 +49,9 @@
   "player": {
     "selectSong": "Select a song",
     "startListening": "to start listening"
+  },
+  "history": {
+    "title": "History",
+    "empty": "No history yet"
   }
 }

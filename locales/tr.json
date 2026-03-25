@@ -49,5 +49,9 @@
   "player": {
     "selectSong": "Bir şarkı seç",
     "startListening": "dinlemeye başlamak için"
+  },
+  "history": {
+    "title": "Geçmiş",
+    "empty": "Henüz geçmiş yok"
   }
 }

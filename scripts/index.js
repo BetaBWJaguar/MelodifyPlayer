@@ -98,6 +98,7 @@ function capitalize(text) {
 
 document.addEventListener('DOMContentLoaded', async () => {
     const { ipcRenderer } = require('electron');
+    window.ipcRenderer = ipcRenderer;
 
     await language.init();
     language.updateUI();
@@ -483,8 +484,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     
             ipcRenderer.on('player-history-updated', (event, data) => {
                 playerState.history = data.history || [];
-                playerState.historyIndex = data.currentIndex || -1;
+                playerState.historyIndex = data.currentIndex !== undefined ? data.currentIndex : -1;
                 updatePrevButton();
+                updateHistoryButton();
+                updateHistoryList();
             });
         
         ipcRenderer.on('player-error', (event, data) => {
@@ -526,6 +529,114 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
         }
-        
+
+        function updateHistoryButton() {
+            const historyBtn = document.getElementById('historyBtn');
+            if (historyBtn) {
+                if (playerState.history.length > 0) {
+                    historyBtn.classList.add('has-history');
+                } else {
+                    historyBtn.classList.remove('has-history');
+                }
+            }
+        }
+
+        function updateHistoryList() {
+            const historyList = document.getElementById('historyList');
+            if (!historyList) return;
+
+            if (playerState.history.length === 0) {
+                const emptyText = language.getTranslation('history.empty');
+                historyList.innerHTML = `<div class="history-empty">${emptyText}</div>`;
+                return;
+            }
+
+            historyList.innerHTML = '';
+            
+            playerState.history.forEach((track, index) => {
+                const isCurrent = index === playerState.historyIndex;
+                const item = document.createElement('div');
+                item.className = `history-item ${isCurrent ? 'current' : ''}`;
+                
+                const art = document.createElement('div');
+                art.className = 'history-item-art';
+                const imageUrl = track.image || track.thumbnail;
+                if (imageUrl) {
+                    art.style.backgroundImage = `url(${imageUrl})`;
+                } else {
+                    const gradientOptions = ['linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                              'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                                              'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                                              'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'];
+                    const randomGradient = gradientOptions[Math.floor(Math.random() * gradientOptions.length)];
+                    art.style.background = randomGradient;
+                }
+                
+                const info = document.createElement('div');
+                info.className = 'history-item-info';
+                
+                const name = document.createElement('div');
+                name.className = 'history-item-name';
+                name.textContent = track.name || 'Unknown Track';
+                
+                const artist = document.createElement('div');
+                artist.className = 'history-item-artist';
+                artist.textContent = track.artist || 'Unknown Artist';
+                
+                info.appendChild(name);
+                info.appendChild(artist);
+                
+                item.appendChild(art);
+                item.appendChild(info);
+                
+                item.addEventListener('click', () => {
+                    const { ipcRenderer } = require('electron');
+                    ipcRenderer.send('request-play-history', index);
+                    toggleHistoryDropdown(false);
+                });
+                
+                historyList.appendChild(item);
+            });
+        }
+
+        function toggleHistoryDropdown(show) {
+            const dropdown = document.getElementById('historyDropdown');
+            if (dropdown) {
+                if (show === undefined) {
+                    dropdown.classList.toggle('show');
+                } else if (show) {
+                    dropdown.classList.add('show');
+                } else {
+                    dropdown.classList.remove('show');
+                }
+            }
+        }
+
+        const historyBtn = document.getElementById('historyBtn');
+        if (historyBtn) {
+            historyBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleHistoryDropdown();
+            });
+        }
+
+        const historyClose = document.getElementById('historyClose');
+        if (historyClose) {
+            historyClose.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleHistoryDropdown(false);
+            });
+        }
+
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('historyDropdown');
+            const historyBtn = document.getElementById('historyBtn');
+            if (dropdown && historyBtn && !dropdown.contains(e.target) && !historyBtn.contains(e.target)) {
+                dropdown.classList.remove('show');
+            }
+        });
+
         updatePlayButton();
+        updateHistoryButton();
+        updateHistoryList();
     });

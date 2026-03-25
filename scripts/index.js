@@ -10,7 +10,9 @@ let playerState = {
     volume: 100,
     isMuted: false,
     previousVolume: 100,
-    repeat: false
+    repeat: false,
+    history: [],
+    historyIndex: -1
 };
 
 function formatTime(seconds) {
@@ -302,6 +304,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateRepeatButton();
     }
 
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            if (playerState.historyIndex > 0) {
+                ipcRenderer.send('request-previous');
+            } else {
+                console.log('No previous tracks');
+            }
+        });
+    }
+
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            ipcRenderer.send('request-next');
+        });
+    }
+
     const likeBtn = document.getElementById('likeBtn');
     const updateLikeButton = async () => {
         if (!likeBtn) return;
@@ -423,8 +444,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     albumArtEl.style.backgroundSize = 'cover';
                     albumArtEl.style.backgroundPosition = 'center';
                 } else {
-                    const gradients = ['gradient-1', 'gradient-2', 'gradient-3', 'gradient-4'];
-                    const randomGradient = gradients[Math.floor(Math.random() * gradients.length)];
+                    const gradientOptions = ['gradient-1', 'gradient-2', 'gradient-3', 'gradient-4'];
+                    const randomGradient = gradientOptions[Math.floor(Math.random() * gradientOptions.length)];
                     albumArtEl.classList.add(randomGradient);
                     albumArtEl.style.backgroundImage = '';
                 }
@@ -433,6 +454,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             updatePlayButton();
             updateLikeButton();
             updateFavoriteButton();
+            updatePrevButton();
         });
         
         ipcRenderer.on('player-pause', (event, data) => {
@@ -452,12 +474,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             
             ipcRenderer.on('player-stop', (event, data) => {
-                console.log('Player stopped event received:', data);
-                playerState.isPlaying = false;
-                playerState.isPaused = false;
-                playerState.currentTrack = null;
-                console.log('State after stop event:', playerState);
-                updatePlayButton();
+                    console.log('Player stopped event received:', data);
+                    playerState.isPlaying = false;
+                    playerState.isPaused = false;
+                    playerState.currentTrack = null;
+                    updatePlayButton();
+                });
+    
+            ipcRenderer.on('player-history-updated', (event, data) => {
+                playerState.history = data.history || [];
+                playerState.historyIndex = data.currentIndex || -1;
+                updatePrevButton();
             });
         
         ipcRenderer.on('player-error', (event, data) => {
@@ -474,6 +501,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateProgressBar();
         });
         
+        function updatePrevButton() {
+            const prevBtn = document.getElementById('prevBtn');
+            if (prevBtn) {
+                if (playerState.historyIndex > 0) {
+                    prevBtn.style.opacity = '1';
+                    prevBtn.style.pointerEvents = 'auto';
+                } else {
+                    prevBtn.style.opacity = '0.5';
+                    prevBtn.style.pointerEvents = 'none';
+                }
+            }
+        }
+
         function updatePlayButton() {
             const playBtn = document.querySelector('.play-btn');
             if (playBtn) {

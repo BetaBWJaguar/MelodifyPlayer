@@ -1,5 +1,8 @@
 const youtubeModule = require('./youtubeModule');
 const pythonPlayer = require('./pythonPlayer');
+const lastfmModule = require('./lastfmModule');
+const likedSongs = require('./likedSongs');
+const favorites = require('./favorites');
 
 class Player {
     constructor() {
@@ -9,7 +12,9 @@ class Player {
         this.isPlayingPromise = false;
         this.pendingPlayRequest = null;
         this.repeat = false;
-        
+        this.history = [];
+        this.historyIndex = -1;
+
         pythonPlayer.on('play', (data) => {
             this.notifyListeners('play', data);
         });
@@ -17,9 +22,14 @@ class Player {
         pythonPlayer.on('stop', (data) => {
             this.stopProgressUpdates();
             
-            if (data.reason === 'ended' && this.repeat && this.currentTrack) {
-                console.log('[Player] Song ended, repeating...');
-                this.play(this.currentTrack);
+            if (data.reason === 'ended') {
+                if (this.repeat && this.currentTrack) {
+                    this.play(this.currentTrack, false, false);
+                    return;
+                }
+                
+                console.log('[Player] Song ended, playing next...');
+                this.playNext();
                 return;
             }
             
@@ -67,13 +77,25 @@ class Player {
         }
     }
 
-    async play(track) {
+    async play(track, fromHistory = false, addToHistory = true) {
         if (this.isPlayingPromise) {
             this.pendingPlayRequest = track;
             return;
         }
 
         this.isPlayingPromise = true;
+
+        if (addToHistory && !fromHistory) {
+            this.history = this.history.slice(0, this.historyIndex + 1);
+            this.history.push({
+                name: track.name,
+                artist: track.artist,
+                image: track.image || track.thumbnail,
+                id: track.id || track.videoId
+            });
+            this.historyIndex = this.history.length - 1;
+        }
+
         this.pendingPlayRequest = null;
 
         try {
@@ -94,7 +116,8 @@ class Player {
                 videoId: video.videoId,
                 streamUrl: url,
                 duration: video.duration,
-                thumbnail: video.thumbnail || track.image || null
+                thumbnail: track.image || video.thumbnail || null,
+                image: track.image || video.thumbnail || null
             };
 
             this.notifyListeners('play', this.currentTrack);
@@ -112,7 +135,8 @@ class Player {
                 this.isPlayingPromise = false;
                 await this.play(pendingTrack);
             }
-            
+            this.notifyListeners('history-updated', this.getHistory());
+
         } catch (error) {
             console.error('[Player] Play error:', error);
             this.notifyListeners('error', { error: error.message });
@@ -174,6 +198,139 @@ class Player {
     setRepeat(repeat) {
         this.repeat = repeat;
         console.log('[Player] Repeat mode set to:', repeat);
+    }
+
+    async playNext() {
+
+        if (!this.currentTrack) {
+            return;
+        }
+
+        const addToHistory = true;
+
+        try {
+            const trackName = this.currentTrack.name;
+            const artistName = this.currentTrack.artist;
+
+
+            const similarTracks = await lastfmModule.getSimilarTracks(trackName, artistName);
+
+            if (similarTracks.length === 0) {
+                await this.playRandomFromLocal(addToHistory);
+                return;
+            }
+
+            const favoritesList = await favorites.getAllFavorites();
+            const likedList = await likedSongs.getAllLikedSongs();
+
+            const allLocalTracks = [
+                ...favoritesList.map(f => ({
+                    name: f.track_name,
+                    artist: f.artist_name,
+                    image: f.image,
+                    id: f.track_id
+                })),
+                ...likedList.map(l => ({
+                    name: l.track_name,
+                    artist: l.artist_name,
+                    image: l.image,
+                    id: l.track_id
+                }))
+            ];
+
+            const matchedTracks = [];
+            for (const similar of similarTracks) {
+                const match = allLocalTracks.find(
+                    t => t.name.toLowerCase() === similar.name.toLowerCase() &&
+                         t.artist.toLowerCase() === similar.artist.toLowerCase()
+                );
+                if (match &&
+                    (match.name.toLowerCase() !== trackName.toLowerCase() ||
+                     match.artist.toLowerCase() !== artistName.toLowerCase())) {
+                    matchedTracks.push({
+                        ...match,
+                        match: similar.match
+                    });
+                }
+            }
+
+            if (matchedTracks.length > 0) {
+                const selectedTrack = matchedTracks[Math.floor(Math.random() * matchedTracks.length)];
+
+                if (!selectedTrack.image) {
+                    const similar = similarTracks.find(s =>
+                        s.name.toLowerCase() === selectedTrack.name.toLowerCase() &&
+                        s.artist.toLowerCase() === selectedTrack.artist.toLowerCase()
+                    );
+                    if (similar && similar.image) {
+                        selectedTrack.image = similar.image;
+                    }
+                }
+
+                await this.play(selectedTrack, false, addToHistory);
+            } else {
+                const randomSimilar = similarTracks[Math.floor(Math.random() * similarTracks.length)];
+                await this.play(randomSimilar, false, addToHistory);
+            }
+        } catch (error) {
+
+        }
+    }
+
+    async playRandomFromLocal(manual = true) {
+        try {
+            const favoritesList = await favorites.getAllFavorites();
+            const likedList = await likedSongs.getAllLikedSongs();
+            
+            const allLocalTracks = [
+                ...favoritesList.map(f => ({
+                    name: f.track_name,
+                    artist: f.artist_name,
+                    image: f.image,
+                    id: f.track_id
+                })),
+                ...likedList.map(l => ({
+                    name: l.track_name,
+                    artist: l.artist_name,
+                    image: l.image,
+                    id: l.track_id
+                }))
+            ];
+
+            if (allLocalTracks.length === 0) {
+                return;
+            }
+
+            const filteredTracks = allLocalTracks.filter(
+                t => this.currentTrack &&
+                     (t.name.toLowerCase() !== this.currentTrack.name.toLowerCase() ||
+                      t.artist.toLowerCase() !== this.currentTrack.artist.toLowerCase())
+            );
+
+            const tracksToChoose = filteredTracks.length > 0 ? filteredTracks : allLocalTracks;
+            const randomTrack = tracksToChoose[Math.floor(Math.random() * tracksToChoose.length)];
+            
+            await this.play(randomTrack, false, manual);
+        } catch (error) {
+            console.error('[Player] Error in playRandomFromLocal:', error);
+        }
+    }
+
+    async playPrevious() {
+        if (this.historyIndex > 0) {
+            this.historyIndex--;
+            const track = this.history[this.historyIndex];
+            await this.play(track, true, false);
+        }
+    }
+
+    getHistory() {
+        return {
+            history: this.history,
+            currentIndex: this.historyIndex,
+            canGoBack: this.historyIndex > 0,
+            canGoForward: this.historyIndex < this.history.length - 1
+        };
     }
 
 

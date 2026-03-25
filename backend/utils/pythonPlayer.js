@@ -465,4 +465,6 @@ class PythonPlayer {
     }
 }
 
-module.exports = new PythonPlayer();
+const pythonPlayer = new PythonPlayer();
+module.exports = pythonPlayer;
+module.exports.killAllMpvProcesses = killAllMpvProcesses;

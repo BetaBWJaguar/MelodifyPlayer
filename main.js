@@ -118,6 +118,18 @@ ipcMain.on('request-repeat', (event, repeat) => {
     player.setRepeat(repeat);
 });
 
+ipcMain.on('request-next', () => {
+    player.playNext();
+});
+
+ipcMain.on('request-previous', () => {
+    player.playPrevious();
+});
+
+ipcMain.handle('get-history', () => {
+    return player.getHistory();
+});
+
 ipcMain.handle('get-player-status', () => {
     return player.getStatus();
 });
@@ -199,6 +211,12 @@ player.on('progress', (data) => {
 player.on('error', (data) => {
     if (mainWindow) {
         mainWindow.webContents.send('player-error', data);
+    }
+});
+
+player.on('history-updated', (data) => {
+    if (mainWindow) {
+        mainWindow.webContents.send('player-history-updated', data);
     }
 });
 

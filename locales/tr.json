@@ -44,7 +44,14 @@
     "notesPlaceholder": "Bu parça hakkında notlar ekle...",
     "cancel": "İptal",
     "save": "Kaydet",
-    "dragToReorder": "Sıralamak için sürükle"
+    "dragToReorder": "Sıralamak için sürükle",
+    "searchPlaceholder": "Favorilerde ara...",
+    "filterNotes": "Notlu",
+    "filterNotesTitle": "Sadece notlu şarkıları göster",
+    "filterAll": "Tümü",
+    "filterAllTitle": "Tüm şarkıları göster",
+    "noResults": "Sonuç bulunamadı",
+    "tryDifferentSearch": "Farklı arama terimleri deneyin"
   },
   "player": {
     "selectSong": "Bir şarkı seç",

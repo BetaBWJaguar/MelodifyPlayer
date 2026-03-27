@@ -44,7 +44,14 @@
     "notesPlaceholder": "Add notes about this track...",
     "cancel": "Cancel",
     "save": "Save",
-    "dragToReorder": "Drag to reorder"
+    "dragToReorder": "Drag to reorder",
+    "searchPlaceholder": "Search favorites...",
+    "filterNotes": "Notes",
+    "filterNotesTitle": "Show only songs with notes",
+    "filterAll": "All",
+    "filterAllTitle": "Show all songs",
+    "noResults": "No results found",
+    "tryDifferentSearch": "Try different search terms"
   },
   "player": {
     "selectSong": "Select a song",

@@ -3,6 +3,9 @@ const { ipcRenderer } = require('electron');
 let isPlaying = false;
 let currentEditingTrackId = null;
 let draggedItem = null;
+let allFavorites = [];
+let currentFilter = 'all';
+let searchTerm = '';
 
 ipcRenderer.on("player-play", (event, data) => {
     isPlaying = true;
@@ -20,7 +23,162 @@ ipcRenderer.on("player-error", (event, data) => {
 async function initFavoritesPage() {
     console.log('Initializing favorites page...');
     setupNotesModal();
+    setupFilters();
     await loadFavorites();
+}
+
+function setupFilters() {
+    const searchInput = document.getElementById('searchInput');
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
+    const filterNotesBtn = document.getElementById('filterNotesBtn');
+    const filterAllBtn = document.getElementById('filterAllBtn');
+
+    searchInput.addEventListener('input', (e) => {
+        searchTerm = e.target.value.toLowerCase();
+        clearSearchBtn.style.display = searchTerm.length > 0 ? 'flex' : 'none';
+        applyFilters();
+    });
+
+    clearSearchBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        searchTerm = '';
+        clearSearchBtn.style.display = 'none';
+        applyFilters();
+    });
+
+    filterNotesBtn.addEventListener('click', () => {
+        currentFilter = 'notes';
+        updateFilterButtons();
+        applyFilters();
+    });
+
+    filterAllBtn.addEventListener('click', () => {
+        currentFilter = 'all';
+        updateFilterButtons();
+        applyFilters();
+    });
+
+    updateFilterButtons();
+}
+
+function updateFilterButtons() {
+    const filterNotesBtn = document.getElementById('filterNotesBtn');
+    const filterAllBtn = document.getElementById('filterAllBtn');
+
+    filterNotesBtn.classList.toggle('active', currentFilter === 'notes');
+    filterAllBtn.classList.toggle('active', currentFilter === 'all');
+}
+
+function applyFilters() {
+    let filteredSongs = [...allFavorites];
+
+    if (searchTerm) {
+        filteredSongs = filteredSongs.filter(song =>
+            song.track_name.toLowerCase().includes(searchTerm) ||
+            song.artist_name.toLowerCase().includes(searchTerm)
+        );
+    }
+
+    if (currentFilter === 'notes') {
+        filteredSongs = filteredSongs.filter(song => song.notes && song.notes.trim().length > 0);
+    }
+
+    renderFavorites(filteredSongs);
+}
+
+function renderFavorites(songs) {
+    const favoritesContent = document.getElementById('favoritesContent');
+    const lang = window.language || { t: (k) => k };
+
+    if (!songs || songs.length === 0) {
+        const emptyMessage = searchTerm || currentFilter === 'notes'
+            ? lang.t('favorites.noResults')
+            : lang.t('favorites.noFavorites');
+        
+        favoritesContent.innerHTML = `
+            <div class="empty-state">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                </svg>
+                <h2>${emptyMessage}</h2>
+                <p>${searchTerm ? lang.t('favorites.tryDifferentSearch') : lang.t('favorites.startFavoriting')}</p>
+            </div>
+        `;
+        return;
+    }
+
+    const songsHTML = `
+        <div class="favorites-list" id="favoritesList">
+            ${songs.map((song, index) => createTrackCard(song, index)).join('')}
+        </div>
+    `;
+
+    favoritesContent.innerHTML = songsHTML;
+
+    setupDragAndDrop();
+
+    const trackCards = document.querySelectorAll('.track-card');
+    trackCards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.05}s`;
+
+        card.addEventListener('click', (e) => {
+            if (e.target.closest('.remove-favorite-btn') ||
+                e.target.closest('.play-overlay-btn') ||
+                e.target.closest('.notes-btn') ||
+                e.target.closest('.drag-handle')) {
+                return;
+            }
+            e.preventDefault();
+            e.stopPropagation();
+            const trackName = card.dataset.trackName;
+            const artistName = card.dataset.artistName;
+            const image = card.dataset.image;
+            const trackId = card.dataset.trackId;
+            console.log('Track clicked:', trackName, artistName, image);
+            playTrack(trackName, artistName, image, trackId);
+        });
+    });
+
+    const playButtons = document.querySelectorAll('.play-overlay-btn');
+    playButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const card = btn.closest('.track-card');
+            const trackName = card.dataset.trackName;
+            const artistName = card.dataset.artistName;
+            const image = card.dataset.image;
+            const trackId = card.dataset.trackId;
+            playTrack(trackName, artistName, image, trackId);
+        });
+    });
+
+    const removeButtons = document.querySelectorAll('.remove-favorite-btn');
+    removeButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const trackId = btn.dataset.trackId;
+            removeFavorite(trackId);
+        });
+    });
+
+    const notesButtons = document.querySelectorAll('.notes-btn');
+    notesButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const card = btn.closest('.track-card');
+            const track = {
+                track_id: card.dataset.trackId,
+                track_name: card.dataset.trackName,
+                artist_name: card.dataset.artistName,
+                image: card.dataset.image,
+                notes: card.dataset.notes || ''
+            };
+            openNotesModal(track);
+        });
+    });
 }
 
 function setupNotesModal() {
@@ -116,93 +274,8 @@ async function loadFavorites() {
 
     try {
         const songs = await ipcRenderer.invoke('get-favorites');
-
-        if (!songs || songs.length === 0) {
-            favoritesContent.innerHTML = `
-                <div class="empty-state">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
-                    </svg>
-                    <h2 data-i18n="favorites.noFavorites">${lang.t('favorites.noFavorites')}</h2>
-                    <p data-i18n="favorites.startFavoriting">${lang.t('favorites.startFavoriting')}</p>
-                </div>
-            `;
-            return;
-        }
-
-        const songsHTML = `
-            <div class="favorites-list" id="favoritesList">
-                ${songs.map((song, index) => createTrackCard(song, index)).join('')}
-            </div>
-        `;
-
-        favoritesContent.innerHTML = songsHTML;
-
-        setupDragAndDrop();
-
-        const trackCards = document.querySelectorAll('.track-card');
-        trackCards.forEach((card, index) => {
-            card.style.animationDelay = `${index * 0.05}s`;
-
-            card.addEventListener('click', (e) => {
-                if (e.target.closest('.remove-favorite-btn') || 
-                    e.target.closest('.play-overlay-btn') ||
-                    e.target.closest('.notes-btn') ||
-                    e.target.closest('.drag-handle')) {
-                    return;
-                }
-                e.preventDefault();
-                e.stopPropagation();
-                const trackName = card.dataset.trackName;
-                const artistName = card.dataset.artistName;
-                const image = card.dataset.image;
-                const trackId = card.dataset.trackId;
-                console.log('Track clicked:', trackName, artistName, image);
-                playTrack(trackName, artistName, image, trackId);
-            });
-        });
-
-        const playButtons = document.querySelectorAll('.play-overlay-btn');
-        playButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const card = btn.closest('.track-card');
-                const trackName = card.dataset.trackName;
-                const artistName = card.dataset.artistName;
-                const image = card.dataset.image;
-                const trackId = card.dataset.trackId;
-                playTrack(trackName, artistName, image, trackId);
-            });
-        });
-
-        const removeButtons = document.querySelectorAll('.remove-favorite-btn');
-        removeButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const trackId = btn.dataset.trackId;
-                removeFavorite(trackId);
-            });
-        });
-
-        const notesButtons = document.querySelectorAll('.notes-btn');
-        notesButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const card = btn.closest('.track-card');
-                const track = {
-                    track_id: card.dataset.trackId,
-                    track_name: card.dataset.trackName,
-                    artist_name: card.dataset.artistName,
-                    image: card.dataset.image,
-                    notes: card.dataset.notes || ''
-                };
-                openNotesModal(track);
-            });
-        });
-
+        allFavorites = songs || [];
+        applyFilters();
     } catch (error) {
         console.error('Error loading favorites:', error);
         favoritesContent.innerHTML = `

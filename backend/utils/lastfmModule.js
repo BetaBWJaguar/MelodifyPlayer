@@ -6,6 +6,23 @@ const BASE_URL = "https://ws.audioscrobbler.com/2.0/";
 const similarCache = new Map();
 const CACHE_TTL = 10 * 60 * 1000;
 
+const recentHistory = [];
+const HISTORY_LIMIT = 10;
+
+function addToHistory(track, artist) {
+    const key = `${track.toLowerCase()}:${artist.toLowerCase()}`;
+    recentHistory.push(key);
+
+    if (recentHistory.length > HISTORY_LIMIT) {
+        recentHistory.shift();
+    }
+}
+
+function isInHistory(track, artist) {
+    const key = `${track.toLowerCase()}:${artist.toLowerCase()}`;
+    return recentHistory.includes(key);
+}
+
 function getCacheKey(trackName, artistName) {
     return `${trackName.toLowerCase()}:${artistName.toLowerCase()}`;
 }
@@ -71,39 +88,126 @@ function getBestImage(images) {
 
 async function getSimilarTracks(trackName, artistName, limit = 50) {
     const cacheKey = getCacheKey(trackName, artistName);
-    
+
+
     const cachedResults = getFromCache(cacheKey);
     if (cachedResults) {
         return cachedResults;
     }
 
     try {
-        const url = `${BASE_URL}?method=track.getsimilar&api_key=${API_KEY}&artist=${encodeURIComponent(artistName)}&track=${encodeURIComponent(trackName)}&format=json&limit=${limit}&autocorrect=1`;
-        const json = await httpGetJson(url, 10000);
+        let tracks = [];
 
-        if (json.error) {
+        let url = `${BASE_URL}?method=track.getsimilar&api_key=${API_KEY}&artist=${encodeURIComponent(artistName)}&track=${encodeURIComponent(trackName)}&format=json&limit=${limit}&autocorrect=1`;
+        let json = await httpGetJson(url);
+
+        if (json?.similartracks?.track) {
+            tracks = Array.isArray(json.similartracks.track)
+                ? json.similartracks.track
+                : [json.similartracks.track];
+        }
+
+
+        if (tracks.length === 0) {
+
+            url = `${BASE_URL}?method=artist.gettoptracks&api_key=${API_KEY}&artist=${encodeURIComponent(artistName)}&format=json&limit=${limit}&autocorrect=1`;
+            json = await httpGetJson(url);
+
+            if (json?.toptracks?.track) {
+                tracks = Array.isArray(json.toptracks.track)
+                    ? json.toptracks.track
+                    : [json.toptracks.track];
+            }
+
+        }
+
+        if (tracks.length === 0) {
+
+            url = `${BASE_URL}?method=track.search&api_key=${API_KEY}&track=${encodeURIComponent(trackName)}&format=json&limit=${limit}`;
+            json = await httpGetJson(url);
+
+            if (json?.results?.trackmatches?.track) {
+                tracks = Array.isArray(json.results.trackmatches.track)
+                    ? json.results.trackmatches.track
+                    : [json.results.trackmatches.track];
+            }
+
+        }
+
+        if (tracks.length === 0) {
+
+            const randomQueries = ["love", "night", "dream", "fire", "sky"];
+            const randomQuery = randomQueries[Math.floor(Math.random() * randomQueries.length)];
+
+
+            url = `${BASE_URL}?method=track.search&api_key=${API_KEY}&track=${randomQuery}&format=json&limit=${limit}`;
+            json = await httpGetJson(url);
+
+            if (json?.results?.trackmatches?.track) {
+                tracks = Array.isArray(json.results.trackmatches.track)
+                    ? json.results.trackmatches.track
+                    : [json.results.trackmatches.track];
+            }
+
+        }
+
+        if (tracks.length === 0) {
             return [];
         }
 
-        if (!json.similartracks || !json.similartracks.track) {
+
+        const originalTrack = trackName.toLowerCase().trim();
+        const originalArtist = artistName.toLowerCase().trim();
+        const uniqueSet = new Set();
+
+        tracks = tracks.filter(track => {
+            const tName = track.name?.toLowerCase().trim();
+            const tArtist = (track.artist?.name || track.artist || "").toLowerCase().trim();
+
+            if (tName === originalTrack && tArtist === originalArtist) return false;
+
+            const key = `${tName}:${tArtist}`;
+            if (uniqueSet.has(key)) return false;
+
+            uniqueSet.add(key);
+            return true;
+        });
+
+
+        const beforeHistory = tracks.length;
+
+        tracks = tracks.filter(track => {
+            const tName = track.name;
+            const tArtist = track.artist?.name || track.artist;
+            return !isInHistory(tName, tArtist);
+        });
+
+
+        if (tracks.length === 0) {
             return [];
         }
 
-        const tracksRaw = json.similartracks.track;
-        const tracks = Array.isArray(tracksRaw) ? tracksRaw : [tracksRaw];
-
-        const formatted = tracks.map(track => ({
+        let formatted = tracks.map(track => ({
             name: track.name,
-            artist: track.artist.name,
+            artist: track.artist?.name || track.artist,
             image: getBestImage(track.image),
-            match: parseFloat(track.match) || 0
+            match: parseFloat(track.match) || Math.random()
         }));
+
+        formatted.sort(() => Math.random() - 0.5);
+
+        formatted.slice(0, 3).forEach(t => {
+            addToHistory(t.name, t.artist);
+        });
+
+        console.log("[FINAL RESULT]:", formatted.length);
 
         setCache(cacheKey, formatted);
 
         return formatted;
+
     } catch (error) {
-        console.error("[Last.fm] Error:", error);
+        console.error("[ERROR]:", error);
         return [];
     }
 }

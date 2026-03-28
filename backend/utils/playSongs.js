@@ -224,6 +224,17 @@ class Player {
             const trackName = this.currentTrack.name;
             const artistName = this.currentTrack.artist;
 
+            if (!this.recentHistory) this.recentHistory = [];
+            
+            const currentKey = `${trackName.toLowerCase()}:${artistName.toLowerCase()}`;
+            if (!this.recentHistory.includes(currentKey)) {
+                this.recentHistory.push(currentKey);
+            }
+            if (this.recentHistory.length > 30) {
+                this.recentHistory.shift();
+            }
+            
+            const historySet = new Set(this.recentHistory);
 
             const similarTracks = await lastfmModule.getSimilarTracks(trackName, artistName);
 
@@ -252,13 +263,14 @@ class Player {
 
             const matchedTracks = [];
             for (const similar of similarTracks) {
-                const match = allLocalTracks.find(
-                    t => t.name.toLowerCase() === similar.name.toLowerCase() &&
-                         t.artist.toLowerCase() === similar.artist.toLowerCase()
+                const match = allLocalTracks.find(t =>
+                    t.name.toLowerCase().includes(similar.name.toLowerCase()) ||
+                    similar.name.toLowerCase().includes(t.name.toLowerCase())
                 );
+
                 if (match &&
                     (match.name.toLowerCase() !== trackName.toLowerCase() ||
-                     match.artist.toLowerCase() !== artistName.toLowerCase())) {
+                        match.artist.toLowerCase() !== artistName.toLowerCase())) {
                     matchedTracks.push({
                         ...match,
                         match: similar.match
@@ -266,26 +278,41 @@ class Player {
                 }
             }
 
-            if (matchedTracks.length > 0) {
-                const selectedTrack = matchedTracks[Math.floor(Math.random() * matchedTracks.length)];
+            let candidatePool = matchedTracks.length > 0 ? matchedTracks : similarTracks;
 
-                if (!selectedTrack.image) {
-                    const similar = similarTracks.find(s =>
-                        s.name.toLowerCase() === selectedTrack.name.toLowerCase() &&
-                        s.artist.toLowerCase() === selectedTrack.artist.toLowerCase()
-                    );
-                    if (similar && similar.image) {
-                        selectedTrack.image = similar.image;
-                    }
-                }
+            candidatePool = candidatePool.filter(t => {
+                const key = `${t.name.toLowerCase()}:${t.artist.toLowerCase()}`;
+                return !historySet.has(key);
+            });
 
-                await this.play(selectedTrack, false, addToHistory);
-            } else {
-                const randomSimilar = similarTracks[Math.floor(Math.random() * similarTracks.length)];
-                await this.play(randomSimilar, false, addToHistory);
+            if (candidatePool.length === 0) {
+                candidatePool = matchedTracks.length > 0 ? matchedTracks : similarTracks;
             }
-        } catch (error) {
 
+            const selectedTrack = candidatePool[Math.floor(Math.random() * candidatePool.length)];
+
+            if (!selectedTrack.image) {
+                const similar = similarTracks.find(s =>
+                    s.name.toLowerCase() === selectedTrack.name.toLowerCase() &&
+                    s.artist.toLowerCase() === selectedTrack.artist.toLowerCase()
+                );
+                if (similar && similar.image) {
+                    selectedTrack.image = similar.image;
+                }
+            }
+
+            const selectedKey = `${selectedTrack.name.toLowerCase()}:${selectedTrack.artist.toLowerCase()}`;
+            if (!this.recentHistory.includes(selectedKey)) {
+                this.recentHistory.push(selectedKey);
+            }
+            if (this.recentHistory.length > 30) {
+                this.recentHistory.shift();
+            }
+
+            await this.play(selectedTrack, false, addToHistory);
+
+        } catch (error) {
+            console.error("playNext error:", error);
         }
     }
 

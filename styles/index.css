@@ -498,12 +498,22 @@ body {
 
 .repeat-btn.repeat-one::after {
     content: '1';
-    width: auto;
-    height: auto;
-    font-size: 8px;
+    position: absolute;
+    bottom: -3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 14px;
+    height: 14px;
+    font-size: 9px;
     font-weight: 700;
     color: var(--accent-primary);
-    bottom: 1px;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--accent-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
 }
 
 .progress-bar {

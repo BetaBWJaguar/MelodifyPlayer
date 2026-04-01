@@ -239,7 +239,10 @@ class Player {
             const similarTracks = await lastfmModule.getSimilarTracks(trackName, artistName);
 
             if (similarTracks.length === 0) {
-                await this.playRandomFromLocal(addToHistory);
+                const youtubeResult = await this.playRandomFromYouTube(addToHistory);
+                if (!youtubeResult) {
+                    await this.playRandomFromLocal(addToHistory);
+                }
                 return;
             }
 
@@ -286,7 +289,11 @@ class Player {
             });
 
             if (candidatePool.length === 0) {
-                candidatePool = matchedTracks.length > 0 ? matchedTracks : similarTracks;
+                const youtubeResult = await this.playRandomFromYouTube(addToHistory);
+                if (!youtubeResult) {
+                    await this.playRandomFromLocal(addToHistory);
+                }
+                return;
             }
 
             const selectedTrack = candidatePool[Math.floor(Math.random() * candidatePool.length)];
@@ -313,6 +320,80 @@ class Player {
 
         } catch (error) {
             console.error("playNext error:", error);
+        }
+    }
+
+    async playRandomFromYouTube(manual = true) {
+        try {
+            const yts = require("yt-search");
+            
+            const randomQueries = [
+                "music 2024",
+                "top hits",
+                "popular songs",
+                "trending music",
+                "best songs",
+                "new music",
+                "chart hits"
+            ];
+            
+            const banned = [
+                "reaction",
+                "interview",
+                "podcast",
+                "karaoke",
+                "cover",
+                "playlist",
+                "mix",
+                "dj",
+                "remix",
+                "hour",
+                "hours",
+                "live",
+                "concert",
+                "medley",
+                "compilation",
+                "nonstop",
+                "continuous",
+                "loop"
+            ];
+            
+            const randomQuery = randomQueries[Math.floor(Math.random() * randomQueries.length)];
+            
+            const results = await yts({ query: randomQuery, pages: 1 });
+            const videos = results?.videos || [];
+            
+            if (videos.length === 0) {
+                return false;
+            }
+            
+            const filteredVideos = videos.filter(video => {
+                const title = video.title.toLowerCase();
+                const hasBannedWord = banned.some(word => title.includes(word));
+                const duration = video.seconds || 0;
+                const maxDuration = 600;
+                const minDuration = 60;
+                
+                return !hasBannedWord && duration >= minDuration && duration <= maxDuration;
+            });
+            
+            if (filteredVideos.length === 0) {
+                return false;
+            }
+            
+            const randomVideo = filteredVideos[Math.floor(Math.random() * filteredVideos.length)];
+            
+            const track = {
+                name: randomVideo.title,
+                artist: randomVideo.author?.name || 'Unknown',
+                image: randomVideo.thumbnail || null,
+                id: randomVideo.videoId
+            };
+            
+            await this.play(track, false, manual);
+            return true;
+        } catch (error) {
+            return false;
         }
     }
 
@@ -345,6 +426,12 @@ class Player {
                      (t.name.toLowerCase() !== this.currentTrack.name.toLowerCase() ||
                       t.artist.toLowerCase() !== this.currentTrack.artist.toLowerCase())
             );
+
+            if (filteredTracks.length === 0 && allLocalTracks.length > 0) {
+                const randomTrack = allLocalTracks[Math.floor(Math.random() * allLocalTracks.length)];
+                await this.play(randomTrack, false, manual);
+                return;
+            }
 
             const tracksToChoose = filteredTracks.length > 0 ? filteredTracks : allLocalTracks;
             const randomTrack = tracksToChoose[Math.floor(Math.random() * tracksToChoose.length)];

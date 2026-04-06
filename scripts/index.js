@@ -11,6 +11,7 @@ let playerState = {
     isMuted: false,
     previousVolume: 100,
     repeat: false,
+    shuffle: false,
     history: [],
     historyIndex: -1
 };
@@ -303,6 +304,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log('Repeat mode:', playerState.repeat);
         });
         updateRepeatButton();
+    }
+
+    const shuffleBtn = document.getElementById('shuffleBtn');
+    const updateShuffleButton = () => {
+        if (!shuffleBtn) return;
+        
+        if (playerState.shuffle) {
+            shuffleBtn.classList.add('active');
+        } else {
+            shuffleBtn.classList.remove('active');
+        }
+    };
+    
+    if (shuffleBtn) {
+        shuffleBtn.addEventListener('click', () => {
+            playerState.shuffle = !playerState.shuffle;
+            updateShuffleButton();
+            ipcRenderer.send('request-shuffle', playerState.shuffle);
+            console.log('Shuffle mode:', playerState.shuffle);
+        });
+        updateShuffleButton();
     }
 
     const prevBtn = document.getElementById('prevBtn');

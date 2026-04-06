@@ -80,6 +80,14 @@ class YouTubeAudioPlayer:
             return response["data"]
         return None
 
+    def wait_until_ready(self, timeout=3):
+        start = time.time()
+        while time.time() - start < timeout:
+            if self.get_duration() is not None:
+                return True
+            time.sleep(0.1)
+        return False
+
     def play(self, youtube_url, start_time=0):
 
         if self.is_playing:
@@ -123,6 +131,9 @@ class YouTubeAudioPlayer:
             time.sleep(0.4)
 
             self.is_playing = True
+
+            if not self.wait_until_ready():
+                print("[Python Player] MPV not ready!")
 
             monitor_thread = threading.Thread(target=self._monitor_playback)
             monitor_thread.daemon = True

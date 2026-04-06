@@ -118,6 +118,10 @@ ipcMain.on('request-repeat', (event, repeat) => {
     player.setRepeat(repeat);
 });
 
+ipcMain.on('request-shuffle', (event, shuffle) => {
+    player.setShuffle(shuffle);
+});
+
 ipcMain.on('request-next', () => {
     player.playNext();
 });

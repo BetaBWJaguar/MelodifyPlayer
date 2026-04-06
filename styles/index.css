@@ -480,8 +480,13 @@ body {
 }
 
 .shuffle-btn.active,
-.repeat-btn.active {
+.repeat-btn.active,
+#shuffleBtn.active {
     color: var(--accent-primary);
+}
+
+#shuffleBtn.active svg {
+    fill: var(--accent-primary);
 }
 
 .repeat-btn.active::after {

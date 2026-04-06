@@ -12,6 +12,7 @@ class Player {
         this.isPlayingPromise = false;
         this.pendingPlayRequest = null;
         this.repeat = false;
+        this.shuffle = false;
         this.history = [];
         this.historyIndex = -1;
 
@@ -153,6 +154,8 @@ class Player {
             console.error('[Player] Play error:', error);
             this.notifyListeners('error', { error: error.message });
             this.notifyListeners('stop', { reason: 'error' });
+
+            throw error;
         } finally {
             this.isPlayingPromise = false;
         }
@@ -193,8 +196,10 @@ class Player {
         } else {
             console.log('[Player] IPC seek failed, falling back to restart');
             this.stopProgressUpdates();
+            await pythonPlayer.stop();
+            await new Promise(r => setTimeout(r, 300));
             await pythonPlayer.play(this.currentTrack.streamUrl, position);
-            
+
             setTimeout(() => {
                 this.startProgressUpdates();
             }, 1000);
@@ -213,7 +218,6 @@ class Player {
     }
 
     async playNext() {
-
         if (!this.currentTrack) {
             return;
         }
@@ -296,7 +300,36 @@ class Player {
                 return;
             }
 
-            const selectedTrack = candidatePool[Math.floor(Math.random() * candidatePool.length)];
+            const scoredPool = candidatePool.map(track => {
+                const key = `${track.name.toLowerCase()}:${track.artist.toLowerCase()}`;
+
+                const similarity = track.match ? parseFloat(track.match) : 0.5;
+
+                const recentlyPlayed = this.recentHistory.includes(key);
+                const freshnessPenalty = recentlyPlayed ? -0.6 : 0;
+
+                const isLocal = track.id !== undefined;
+                const localBoost = isLocal ? 0.2 : 0;
+
+                const randomness = Math.random() * 0.3;
+
+                const score = similarity + freshnessPenalty + localBoost + randomness;
+
+                return { track, score };
+            });
+
+            scoredPool.sort((a, b) => b.score - a.score);
+
+            let selectedTrack;
+
+            if (this.shuffle) {
+                const topN = Math.max(3, Math.floor(scoredPool.length * 0.3));
+                const topCandidates = scoredPool.slice(0, topN);
+
+                selectedTrack = topCandidates[Math.floor(Math.random() * topCandidates.length)].track;
+            } else {
+                selectedTrack = scoredPool[0].track;
+            }
 
             if (!selectedTrack.image) {
                 const similar = similarTracks.find(s =>
@@ -393,6 +426,7 @@ class Player {
             await this.play(track, false, manual);
             return true;
         } catch (error) {
+            console.error('[Player] Error in playRandomFromYouTube:', error);
             return false;
         }
     }
@@ -440,6 +474,11 @@ class Player {
         } catch (error) {
             console.error('[Player] Error in playRandomFromLocal:', error);
         }
+    }
+
+    setShuffle(shuffle) {
+        this.shuffle = shuffle;
+        console.log('[Player] Shuffle mode set to:', shuffle);
     }
 
     async playPrevious() {

@@ -60,5 +60,31 @@
   "history": {
     "title": "Geçmiş",
     "empty": "Henüz geçmiş yok"
+  },
+  "library": {
+    "title": "Kütüphanen",
+    "subtitle": "Oynatma listelerin ve koleksiyonların",
+    "noPlaylists": "Henüz oynatma listesi yok",
+    "startCreating": "Müziklerini düzenlemek için oynatma listeleri oluştur",
+    "noResults": "Oynatma listesi bulunamadı",
+    "tryDifferentSearch": "Farklı arama terimleri deneyin",
+    "tracks": "parça",
+    "noTracks": "Bu oynatma listesinde parça yok",
+    "play": "Oynat",
+    "playAll": "Tümünü Oynat",
+    "editPlaylist": "Listeyi Düzenle",
+    "deletePlaylist": "Listeyi Sil",
+    "deleteConfirm": "Oynatma Listesi Silinsin mi?",
+    "deleteMessage": "\"{name}\" oynatma listesini silmek istediğine emin misin?",
+    "delete": "Sil",
+    "close": "Kapat",
+    "nameLabel": "Oynatma Listesi Adı",
+    "namePlaceholder": "Oynatma listesi adını gir...",
+    "descLabel": "Açıklama (isteğe bağlı)",
+    "descPlaceholder": "Açıklama ekle...",
+    "cancel": "İptal",
+    "save": "Kaydet",
+    "error": "Oynatma listeleri yüklenirken hata oluştu",
+    "searchPlaceholder": "Oynatma listelerinde ara..."
   }
 }

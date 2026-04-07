@@ -141,9 +141,8 @@ class Player {
                 this.notifyListeners('history-updated', this.getHistory());
             }
 
-            this.notifyListeners('play', this.currentTrack);
-
             if (url) {
+                this.notifyListeners('play', this.currentTrack);
                 await pythonPlayer.play(url, 0);
                 
                 setTimeout(() => {

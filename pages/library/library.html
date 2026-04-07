@@ -1,0 +1,128 @@
+<div class="library-page">
+    <div class="library-header">
+        <div class="library-header-content">
+            <div class="library-icon">
+                <svg width="56" height="56" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"/>
+                </svg>
+            </div>
+            <div class="library-header-info">
+                <h1 data-i18n="library.title"></h1>
+                <p data-i18n="library.subtitle"></p>
+            </div>
+        </div>
+    </div>
+    <div class="library-filters">
+        <div class="search-container">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            </svg>
+            <input type="text" id="searchInput" placeholder="Search..." data-i18n-placeholder="library.searchPlaceholder">
+            <button class="clear-search-btn" id="clearSearchBtn" style="display: none;">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+    <div class="library-content" id="libraryContent">
+        <div class="loading-state">
+            <div class="spinner"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="editPlaylistModal">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h2 data-i18n="library.editPlaylist"></h2>
+            <button class="modal-close-btn" id="closeEditModal">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="playlist-input-container">
+                <label for="playlistNameInput" data-i18n="library.nameLabel"></label>
+                <input 
+                    type="text" 
+                    id="playlistNameInput" 
+                    placeholder="..."
+                    data-i18n-placeholder="library.namePlaceholder"
+                    maxlength="100"
+                >
+            </div>
+            <div class="playlist-input-container">
+                <label for="playlistDescInput" data-i18n="library.descLabel"></label>
+                <textarea 
+                    id="playlistDescInput" 
+                    rows="4" 
+                    placeholder="..."
+                    data-i18n-placeholder="library.descPlaceholder"
+                    maxlength="500"
+                ></textarea>
+                <div class="playlist-char-count">
+                    <span id="descCharCount">0</span> / 500
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="cancelEditBtn" data-i18n="library.cancel"></button>
+            <button class="btn btn-primary" id="saveEditBtn" data-i18n="library.save"></button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal-container modal-small">
+        <div class="modal-header">
+            <h2 data-i18n="library.deleteConfirm"></h2>
+            <button class="modal-close-btn" id="closeDeleteModal">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p id="deleteMessage"></p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="cancelDeleteBtn" data-i18n="library.cancel"></button>
+            <button class="btn btn-danger" id="confirmDeleteBtn" data-i18n="library.delete"></button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="playlistViewModal">
+    <div class="modal-container modal-large">
+        <div class="modal-header">
+            <div class="playlist-view-header">
+                <div class="playlist-view-image" id="playlistViewImage">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                    </svg>
+                </div>
+                <div class="playlist-view-info">
+                    <h2 id="playlistViewName"></h2>
+                    <p id="playlistViewDesc"></p>
+                    <span class="playlist-view-count" id="playlistViewCount"></span>
+                </div>
+            </div>
+            <button class="modal-close-btn" id="closePlaylistViewModal">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="playlist-tracks-list" id="playlistTracksList">
+                <!-- Tracks will be loaded here -->
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="closePlaylistViewBtn" data-i18n="library.close"></button>
+            <button class="btn btn-primary" id="playPlaylistBtn" data-i18n="library.playAll"></button>
+        </div>
+    </div>
+</div>

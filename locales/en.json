@@ -60,5 +60,31 @@
   "history": {
     "title": "History",
     "empty": "No history yet"
+  },
+  "library": {
+    "title": "Your Library",
+    "subtitle": "Your playlists and collections",
+    "noPlaylists": "No playlists yet",
+    "startCreating": "Create playlists to organize your music",
+    "noResults": "No playlists found",
+    "tryDifferentSearch": "Try different search terms",
+    "tracks": "tracks",
+    "noTracks": "No tracks in this playlist",
+    "play": "Play",
+    "playAll": "Play All",
+    "editPlaylist": "Edit Playlist",
+    "deletePlaylist": "Delete Playlist",
+    "deleteConfirm": "Delete Playlist?",
+    "deleteMessage": "Are you sure you want to delete \"{name}\"?",
+    "delete": "Delete",
+    "close": "Close",
+    "nameLabel": "Playlist Name",
+    "namePlaceholder": "Enter playlist name...",
+    "descLabel": "Description (optional)",
+    "descPlaceholder": "Add a description...",
+    "cancel": "Cancel",
+    "save": "Save",
+    "error": "Error loading playlists",
+    "searchPlaceholder": "Search playlists..."
   }
 }

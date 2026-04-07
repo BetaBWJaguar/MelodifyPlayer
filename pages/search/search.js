@@ -3,6 +3,7 @@ const { ipcRenderer } = require('electron');
 let searchTimeout = null;
 let isPlaying = false;
 let currentSearchRequest = null;
+let displayedTracks = [];
 
 ipcRenderer.on("player-play", (event, data) => {
     isPlaying = true;
@@ -16,6 +17,10 @@ ipcRenderer.on("player-stop", (event, data) => {
 ipcRenderer.on("player-error", (event, data) => {
     alert(`Playback error: ${data.error}`);
     isPlaying = false;
+});
+
+ipcRenderer.on("search-new-track-found", (event, track) => {
+    addNewTrack(track);
 });
 
 
@@ -86,8 +91,8 @@ async function performSearch(query) {
 
     try {
         const searchPromise = ipcRenderer.invoke('search-track', query);
-        const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Search timeout')), 15000)
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Search timeout')), 120000)
         );
 
         const tracks = await Promise.race([searchPromise, timeoutPromise]);
@@ -123,8 +128,11 @@ function displayResults(tracks) {
                 <p data-i18n="search.tryDifferent">${lang.t('search.tryDifferent')}</p>
             </div>
         `;
+        displayedTracks = [];
         return;
     }
+
+    displayedTracks = [...tracks];
 
     const resultsHTML = `
         <div class="search-results">
@@ -148,6 +156,65 @@ function displayResults(tracks) {
             playTrack(trackName, artistName, imageUrl);
         });
     });
+}
+
+function updateTrackWithVideo(updatedTrack) {
+    const trackIndex = displayedTracks.findIndex(t =>
+        t.name === updatedTrack.name && t.artist === updatedTrack.artist
+    );
+    
+    if (trackIndex === -1) return;
+    
+    displayedTracks[trackIndex] = updatedTrack;
+    
+    const trackCards = document.querySelectorAll('.track-card');
+    const card = trackCards[trackIndex];
+    
+    if (card) {
+        const imageUrl = updatedTrack.image || '';
+        
+        if (imageUrl) {
+            const imageDiv = card.querySelector('.track-card-image');
+            if (imageDiv) {
+                imageDiv.innerHTML = `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(updatedTrack.name)}" loading="lazy">`;
+            }
+            
+            card.dataset.imageUrl = escapeHtml(imageUrl);
+        }
+    }
+}
+
+function addNewTrack(track) {
+    const exists = displayedTracks.some(t =>
+        t.name === track.name && t.artist === track.artist
+    );
+    
+    if (exists) return;
+    
+    displayedTracks.push(track);
+    
+    const searchResults = document.querySelector('.search-results');
+    if (!searchResults) return;
+    
+    const cardHTML = createTrackCard(track, displayedTracks.length - 1);
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = cardHTML;
+    const card = tempDiv.firstElementChild;
+    
+    card.style.animationDelay = '0s';
+    
+    card.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const trackName = card.dataset.trackName;
+        const artistName = card.dataset.artistName;
+        const imageUrl = card.dataset.imageUrl;
+        console.log('Track clicked:', trackName, artistName, imageUrl);
+        playTrack(trackName, artistName, imageUrl);
+    });
+    
+
+    searchResults.appendChild(card);
 }
 
 function createTrackCard(track, index) {

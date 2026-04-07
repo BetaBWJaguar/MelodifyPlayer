@@ -58,7 +58,6 @@ class Player {
             if (status.playing && this.currentTrack) {
                 const actualPosition = await pythonPlayer.getActualPosition();
                 
-
                 if (actualPosition !== null) {
                     const duration = status.actualDuration !== null ? status.actualDuration : (this.currentTrack.duration || 0);
                     
@@ -68,7 +67,7 @@ class Player {
                     });
                 }
             }
-        }, 500);
+        }, 1000);
     }
 
     stopProgressUpdates() {
@@ -109,16 +108,24 @@ class Player {
                 }
             }
             
-            const video = await youtubeModule.getVideoForTrack(track.name, track.artist);
-            const url = `https://www.youtube.com/watch?v=${video.videoId}`;
+            let video = track.youtube || null;
+            let url = track.streamUrl || null;
+            
+            if (!video && !url) {
+                video = youtubeModule.getFromCache(track.name, track.artist);
+                if (video) {
+                    console.log('[Player] Using cached video for:', track.name);
+                    url = `https://www.youtube.com/watch?v=${video.videoId}`;
+                }
+            }
 
             this.currentTrack = {
                 ...track,
-                videoId: video.videoId,
+                videoId: video?.videoId || track.videoId || null,
                 streamUrl: url,
-                duration: video.duration,
-                thumbnail: track.image || video.thumbnail || null,
-                image: track.image || video.thumbnail || null
+                duration: video?.duration || track.duration || null,
+                thumbnail: track.image || video?.thumbnail || null,
+                image: track.image || video?.thumbnail || null
             };
 
             if (this.historyIndex >= 0 && this.historyIndex < this.history.length) {
@@ -136,12 +143,15 @@ class Player {
 
             this.notifyListeners('play', this.currentTrack);
 
-            await pythonPlayer.play(url, 0);
-            
-
-            setTimeout(() => {
-                this.startProgressUpdates();
-            }, 1500);
+            if (url) {
+                await pythonPlayer.play(url, 0);
+                
+                setTimeout(() => {
+                    this.startProgressUpdates();
+                }, 1500);
+            } else {
+                this.fetchVideoInBackground(track);
+            }
 
             if (this.pendingPlayRequest) {
                 const pendingTrack = this.pendingPlayRequest;
@@ -158,6 +168,50 @@ class Player {
             throw error;
         } finally {
             this.isPlayingPromise = false;
+        }
+    }
+
+    async fetchVideoInBackground(track) {
+        try {
+            console.log('[Player] Fetching video in background for:', track.name);
+            const video = await youtubeModule.getVideoForTrack(track.name, track.artist);
+            const url = `https://www.youtube.com/watch?v=${video.videoId}`;
+
+            if (this.currentTrack &&
+                this.currentTrack.name === track.name &&
+                this.currentTrack.artist === track.artist) {
+                
+                this.currentTrack = {
+                    ...this.currentTrack,
+                    videoId: video.videoId,
+                    streamUrl: url,
+                    duration: video.duration,
+                    thumbnail: this.currentTrack.image || video.thumbnail,
+                    image: this.currentTrack.image || video.thumbnail
+                };
+
+                if (!pythonPlayer.getStatus().playing) {
+                    await pythonPlayer.play(url, 0);
+                    setTimeout(() => {
+                        this.startProgressUpdates();
+                    }, 1500);
+                }
+
+                this.notifyListeners('play', this.currentTrack);
+                
+                if (this.historyIndex >= 0 && this.historyIndex < this.history.length) {
+                    const historyEntry = this.history[this.historyIndex];
+                    if (historyEntry) {
+                        historyEntry.image = this.currentTrack.image || this.currentTrack.thumbnail;
+                        historyEntry.thumbnail = this.currentTrack.thumbnail;
+                        historyEntry.id = this.currentTrack.id || this.currentTrack.videoId;
+                    }
+                }
+                this.notifyListeners('history-updated', this.getHistory());
+            }
+        } catch (error) {
+            console.error('[Player] Background video fetch error:', error);
+            this.notifyListeners('error', { error: error.message });
         }
     }
 

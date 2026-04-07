@@ -1,5 +1,6 @@
 const https = require("https");
 const youtubeModule = require("./youtubeModule");
+const { BrowserWindow } = require('electron');
 
 const API_KEY = "1b8e4518708251c43d83bb70451f3e28";
 const BASE_URL = "https://ws.audioscrobbler.com/2.0/";
@@ -123,43 +124,94 @@ async function searchTrack(query, limit = 20) {
             };
         }));
 
-        const youtubePromises = formatted.map(async (track) => {
-            try {
-                const video = await Promise.race([
-                    youtubeModule.getVideoForTrack(track.name, track.artist),
-                    new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error("YouTube lookup timeout")), 6000)
-                    )
-                ]);
-
+        const initialResults = formatted.map(track => {
+            const cachedVideo = youtubeModule.getFromCache(track.name, track.artist);
+            if (cachedVideo) {
                 return {
-                    track: {
-                        ...track,
-                        youtube: video,
-                        image: track.image || video.thumbnail || null
-                    },
-                    hasVideo: true
+                    ...track,
+                    youtube: cachedVideo,
+                    image: track.image || cachedVideo.thumbnail || null
                 };
-            } catch (error) {
-                console.log(`[SearchModule] Skipping track without video: ${track.name} - ${track.artist}`);
-                console.log(`[SearchModule] Error details: ${error.message}`);
-                return { track, hasVideo: false };
             }
+            return track;
         });
 
-        const results = await Promise.allSettled(youtubePromises);
+        fetchYouTubeVideosLive(formatted, cacheKey);
 
-        const tracksWithVideos = results
-            .filter(result => result.status === "fulfilled" && result.value.hasVideo)
-            .map(result => result.value.track);
+        setCache(cacheKey, initialResults);
 
-        setCache(cacheKey, tracksWithVideos);
-
-        return tracksWithVideos;
+        return initialResults;
     } catch (error) {
         console.error("[Search] Error:", error);
         return [];
     }
+}
+
+async function fetchYouTubeVideosLive(tracks, cacheKey) {
+
+    const MAX_CONCURRENT = 3;
+    const updatedTracks = [];
+    
+    for (let i = 0; i < tracks.length; i += MAX_CONCURRENT) {
+        const batch = tracks.slice(i, i + MAX_CONCURRENT);
+        
+        const batchPromises = batch.map(async (track) => {
+            try {
+                const cachedVideo = youtubeModule.getFromCache(track.name, track.artist);
+                if (cachedVideo) {
+                    return { track, hasVideo: true, video: cachedVideo };
+                }
+
+                const video = await Promise.race([
+                    youtubeModule.getVideoForTrack(track.name, track.artist),
+                    new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error("YouTube lookup timeout")), 15000)
+                    )
+                ]);
+
+                const trackWithVideo = {
+                    ...track,
+                    youtube: video,
+                    image: track.image || video.thumbnail || null
+                };
+                sendNewTrack(trackWithVideo);
+                
+                return { track, hasVideo: true, video };
+            } catch (error) {
+                console.log(`[SearchModule] Lookup failed: ${track.name} - ${track.artist}`);
+                return { track, hasVideo: false };
+            }
+        });
+
+        const batchResults = await Promise.allSettled(batchPromises);
+        
+        for (const result of batchResults) {
+            if (result.status === "fulfilled") {
+                const { track, hasVideo, video } = result.value;
+                updatedTracks.push({
+                    ...track,
+                    ...(hasVideo ? { youtube: video, image: track.image || video.thumbnail || null } : {})
+                });
+            }
+        }
+        
+        if (i + MAX_CONCURRENT < tracks.length) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+        }
+    }
+
+    if (updatedTracks.length > 0) {
+        setCache(cacheKey, updatedTracks);
+        const withVideos = updatedTracks.filter(t => t.youtube).length;
+        console.log(`[SearchModule] Live fetch complete: ${withVideos}/${updatedTracks.length} tracks with videos`);
+    }
+}
+
+function sendNewTrack(track) {
+    const windows = BrowserWindow.getAllWindows();
+    windows.forEach(win => {
+        win.webContents.send('search-new-track-found', track);
+    });
 }
 
 module.exports = {

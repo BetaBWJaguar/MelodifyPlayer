@@ -84,7 +84,7 @@ async function loadJS(page) {
 
     const module = await import(`../pages/${page}/${page}.js`);
 
-    const initFunction = `init${capitalize(page)}Page`;
+    const initFunction = `init${toPascalCase(page)}Page`;
 
     if (module[initFunction]) {
         module[initFunction]();
@@ -94,6 +94,12 @@ async function loadJS(page) {
 
 function capitalize(text) {
     return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function toPascalCase(text) {
+    return text.split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join('');
 }
 
 

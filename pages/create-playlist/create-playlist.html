@@ -1,0 +1,75 @@
+<div class="create-playlist-page">
+    <div class="create-playlist-header">
+        <div class="create-playlist-header-content">
+            <div class="create-playlist-icon">
+                <svg width="56" height="56" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/>
+                </svg>
+            </div>
+            <div class="create-playlist-header-info">
+                <h1 data-i18n="createPlaylist.title"></h1>
+                <p data-i18n="createPlaylist.subtitle"></p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="create-playlist-content">
+        <div class="create-playlist-form">
+            <div class="cover-image-section">
+                <div class="cover-image-container" id="coverImageContainer">
+                    <div class="cover-image-placeholder" id="coverImagePlaceholder">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                        </svg>
+                        <span data-i18n="createPlaylist.addCoverImage"></span>
+                    </div>
+                    <img id="coverImagePreview" class="cover-image-preview" style="display: none;" alt="">
+                    <input type="file" id="coverImageInput" accept="image/*" style="display: none;">
+                    <button class="change-cover-btn" id="changeCoverBtn" style="display: none;" data-i18n="createPlaylist.changeCover"></button>
+                    <button class="remove-cover-btn" id="removeCoverBtn" style="display: none;">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-group">
+                    <label for="playlistName" data-i18n="createPlaylist.nameLabel"></label>
+                    <input 
+                        type="text" 
+                        id="playlistName" 
+                        class="form-input"
+                        placeholder="..."
+                        data-i18n-placeholder="createPlaylist.namePlaceholder"
+                        maxlength="100"
+                    >
+                    <div class="char-count">
+                        <span id="nameCharCount">0</span> / 100
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="playlistDescription" data-i18n="createPlaylist.descriptionLabel"></label>
+                    <textarea 
+                        id="playlistDescription" 
+                        class="form-textarea"
+                        rows="4"
+                        placeholder="..."
+                        data-i18n-placeholder="createPlaylist.descriptionPlaceholder"
+                        maxlength="500"
+                    ></textarea>
+                    <div class="char-count">
+                        <span id="descCharCount">0</span> / 500
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button class="btn btn-secondary" id="cancelBtn" data-i18n="createPlaylist.cancel"></button>
+                <button class="btn btn-primary" id="saveBtn" data-i18n="createPlaylist.create"></button>
+            </div>
+        </div>
+    </div>
+</div>

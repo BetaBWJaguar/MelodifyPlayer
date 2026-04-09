@@ -53,6 +53,18 @@
     "noResults": "No results found",
     "tryDifferentSearch": "Try different search terms"
   },
+  "createPlaylist": {
+    "title": "Create Playlist",
+    "subtitle": "Create a new playlist to organize your music",
+    "nameLabel": "Playlist Name",
+    "namePlaceholder": "Enter playlist name...",
+    "descriptionLabel": "Description (optional)",
+    "descriptionPlaceholder": "Add a description...",
+    "addCoverImage": "Add Cover Image",
+    "changeCover": "Change Cover",
+    "cancel": "Cancel",
+    "create": "Create"
+  },
   "player": {
     "selectSong": "Select a song",
     "startListening": "to start listening"

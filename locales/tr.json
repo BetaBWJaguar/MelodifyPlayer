@@ -53,6 +53,18 @@
     "noResults": "Sonuç bulunamadı",
     "tryDifferentSearch": "Farklı arama terimleri deneyin"
   },
+  "createPlaylist": {
+    "title": "Çalma Listesi Oluştur",
+    "subtitle": "Müziklerini düzenlemek için yeni bir oynatma listesi oluştur",
+    "nameLabel": "Oynatma Listesi Adı",
+    "namePlaceholder": "Oynatma listesi adını gir...",
+    "descriptionLabel": "Açıklama (isteğe bağlı)",
+    "descriptionPlaceholder": "Açıklama ekle...",
+    "addCoverImage": "Kapak Resmi Ekle",
+    "changeCover": "Kapağı Değiştir",
+    "cancel": "İptal",
+    "create": "Oluştur"
+  },
   "player": {
     "selectSong": "Bir şarkı seç",
     "startListening": "dinlemeye başlamak için"

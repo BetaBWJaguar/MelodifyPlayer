@@ -140,7 +140,7 @@ async function searchTrack(query, limit = 20) {
 
         setCache(cacheKey, initialResults);
 
-        return initialResults;
+        return initialResults.filter(track => track.youtube !== undefined);
     } catch (error) {
         console.error("[Search] Error:", error);
         return [];

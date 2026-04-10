@@ -447,6 +447,7 @@
     padding: 28px;
     max-height: calc(90vh - 160px);
     overflow-y: auto;
+    -webkit-app-region: no-drag;
 }
 
 .modal-body::-webkit-scrollbar {
@@ -471,6 +472,7 @@
     flex-direction: column;
     gap: 10px;
     margin-bottom: 24px;
+    -webkit-app-region: no-drag;
 }
 
 .playlist-input-container label {
@@ -615,6 +617,65 @@
     background: var(--bg-hover);
     border-color: rgba(233, 69, 96, 0.2);
     transform: translateX(4px);
+}
+
+.playlist-track-item.dragging {
+    opacity: 0.5;
+    background: rgba(22, 33, 62, 0.3);
+    border-color: rgba(233, 69, 96, 0.3);
+}
+
+.playlist-track-item.drag-over {
+    background: rgba(233, 69, 96, 0.15);
+    border-color: rgba(233, 69, 96, 0.4);
+    transform: scale(1.02);
+}
+
+.playlist-track-drag-handle {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    cursor: grab;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+    flex-shrink: 0;
+}
+
+.playlist-track-drag-handle:hover {
+    opacity: 1;
+}
+
+.playlist-track-drag-handle:active {
+    cursor: grabbing;
+}
+
+.playlist-track-remove-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    opacity: 0;
+    -webkit-app-region: no-drag;
+}
+
+.playlist-track-item:hover .playlist-track-remove-btn {
+    opacity: 1;
+}
+
+.playlist-track-remove-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.4);
+    transform: scale(1.1);
 }
 
 .playlist-track-image {

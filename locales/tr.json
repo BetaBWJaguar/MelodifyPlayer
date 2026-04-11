@@ -20,7 +20,12 @@
     "unableToFetch": "Arama sonuçları alınamadı. Lütfen tekrar deneyin.",
     "tryAgain": "Tekrar Dene",
     "timeout": "İstek Zaman Aşımı",
-    "timeoutMessage": "Arama çok uzun sürdü. Lütfen tekrar deneyin."
+    "timeoutMessage": "Arama çok uzun sürdü. Lütfen tekrar deneyin.",
+    "addToPlaylist": "Çalma Listesine Ekle",
+    "noPlaylists": "Çalma listesi bulunamadı",
+    "createPlaylist": "Çalma Listesi Oluştur",
+    "alreadyInPlaylist": "Bu şarkı zaten listede var",
+    "addedToPlaylist": "Listeye eklendi"
   },
   "likedSongs": {
     "title": "Beğenilen Şarkılar",

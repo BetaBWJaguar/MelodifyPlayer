@@ -4,6 +4,8 @@ let searchTimeout = null;
 let isPlaying = false;
 let currentSearchRequest = null;
 let displayedTracks = [];
+let selectedTrackForPlaylist = null;
+let allPlaylists = [];
 
 ipcRenderer.on("player-play", (event, data) => {
     isPlaying = true;
@@ -30,6 +32,9 @@ function initSearchPage() {
     const searchContent = document.getElementById('searchContent');
     const emptyState = document.getElementById('emptyState');
     const loadingState = document.getElementById('loadingState');
+
+    setupAddToPlaylistModal();
+    loadPlaylists();
 
     searchInput.focus();
 
@@ -58,7 +63,7 @@ function initSearchPage() {
 
         searchTimeout = setTimeout(() => {
             performSearch(query);
-        }, 300);
+        }, 150);
     });
 
     clearBtn.addEventListener('click', () => {
@@ -147,6 +152,9 @@ function displayResults(tracks) {
         card.style.animationDelay = `${index * 0.05}s`;
 
         card.addEventListener('click', (e) => {
+            if (e.target.closest('.add-to-playlist-btn')) {
+                return;
+            }
             e.preventDefault();
             e.stopPropagation();
             const trackName = card.dataset.trackName;
@@ -154,6 +162,19 @@ function displayResults(tracks) {
             const imageUrl = card.dataset.imageUrl;
             console.log('Track clicked:', trackName, artistName, imageUrl);
             playTrack(trackName, artistName, imageUrl);
+        });
+    });
+
+    const addToPlaylistButtons = document.querySelectorAll('.add-to-playlist-btn');
+    addToPlaylistButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const trackIndex = parseInt(btn.dataset.trackIndex);
+            const track = displayedTracks[trackIndex];
+            if (track) {
+                openAddToPlaylistModal(track);
+            }
         });
     });
 }
@@ -217,6 +238,9 @@ function addNewTrack(track) {
     card.style.animationDelay = '0s';
     
     card.addEventListener('click', (e) => {
+        if (e.target.closest('.add-to-playlist-btn')) {
+            return;
+        }
         e.preventDefault();
         e.stopPropagation();
         const trackName = card.dataset.trackName;
@@ -225,13 +249,25 @@ function addNewTrack(track) {
         console.log('Track clicked:', trackName, artistName, imageUrl);
         playTrack(trackName, artistName, imageUrl);
     });
-    
+
+    const addToPlaylistBtn = card.querySelector('.add-to-playlist-btn');
+    if (addToPlaylistBtn) {
+        addToPlaylistBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const track = displayedTracks[displayedTracks.length - 1];
+            if (track) {
+                openAddToPlaylistModal(track);
+            }
+        });
+    }
 
     searchResults.appendChild(card);
 }
 
 function createTrackCard(track, index) {
     const imageUrl = track.image || '';
+    const trackId = track.id || track.videoId || '';
 
     if (imageUrl) {
         return `
@@ -239,6 +275,7 @@ function createTrackCard(track, index) {
                  data-track-name="${escapeHtml(track.name)}"
                  data-artist-name="${escapeHtml(track.artist)}"
                  data-image-url="${escapeHtml(imageUrl)}"
+                 data-track-id="${escapeHtml(trackId)}"
                  data-index="${index}">
                 <div class="track-card-image">
                     <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(track.name)}" loading="lazy">
@@ -247,6 +284,11 @@ function createTrackCard(track, index) {
                     <span class="track-card-name" title="${escapeHtml(track.name)}">${escapeHtml(track.name)}</span>
                     <span class="track-card-artist" title="${escapeHtml(track.artist)}">${escapeHtml(track.artist)}</span>
                 </div>
+                <button class="add-to-playlist-btn" title="Add to playlist" data-track-index="${index}">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                    </svg>
+                </button>
             </div>
         `;
     } else {
@@ -255,6 +297,7 @@ function createTrackCard(track, index) {
                  data-track-name="${escapeHtml(track.name)}"
                  data-artist-name="${escapeHtml(track.artist)}"
                  data-image-url=""
+                 data-track-id="${escapeHtml(trackId)}"
                  data-index="${index}">
                 <div class="track-card-image no-image">
                     <svg viewBox="0 0 24 24" fill="currentColor">
@@ -265,6 +308,11 @@ function createTrackCard(track, index) {
                     <span class="track-card-name" title="${escapeHtml(track.name)}">${escapeHtml(track.name)}</span>
                     <span class="track-card-artist" title="${escapeHtml(track.artist)}">${escapeHtml(track.artist)}</span>
                 </div>
+                <button class="add-to-playlist-btn" title="Add to playlist" data-track-index="${index}">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                    </svg>
+                </button>
             </div>
         `;
     }
@@ -362,6 +410,182 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+function setupAddToPlaylistModal() {
+    const modal = document.getElementById('addToPlaylistModal');
+    const closeBtn = document.getElementById('closeAddToPlaylistModal');
+    const createNewPlaylistBtn = document.getElementById('createNewPlaylistBtn');
+
+    closeBtn.addEventListener('click', closeAddToPlaylistModal);
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeAddToPlaylistModal();
+        }
+    });
+
+    createNewPlaylistBtn.addEventListener('click', () => {
+        closeAddToPlaylistModal();
+        const createPlaylistBtn = document.querySelector('.create-playlist-btn');
+        if (createPlaylistBtn) {
+            createPlaylistBtn.click();
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeAddToPlaylistModal();
+        }
+    });
+}
+
+function openAddToPlaylistModal(track) {
+    const modal = document.getElementById('addToPlaylistModal');
+    const selectedTrackImage = document.getElementById('selectedTrackImage');
+    const selectedTrackName = document.getElementById('selectedTrackName');
+    const selectedTrackArtist = document.getElementById('selectedTrackArtist');
+    const playlistList = document.getElementById('playlistList');
+    const noPlaylistsMessage = document.getElementById('noPlaylistsMessage');
+
+    selectedTrackForPlaylist = track;
+
+    const imageUrl = track.image || '';
+    if (imageUrl) {
+        selectedTrackImage.innerHTML = `<img src="${escapeHtml(imageUrl)}" alt="">`;
+        selectedTrackImage.classList.remove('no-image');
+    } else {
+        selectedTrackImage.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+            </svg>
+        `;
+        selectedTrackImage.classList.add('no-image');
+    }
+
+    selectedTrackName.textContent = track.name;
+    selectedTrackArtist.textContent = track.artist;
+
+    if (allPlaylists && allPlaylists.length > 0) {
+        playlistList.innerHTML = allPlaylists.map(playlist => createPlaylistItem(playlist)).join('');
+        playlistList.style.display = 'block';
+        noPlaylistsMessage.style.display = 'none';
+
+        const playlistItems = document.querySelectorAll('.playlist-item');
+        playlistItems.forEach(item => {
+            item.addEventListener('click', async () => {
+                const playlistId = item.dataset.playlistId;
+                await addTrackToPlaylist(playlistId, selectedTrackForPlaylist);
+                closeAddToPlaylistModal();
+            });
+        });
+    } else {
+        playlistList.style.display = 'none';
+        noPlaylistsMessage.style.display = 'block';
+    }
+
+    modal.classList.add('active');
+}
+
+function closeAddToPlaylistModal() {
+    const modal = document.getElementById('addToPlaylistModal');
+    modal.classList.remove('active');
+    selectedTrackForPlaylist = null;
+}
+
+function createPlaylistItem(playlist) {
+    const imageUrl = playlist.cover_image || '';
+    const trackCount = playlist.song_count || 0;
+
+    if (imageUrl) {
+        return `
+            <div class="playlist-item" data-playlist-id="${escapeHtml(playlist.id)}">
+                <div class="playlist-item-image">
+                    <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(playlist.name)}" loading="lazy">
+                </div>
+                <div class="playlist-item-info">
+                    <span class="playlist-item-name" title="${escapeHtml(playlist.name)}">${escapeHtml(playlist.name)}</span>
+                    <span class="playlist-item-count">${trackCount} tracks</span>
+                </div>
+                <button class="add-to-playlist-confirm-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
+                    </svg>
+                </button>
+            </div>
+        `;
+    } else {
+        return `
+            <div class="playlist-item" data-playlist-id="${escapeHtml(playlist.id)}">
+                <div class="playlist-item-image no-image">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                    </svg>
+                </div>
+                <div class="playlist-item-info">
+                    <span class="playlist-item-name" title="${escapeHtml(playlist.name)}">${escapeHtml(playlist.name)}</span>
+                    <span class="playlist-item-count">${trackCount} tracks</span>
+                </div>
+                <button class="add-to-playlist-confirm-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
+                    </svg>
+                </button>
+            </div>
+        `;
+    }
+}
+
+async function loadPlaylists() {
+    try {
+        const playlists = await ipcRenderer.invoke('get-all-playlists');
+        allPlaylists = playlists || [];
+    } catch (error) {
+        console.error('Error loading playlists:', error);
+        allPlaylists = [];
+    }
+}
+
+async function addTrackToPlaylist(playlistId, track) {
+    try {
+        const result = await ipcRenderer.invoke('add-song-to-playlist', playlistId, track);
+        
+        if (!result) {
+            const lang = window.language || { t: (k) => k };
+            const errorMessage = lang.t('search.alreadyInPlaylist');
+            showNotification(errorMessage);
+            return;
+        }
+
+        const lang = window.language || { t: (k) => k };
+        const successMessage = lang.t('search.addedToPlaylist');
+        showNotification(successMessage);
+        
+        await loadPlaylists();
+    } catch (error) {
+        console.error('Error adding track to playlist:', error);
+        const lang = window.language || { t: (k) => k };
+        const errorMessage = lang.t('search.errorAdding') || 'Error adding track to playlist';
+        showNotification(errorMessage + ': ' + error.message);
+    }
+}
+
+function showNotification(message) {
+    const notification = document.createElement('div');
+    notification.className = 'notification';
+    notification.textContent = message;
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 10);
+
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 300);
+    }, 2000);
 }
 
 export { initSearchPage };

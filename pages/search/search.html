@@ -38,4 +38,32 @@
         <div class="spinner"></div>
         <p data-i18n="search.searching"></p>
     </div>
+
+    <div class="modal" id="addToPlaylistModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 data-i18n="search.addToPlaylist"></h2>
+                <button class="modal-close-btn" id="closeAddToPlaylistModal">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="selected-track-info" id="selectedTrackInfo">
+                    <div class="selected-track-image" id="selectedTrackImage"></div>
+                    <div class="selected-track-details">
+                        <span class="selected-track-name" id="selectedTrackName"></span>
+                        <span class="selected-track-artist" id="selectedTrackArtist"></span>
+                    </div>
+                </div>
+                <div class="playlist-list" id="playlistList">
+                </div>
+                <div class="no-playlists-message" id="noPlaylistsMessage" style="display: none;">
+                    <p data-i18n="search.noPlaylists"></p>
+                    <button class="btn btn-primary" data-i18n="search.createPlaylist" id="createNewPlaylistBtn"></button>
+                </div>
+            </div>
+        </div>
+    </div>
 </section>

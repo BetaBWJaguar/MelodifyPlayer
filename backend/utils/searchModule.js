@@ -124,7 +124,42 @@ async function searchTrack(query, limit = 20) {
             };
         }));
 
-        const initialResults = formatted.map(track => {
+        const FIRST_BATCH_SIZE = 6;
+        const firstBatch = formatted.slice(0, FIRST_BATCH_SIZE);
+        const remainingTracks = formatted.slice(FIRST_BATCH_SIZE);
+        
+        const firstBatchWithVideos = await Promise.all(firstBatch.map(async (track) => {
+            try {
+                const cachedVideo = youtubeModule.getFromCache(track.name, track.artist);
+                if (cachedVideo) {
+                    return {
+                        ...track,
+                        youtube: cachedVideo,
+                        image: track.image || cachedVideo.thumbnail || null
+                    };
+                }
+
+                const video = await Promise.race([
+                    youtubeModule.getVideoForTrack(track.name, track.artist),
+                    new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error("YouTube lookup timeout")), 8000)
+                    )
+                ]);
+
+                return {
+                    ...track,
+                    youtube: video,
+                    image: track.image || video.thumbnail || null
+                };
+            } catch (error) {
+                console.log(`[SearchModule] First batch lookup failed: ${track.name} - ${track.artist}`);
+                return null;
+            }
+        }));
+
+        const validFirstBatch = firstBatchWithVideos.filter(t => t !== null && t.youtube);
+        
+        const remainingWithCache = remainingTracks.map(track => {
             const cachedVideo = youtubeModule.getFromCache(track.name, track.artist);
             if (cachedVideo) {
                 return {
@@ -136,11 +171,12 @@ async function searchTrack(query, limit = 20) {
             return track;
         });
 
-        fetchYouTubeVideosLive(formatted, cacheKey);
+        fetchYouTubeVideosLive(remainingTracks, cacheKey);
 
-        setCache(cacheKey, initialResults);
+        const allResults = [...validFirstBatch, ...remainingWithCache];
+        setCache(cacheKey, allResults);
 
-        return initialResults.filter(track => track.youtube !== undefined);
+        return allResults.filter(track => track.youtube !== undefined);
     } catch (error) {
         console.error("[Search] Error:", error);
         return [];

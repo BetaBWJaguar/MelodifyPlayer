@@ -1,7 +1,14 @@
 const Database = require('better-sqlite3');
 const path = require('path');
+const crypto = require('crypto');
 
 let db;
+
+function generateTrackId(name, artist) {
+    const hash = crypto.createHash('md5');
+    hash.update(`${name}|${artist}`.toLowerCase().trim());
+    return `local_${hash.digest('hex')}`;
+}
 
 function initDatabase() {
     const projectDir = path.join(__dirname, '../../');
@@ -137,14 +144,21 @@ function deletePlaylist(playlistId) {
 function addSongToPlaylist(playlistId, track) {
     if (!db) initDatabase();
     
+    const trackId = (track.id !== undefined && track.id !== null) ? track.id : (track.videoId || generateTrackId(track.name || track.title, track.artist));
+    const image = track.image || track.thumbnail || null;
+    
+    const checkStmt = db.prepare('SELECT COUNT(*) as count FROM playlist_songs WHERE playlist_id = ? AND track_id = ?');
+    const checkResult = checkStmt.get(playlistId, trackId);
+    
+    if (checkResult.count > 0) {
+        return false;
+    }
+    
     const stmt = db.prepare(`
-        INSERT OR REPLACE INTO playlist_songs
+        INSERT INTO playlist_songs
         (playlist_id, track_id, track_name, artist_name, duration, image, gradient, custom_order)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
-    
-    const trackId = track.id || track.videoId;
-    const image = track.image || track.thumbnail || null;
     
     const maxOrderStmt = db.prepare('SELECT COALESCE(MAX(custom_order), 0) as max_order FROM playlist_songs WHERE playlist_id = ?');
     const maxOrderResult = maxOrderStmt.get(playlistId);

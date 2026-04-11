@@ -20,7 +20,12 @@
     "unableToFetch": "Unable to fetch search results. Please try again.",
     "tryAgain": "Try Again",
     "timeout": "Request Timeout",
-    "timeoutMessage": "The search took too long. Please try again."
+    "timeoutMessage": "The search took too long. Please try again.",
+    "addToPlaylist": "Add to Playlist",
+    "noPlaylists": "No playlists found",
+    "createPlaylist": "Create Playlist",
+    "alreadyInPlaylist": "This song is already in the playlist",
+    "addedToPlaylist": "Added to playlist"
   },
   "likedSongs": {
     "title": "Liked Songs",

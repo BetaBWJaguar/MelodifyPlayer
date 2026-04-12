@@ -496,6 +496,7 @@ function closeAddToPlaylistModal() {
 function createPlaylistItem(playlist) {
     const imageUrl = playlist.cover_image || '';
     const trackCount = playlist.song_count || 0;
+    const lang = window.language || { t: (k) => k };
 
     if (imageUrl) {
         return `
@@ -505,7 +506,7 @@ function createPlaylistItem(playlist) {
                 </div>
                 <div class="playlist-item-info">
                     <span class="playlist-item-name" title="${escapeHtml(playlist.name)}">${escapeHtml(playlist.name)}</span>
-                    <span class="playlist-item-count">${trackCount} tracks</span>
+                    <span class="playlist-item-count">${trackCount} ${lang.t('library.tracks')}</span>
                 </div>
                 <button class="add-to-playlist-confirm-btn">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -524,7 +525,7 @@ function createPlaylistItem(playlist) {
                 </div>
                 <div class="playlist-item-info">
                     <span class="playlist-item-name" title="${escapeHtml(playlist.name)}">${escapeHtml(playlist.name)}</span>
-                    <span class="playlist-item-count">${trackCount} tracks</span>
+                    <span class="playlist-item-count">${trackCount} ${lang.t('library.tracks')}</span>
                 </div>
                 <button class="add-to-playlist-confirm-btn">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">

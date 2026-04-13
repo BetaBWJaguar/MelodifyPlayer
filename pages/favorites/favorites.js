@@ -444,6 +444,7 @@ function playTrack(trackName, artistName, image, trackId) {
     };
 
     console.log('[Favorites] Requesting to play:', track);
+    ipcRenderer.send('request-exit-playlist-mode');
     ipcRenderer.send('request-play', track);
 }
 

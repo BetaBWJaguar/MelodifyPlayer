@@ -93,12 +93,20 @@ function renderPlaylists(playlists) {
 
     const playButtons = document.querySelectorAll('.play-overlay-btn');
     playButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('click', async (e) => {
             e.preventDefault();
             e.stopPropagation();
             const card = btn.closest('.playlist-card');
             const playlistId = card.dataset.playlistId;
-            openViewModal(playlistId);
+            
+            try {
+                const tracks = await ipcRenderer.invoke('get-playlist-songs', playlistId);
+                if (tracks && tracks.length > 0) {
+                    ipcRenderer.send('request-play-playlist', playlistId, tracks, 0);
+                }
+            } catch (error) {
+                console.error('Error playing playlist:', error);
+            }
         });
     });
 
@@ -366,8 +374,7 @@ function setupViewModal() {
         try {
             const tracks = await ipcRenderer.invoke('get-playlist-songs', currentViewingPlaylistId);
             if (tracks && tracks.length > 0) {
-                const firstTrack = tracks[0];
-                playTrack(firstTrack.track_name, firstTrack.artist_name, firstTrack.image, firstTrack.track_id);
+                ipcRenderer.send('request-play-playlist', currentViewingPlaylistId, tracks, 0);
             }
         } catch (error) {
             console.error('Error playing playlist:', error);
@@ -521,7 +528,7 @@ function setupTrackDragAndDrop() {
         item.addEventListener('drop', handleDrop);
         item.addEventListener('dragleave', handleDragLeave);
         
-        item.addEventListener('click', (e) => {
+        item.addEventListener('click', async (e) => {
             if (e.target.closest('.playlist-track-remove-btn') || e.target.closest('.playlist-track-drag-handle')) {
                 return;
             }
@@ -529,7 +536,23 @@ function setupTrackDragAndDrop() {
             const trackArtist = item.dataset.trackArtist;
             const trackImage = item.dataset.trackImage;
             const trackId = item.dataset.trackId;
-            playTrack(trackName, trackArtist, trackImage, trackId);
+            
+            try {
+                const tracks = await ipcRenderer.invoke('get-playlist-songs', currentViewingPlaylistId);
+                if (tracks && tracks.length > 0) {
+                    const trackIndex = tracks.findIndex(t => t.track_id === trackId);
+                    if (trackIndex !== -1) {
+                        ipcRenderer.send('request-play-playlist', currentViewingPlaylistId, tracks, trackIndex);
+                    } else {
+                        playTrack(trackName, trackArtist, trackImage, trackId);
+                    }
+                } else {
+                    playTrack(trackName, trackArtist, trackImage, trackId);
+                }
+            } catch (error) {
+                console.error('Error playing track:', error);
+                playTrack(trackName, trackArtist, trackImage, trackId);
+            }
         });
         
         const removeBtn = item.querySelector('.playlist-track-remove-btn');
@@ -640,7 +663,7 @@ function playTrack(trackName, artistName, image, trackId) {
         image: image,
         id: trackId
     };
-
+    ipcRenderer.send('request-exit-playlist-mode');
     ipcRenderer.send('request-play', track);
 }
 

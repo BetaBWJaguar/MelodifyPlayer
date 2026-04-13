@@ -132,6 +132,18 @@ ipcMain.on('request-previous', () => {
     player.playPrevious();
 });
 
+ipcMain.on('request-play-playlist', (event, playlistId, tracks, startIndex) => {
+    player.playPlaylist(playlistId, tracks, startIndex);
+});
+
+ipcMain.on('request-exit-playlist-mode', () => {
+    player.exitPlaylistMode();
+});
+
+ipcMain.handle('get-playlist-status', () => {
+    return player.getPlaylistStatus();
+});
+
 ipcMain.on('request-play-history', (event, index) => {
     player.playHistoryItem(index);
 });
@@ -327,6 +339,12 @@ player.on('error', (data) => {
 player.on('history-updated', (data) => {
     if (mainWindow) {
         mainWindow.webContents.send('player-history-updated', data);
+    }
+});
+
+player.on('playlist-updated', (data) => {
+    if (mainWindow) {
+        mainWindow.webContents.send('player-playlist-updated', data);
     }
 });
 

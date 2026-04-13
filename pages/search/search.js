@@ -367,6 +367,7 @@ function playTrack(trackName, artistName, imageUrl) {
     };
 
     console.log('[Search] Requesting to play:', track);
+    ipcRenderer.send('request-exit-playlist-mode');
     ipcRenderer.send('request-play', track);
 }
 

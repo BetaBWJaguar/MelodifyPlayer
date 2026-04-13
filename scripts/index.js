@@ -13,7 +13,11 @@ let playerState = {
     repeat: false,
     shuffle: false,
     history: [],
-    historyIndex: -1
+    historyIndex: -1,
+    playlistMode: false,
+    currentPlaylistId: null,
+    playlistIndex: 0,
+    totalTracks: 0
 };
 
 function formatTime(seconds) {
@@ -530,6 +534,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             playerState.currentTime = data.currentTime || 0;
             playerState.duration = data.duration || playerState.duration;
             updateProgressBar();
+        });
+        
+        ipcRenderer.on('player-playlist-updated', (event, data) => {
+            console.log('Playlist status updated:', data);
+            playerState.playlistMode = data.playlistMode || false;
+            playerState.currentPlaylistId = data.currentPlaylistId || null;
+            playerState.playlistIndex = data.playlistIndex || 0;
+            playerState.totalTracks = data.totalTracks || 0;
         });
         
         function updatePrevButton() {

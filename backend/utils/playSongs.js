@@ -15,6 +15,10 @@ class Player {
         this.shuffle = false;
         this.history = [];
         this.historyIndex = -1;
+        this.playlistMode = false;
+        this.currentPlaylistId = null;
+        this.playlistTracks = [];
+        this.playlistIndex = 0;
 
         pythonPlayer.on('play', (data) => {
             this.notifyListeners('play', data);
@@ -24,7 +28,7 @@ class Player {
             this.stopProgressUpdates();
             
             if (data.reason === 'ended') {
-                if (this.repeat && this.currentTrack) {
+                if (this.repeat && !this.playlistMode && this.currentTrack) {
                     this.play(this.currentTrack, false, false);
                     return;
                 }
@@ -271,6 +275,42 @@ class Player {
     }
 
     async playNext() {
+        if (this.playlistMode && this.playlistTracks.length > 0) {
+            this.playlistIndex++;
+
+            if (this.playlistIndex >= this.playlistTracks.length) {
+                if (this.repeat) {
+                    this.playlistIndex = 0;
+                } else {
+
+                    this.playlistMode = false;
+                    this.currentPlaylistId = null;
+                    this.playlistTracks = [];
+                    this.playlistIndex = 0;
+
+                    this.notifyListeners('playlist-updated', this.getPlaylistStatus());
+
+                    await this.playNext();
+
+                    return;
+                }
+            }
+            
+            if (this.playlistMode) {
+                const nextTrack = this.playlistTracks[this.playlistIndex];
+                const track = {
+                    name: nextTrack.track_name,
+                    artist: nextTrack.artist_name,
+                    image: nextTrack.image,
+                    id: nextTrack.track_id,
+                    duration: nextTrack.duration
+                };
+                
+                await this.play(track, false, true);
+                return;
+            }
+        }
+
         if (!this.currentTrack) {
             return;
         }
@@ -407,6 +447,54 @@ class Player {
         } catch (error) {
             console.error("playNext error:", error);
         }
+    }
+
+    async playPlaylist(playlistId, tracks, startIndex = 0) {
+        if (!tracks || tracks.length === 0) {
+            return;
+        }
+
+        this.playlistMode = true;
+        this.currentPlaylistId = playlistId;
+        this.playlistTracks = tracks;
+        this.playlistIndex = startIndex;
+
+        console.log('[Player] Starting playlist playback:', {
+            playlistId,
+            totalTracks: tracks.length,
+            startIndex
+        });
+
+        this.notifyListeners('playlist-updated', this.getPlaylistStatus());
+
+        const firstTrack = tracks[startIndex];
+        const track = {
+            name: firstTrack.track_name,
+            artist: firstTrack.artist_name,
+            image: firstTrack.image,
+            id: firstTrack.track_id,
+            duration: firstTrack.duration
+        };
+
+        await this.play(track, false, true);
+    }
+
+    exitPlaylistMode() {
+        this.playlistMode = false;
+        this.currentPlaylistId = null;
+        this.playlistTracks = [];
+        this.playlistIndex = 0;
+
+        this.notifyListeners('playlist-updated', this.getPlaylistStatus());
+    }
+
+    getPlaylistStatus() {
+        return {
+            playlistMode: this.playlistMode,
+            currentPlaylistId: this.currentPlaylistId,
+            playlistIndex: this.playlistIndex,
+            totalTracks: this.playlistTracks.length
+        };
     }
 
     async playRandomFromYouTube(manual = true) {

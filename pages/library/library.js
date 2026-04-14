@@ -625,6 +625,7 @@ async function removeTrackFromPlaylist(trackId) {
     
     try {
         await ipcRenderer.invoke('remove-song-from-playlist', currentViewingPlaylistId, trackId);
+        await loadPlaylists();
         await openViewModal(currentViewingPlaylistId);
     } catch (error) {
         console.error('Error removing track from playlist:', error);

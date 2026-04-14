@@ -36,7 +36,7 @@ function addFavorite(track) {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
-    const trackId = track.id || track.videoId;
+    const trackId = track.id || track.videoId || track.youtube?.videoId;
     const image = track.image || track.thumbnail || null;
     
     const maxOrderStmt = db.prepare('SELECT COALESCE(MAX(custom_order), 0) as max_order FROM favorites');

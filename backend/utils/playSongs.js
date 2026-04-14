@@ -17,6 +17,7 @@ class Player {
         this.historyIndex = -1;
         this.playlistMode = false;
         this.currentPlaylistId = null;
+        this.playlistName = null;
         this.playlistTracks = [];
         this.playlistIndex = 0;
 
@@ -285,6 +286,7 @@ class Player {
 
                     this.playlistMode = false;
                     this.currentPlaylistId = null;
+                    this.playlistName = null;
                     this.playlistTracks = [];
                     this.playlistIndex = 0;
 
@@ -297,6 +299,7 @@ class Player {
             }
             
             if (this.playlistMode) {
+                this.notifyListeners('playlist-updated', this.getPlaylistStatus());
                 const nextTrack = this.playlistTracks[this.playlistIndex];
                 const track = {
                     name: nextTrack.track_name,
@@ -449,18 +452,20 @@ class Player {
         }
     }
 
-    async playPlaylist(playlistId, tracks, startIndex = 0) {
+    async playPlaylist(playlistId, playlistName, tracks, startIndex = 0) {
         if (!tracks || tracks.length === 0) {
             return;
         }
 
         this.playlistMode = true;
         this.currentPlaylistId = playlistId;
+        this.playlistName = playlistName;
         this.playlistTracks = tracks;
         this.playlistIndex = startIndex;
 
         console.log('[Player] Starting playlist playback:', {
             playlistId,
+            playlistName,
             totalTracks: tracks.length,
             startIndex
         });
@@ -482,6 +487,7 @@ class Player {
     exitPlaylistMode() {
         this.playlistMode = false;
         this.currentPlaylistId = null;
+        this.playlistName = null;
         this.playlistTracks = [];
         this.playlistIndex = 0;
 
@@ -492,6 +498,7 @@ class Player {
         return {
             playlistMode: this.playlistMode,
             currentPlaylistId: this.currentPlaylistId,
+            playlistName: this.playlistName,
             playlistIndex: this.playlistIndex,
             totalTracks: this.playlistTracks.length
         };

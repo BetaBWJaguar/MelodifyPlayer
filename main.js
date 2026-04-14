@@ -132,8 +132,8 @@ ipcMain.on('request-previous', () => {
     player.playPrevious();
 });
 
-ipcMain.on('request-play-playlist', (event, playlistId, tracks, startIndex) => {
-    player.playPlaylist(playlistId, tracks, startIndex);
+ipcMain.on('request-play-playlist', (event, playlistId, playlistName, tracks, startIndex) => {
+    player.playPlaylist(playlistId, playlistName, tracks, startIndex);
 });
 
 ipcMain.on('request-exit-playlist-mode', () => {
@@ -252,8 +252,7 @@ ipcMain.handle('delete-playlist', async (event, playlistId) => {
 
 ipcMain.handle('add-song-to-playlist', async (event, playlistId, track) => {
     try {
-        const result = playlist.addSongToPlaylist(playlistId, track);
-        return result;
+        return playlist.addSongToPlaylist(playlistId, track);
     } catch (error) {
         console.error('Error adding song to playlist:', error);
         throw error;

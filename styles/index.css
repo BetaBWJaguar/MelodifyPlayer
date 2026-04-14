@@ -430,6 +430,32 @@ body {
     transform: scale(0.95);
 }
 
+.playlist-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-left: 8px;
+    padding: 4px 8px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    max-width: 120px;
+}
+
+.playlist-name {
+    font-size: 10px;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+.playlist-position {
+    font-size: 10px;
+    color: var(--accent-primary);
+    font-weight: 600;
+}
+
 .player-center {
     width: 40%;
     display: flex;

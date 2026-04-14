@@ -137,11 +137,14 @@ function displayResults(tracks) {
         return;
     }
 
-    displayedTracks = [...tracks];
+    displayedTracks = tracks.map(track => ({
+        ...track,
+        id: track.id || track.videoId || track.youtube?.videoId
+    }));
 
     const resultsHTML = `
         <div class="search-results">
-            ${tracks.map((track, index) => createTrackCard(track, index)).join('')}
+            ${displayedTracks.map((track, index) => createTrackCard(track, index)).join('')}
         </div>
     `;
 
@@ -160,8 +163,9 @@ function displayResults(tracks) {
             const trackName = card.dataset.trackName;
             const artistName = card.dataset.artistName;
             const imageUrl = card.dataset.imageUrl;
+            const trackId = card.dataset.trackId;
             console.log('Track clicked:', trackName, artistName, imageUrl);
-            playTrack(trackName, artistName, imageUrl);
+            playTrack(trackName, artistName, imageUrl, trackId);
         });
     });
 
@@ -246,8 +250,9 @@ function addNewTrack(track) {
         const trackName = card.dataset.trackName;
         const artistName = card.dataset.artistName;
         const imageUrl = card.dataset.imageUrl;
+        const trackId = card.dataset.trackId;
         console.log('Track clicked:', trackName, artistName, imageUrl);
-        playTrack(trackName, artistName, imageUrl);
+        playTrack(trackName, artistName, imageUrl, trackId);
     });
 
     const addToPlaylistBtn = card.querySelector('.add-to-playlist-btn');
@@ -359,11 +364,12 @@ function showErrorState(errorMessage = '') {
     `;
 }
 
-function playTrack(trackName, artistName, imageUrl) {
+function playTrack(trackName, artistName, imageUrl, trackId = null) {
     const track = {
         name: trackName,
         artist: artistName,
-        image: imageUrl
+        image: imageUrl,
+        id: trackId
     };
 
     console.log('[Search] Requesting to play:', track);

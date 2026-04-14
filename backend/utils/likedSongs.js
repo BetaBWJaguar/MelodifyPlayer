@@ -33,8 +33,8 @@ function addLikedSong(track) {
         (track_id, track_name, artist_name, duration, image, gradient)
         VALUES (?, ?, ?, ?, ?, ?)
     `);
-    
-    const trackId = track.id || track.videoId;
+
+    const trackId = track.id || track.videoId || track.youtube?.videoId
     const image = track.image || track.thumbnail || null;
     stmt.run(
         trackId,

@@ -1,14 +1,8 @@
 const Database = require('better-sqlite3');
 const path = require('path');
-const crypto = require('crypto');
 
 let db;
 
-function generateTrackId(name, artist) {
-    const hash = crypto.createHash('md5');
-    hash.update(`${name}|${artist}`.toLowerCase().trim());
-    return `local_${hash.digest('hex')}`;
-}
 
 function initDatabase() {
     const projectDir = path.join(__dirname, '../../');
@@ -144,7 +138,7 @@ function deletePlaylist(playlistId) {
 function addSongToPlaylist(playlistId, track) {
     if (!db) initDatabase();
     
-    const trackId = (track.id !== undefined && track.id !== null) ? track.id : (track.videoId || generateTrackId(track.name || track.title, track.artist));
+    const trackId = track.videoId || track.id || track.youtube?.videoId;
     const image = track.image || track.thumbnail || null;
     
     const checkStmt = db.prepare('SELECT COUNT(*) as count FROM playlist_songs WHERE playlist_id = ? AND track_id = ?');

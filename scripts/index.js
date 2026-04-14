@@ -16,6 +16,7 @@ let playerState = {
     historyIndex: -1,
     playlistMode: false,
     currentPlaylistId: null,
+    playlistName: null,
     playlistIndex: 0,
     totalTracks: 0
 };
@@ -387,7 +388,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ipcRenderer.send('request-like-song', playerState.currentTrack);
                 console.log('Added to liked:', trackId);
             }
-            updateLikeButton();
+            await updateLikeButton();
         });
         updateLikeButton();
     }
@@ -423,7 +424,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ipcRenderer.send('request-favorite-song', playerState.currentTrack);
                 console.log('Added to favorites:', trackId);
             }
-            updateFavoriteButton();
+            await updateFavoriteButton();
         });
         updateFavoriteButton();
     }
@@ -447,48 +448,48 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    ipcRenderer.on('player-play', (event, data) => {
-            console.log('Player started:', data);
-            playerState.isPlaying = true;
-            playerState.isPaused = false;
-            playerState.currentTrack = data;
-            playerState.duration = data.actualDuration !== undefined && data.actualDuration !== null
-                ? data.actualDuration
-                : (data.duration || 0);
+    ipcRenderer.on('player-play', async (event, data) => {
+        console.log('Player started:', data);
+        playerState.isPlaying = true;
+        playerState.isPaused = false;
+        playerState.currentTrack = data;
+        playerState.duration = data.actualDuration !== undefined && data.actualDuration !== null
+            ? data.actualDuration
+            : (data.duration || 0);
 
-            
-            const trackNameEl = document.getElementById('trackName');
-            const artistNameEl = document.getElementById('artistName');
-            const albumArtEl = document.getElementById('albumArt');
-            
-            if (trackNameEl && data.name) {
-                trackNameEl.textContent = data.name;
-                trackNameEl.removeAttribute('data-i18n');
+
+        const trackNameEl = document.getElementById('trackName');
+        const artistNameEl = document.getElementById('artistName');
+        const albumArtEl = document.getElementById('albumArt');
+
+        if (trackNameEl && data.name) {
+            trackNameEl.textContent = data.name;
+            trackNameEl.removeAttribute('data-i18n');
+        }
+        if (artistNameEl && data.artist) {
+            artistNameEl.textContent = data.artist;
+            artistNameEl.removeAttribute('data-i18n');
+        }
+        if (albumArtEl) {
+            albumArtEl.classList.remove('gradient-1', 'gradient-2', 'gradient-3', 'gradient-4');
+
+            if (data.image) {
+                albumArtEl.style.backgroundImage = `url(${data.image})`;
+                albumArtEl.style.backgroundSize = 'cover';
+                albumArtEl.style.backgroundPosition = 'center';
+            } else {
+                const gradientOptions = ['gradient-1', 'gradient-2', 'gradient-3', 'gradient-4'];
+                const randomGradient = gradientOptions[Math.floor(Math.random() * gradientOptions.length)];
+                albumArtEl.classList.add(randomGradient);
+                albumArtEl.style.backgroundImage = '';
             }
-            if (artistNameEl && data.artist) {
-                artistNameEl.textContent = data.artist;
-                artistNameEl.removeAttribute('data-i18n');
-            }
-            if (albumArtEl) {
-                albumArtEl.classList.remove('gradient-1', 'gradient-2', 'gradient-3', 'gradient-4');
-                
-                if (data.image) {
-                    albumArtEl.style.backgroundImage = `url(${data.image})`;
-                    albumArtEl.style.backgroundSize = 'cover';
-                    albumArtEl.style.backgroundPosition = 'center';
-                } else {
-                    const gradientOptions = ['gradient-1', 'gradient-2', 'gradient-3', 'gradient-4'];
-                    const randomGradient = gradientOptions[Math.floor(Math.random() * gradientOptions.length)];
-                    albumArtEl.classList.add(randomGradient);
-                    albumArtEl.style.backgroundImage = '';
-                }
-            }
-            
-            updatePlayButton();
-            updateLikeButton();
-            updateFavoriteButton();
-            updatePrevButton();
-        });
+        }
+
+        updatePlayButton();
+        await updateLikeButton();
+        await updateFavoriteButton();
+        updatePrevButton();
+    });
         
         ipcRenderer.on('player-pause', (event, data) => {
                 console.log('Player paused event received:', data);
@@ -512,6 +513,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     playerState.isPaused = false;
                     playerState.currentTrack = null;
                     updatePlayButton();
+                    updateLikeButton();
+                    updateFavoriteButton();
                 });
     
             ipcRenderer.on('player-history-updated', (event, data) => {
@@ -540,8 +543,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log('Playlist status updated:', data);
             playerState.playlistMode = data.playlistMode || false;
             playerState.currentPlaylistId = data.currentPlaylistId || null;
+            playerState.playlistName = data.playlistName || null;
             playerState.playlistIndex = data.playlistIndex || 0;
             playerState.totalTracks = data.totalTracks || 0;
+            updatePlaylistInfo();
         });
         
         function updatePrevButton() {
@@ -577,6 +582,30 @@ document.addEventListener('DOMContentLoaded', async () => {
                     historyBtn.classList.add('has-history');
                 } else {
                     historyBtn.classList.remove('has-history');
+                }
+            }
+        }
+
+        function updatePlaylistInfo() {
+            const playlistInfo = document.getElementById('playlistInfo');
+            const playlistNameEl = document.getElementById('playlistName');
+            const playlistPositionEl = document.getElementById('playlistPosition');
+            
+            if (playerState.playlistMode && playerState.playlistName) {
+                if (playlistInfo) {
+                    playlistInfo.style.display = 'flex';
+                }
+                if (playlistNameEl) {
+                    playlistNameEl.textContent = playerState.playlistName;
+                }
+                if (playlistPositionEl) {
+                    const currentIndex = playerState.playlistIndex + 1;
+                    const total = playerState.totalTracks;
+                    playlistPositionEl.textContent = `${currentIndex}/${total}`;
+                }
+            } else {
+                if (playlistInfo) {
+                    playlistInfo.style.display = 'none';
                 }
             }
         }

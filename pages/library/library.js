@@ -98,11 +98,12 @@ function renderPlaylists(playlists) {
             e.stopPropagation();
             const card = btn.closest('.playlist-card');
             const playlistId = card.dataset.playlistId;
+            const playlist = allPlaylists.find(p => p.id == playlistId);
             
             try {
                 const tracks = await ipcRenderer.invoke('get-playlist-songs', playlistId);
                 if (tracks && tracks.length > 0) {
-                    ipcRenderer.send('request-play-playlist', playlistId, tracks, 0);
+                    ipcRenderer.send('request-play-playlist', playlistId, playlist?.name || '', tracks, 0);
                 }
             } catch (error) {
                 console.error('Error playing playlist:', error);
@@ -371,10 +372,11 @@ function setupViewModal() {
     });
 
     playBtn.addEventListener('click', async () => {
+        const playlist = allPlaylists.find(p => p.id == currentViewingPlaylistId);
         try {
             const tracks = await ipcRenderer.invoke('get-playlist-songs', currentViewingPlaylistId);
             if (tracks && tracks.length > 0) {
-                ipcRenderer.send('request-play-playlist', currentViewingPlaylistId, tracks, 0);
+                ipcRenderer.send('request-play-playlist', currentViewingPlaylistId, playlist?.name || '', tracks, 0);
             }
         } catch (error) {
             console.error('Error playing playlist:', error);
@@ -452,6 +454,8 @@ function createPlaylistTrackItem(track) {
     const imageUrl = track.image || '';
     const trackName = track.track_name || '';
     const artistName = track.artist_name || '';
+    const isFavorite = track.isFavorite || false;
+    const isLiked = track.isLiked || false;
     const lang = window.language || { t: (k) => k };
 
     if (imageUrl) {
@@ -536,13 +540,14 @@ function setupTrackDragAndDrop() {
             const trackArtist = item.dataset.trackArtist;
             const trackImage = item.dataset.trackImage;
             const trackId = item.dataset.trackId;
-            
+
+            const playlist = allPlaylists.find(p => p.id == currentViewingPlaylistId);
             try {
                 const tracks = await ipcRenderer.invoke('get-playlist-songs', currentViewingPlaylistId);
                 if (tracks && tracks.length > 0) {
                     const trackIndex = tracks.findIndex(t => t.track_id === trackId);
                     if (trackIndex !== -1) {
-                        ipcRenderer.send('request-play-playlist', currentViewingPlaylistId, tracks, trackIndex);
+                        ipcRenderer.send('request-play-playlist', currentViewingPlaylistId, playlist?.name || '', tracks, trackIndex);
                     } else {
                         playTrack(trackName, trackArtist, trackImage, trackId);
                     }

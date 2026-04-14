@@ -116,12 +116,13 @@ async function searchTrack(query, limit = 20) {
             }
 
             return {
-                name: track.name,
-                artist: track.artist,
-                url: track.url,
-                listeners: track.listeners,
-                image: imageUrl
-            };
+                    name: track.name,
+                    artist: track.artist,
+                    url: track.url,
+                    listeners: track.listeners,
+                    image: imageUrl,
+                    id: track.id || track.videoId ||track.youtube?.videoId
+                };
         }));
 
         const FIRST_BATCH_SIZE = 6;
@@ -135,7 +136,8 @@ async function searchTrack(query, limit = 20) {
                     return {
                         ...track,
                         youtube: cachedVideo,
-                        image: track.image || cachedVideo.thumbnail || null
+                        image: track.image || cachedVideo.thumbnail || null,
+                        duration: cachedVideo.duration
                     };
                 }
 
@@ -149,7 +151,8 @@ async function searchTrack(query, limit = 20) {
                 return {
                     ...track,
                     youtube: video,
-                    image: track.image || video.thumbnail || null
+                    image: track.image || video.thumbnail || null,
+                    duration: video.duration
                 };
             } catch (error) {
                 console.log(`[SearchModule] First batch lookup failed: ${track.name} - ${track.artist}`);
@@ -165,7 +168,8 @@ async function searchTrack(query, limit = 20) {
                 return {
                     ...track,
                     youtube: cachedVideo,
-                    image: track.image || cachedVideo.thumbnail || null
+                    image: track.image || cachedVideo.thumbnail || null,
+                    duration: cachedVideo.duration
                 };
             }
             return track;
@@ -174,7 +178,10 @@ async function searchTrack(query, limit = 20) {
         fetchYouTubeVideosLive(remainingTracks, cacheKey);
 
         const allResults = [...validFirstBatch, ...remainingWithCache];
-        setCache(cacheKey, allResults);
+        setCache(cacheKey, allResults.map(track => ({
+            ...track,
+            id: track.id || track.videoId ||track.youtube?.videoId
+        })));
 
         return allResults.filter(track => track.youtube !== undefined);
     } catch (error) {
@@ -208,7 +215,9 @@ async function fetchYouTubeVideosLive(tracks, cacheKey) {
                 const trackWithVideo = {
                     ...track,
                     youtube: video,
-                    image: track.image || video.thumbnail || null
+                    image: track.image || video.thumbnail || null,
+                    duration: video.duration,
+                    id: track.id || track.videoId || track.youtube?.videoId
                 };
                 sendNewTrack(trackWithVideo);
                 
@@ -226,7 +235,7 @@ async function fetchYouTubeVideosLive(tracks, cacheKey) {
                 const { track, hasVideo, video } = result.value;
                 updatedTracks.push({
                     ...track,
-                    ...(hasVideo ? { youtube: video, image: track.image || video.thumbnail || null } : {})
+                    ...(hasVideo ? { youtube: video, image: track.image || video.thumbnail || null, duration: video.duration } : {})
                 });
             }
         }

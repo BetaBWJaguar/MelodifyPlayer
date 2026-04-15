@@ -69,6 +69,45 @@ body {
     z-index: 1000;
 }
 
+.mobile-menu-btn {
+    display: none;
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1001;
+    background-color: var(--bg-elevated);
+    border: none;
+    color: var(--text-primary);
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.mobile-menu-btn:hover {
+    background-color: var(--accent-primary);
+}
+
+.mobile-menu-btn svg {
+    width: 24px;
+    height: 24px;
+}
+
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 998;
+}
+
+.sidebar-overlay.active {
+    display: block;
+}
+
 .window-btn {
     width: 36px;
     height: 36px;
@@ -216,6 +255,7 @@ body {
     align-items: center;
     padding: 16px 32px;
     background-color: rgba(0, 0, 0, 0.3);
+    min-height: 64px;
 }
 
 .nav-buttons {
@@ -246,6 +286,7 @@ body {
     padding: 0 32px;
     overflow-y: auto;
     flex: 1;
+    padding-bottom: 100px;
 }
 
 .main-content > section::-webkit-scrollbar {
@@ -328,6 +369,7 @@ body {
     align-items: center;
     padding: 0 16px;
     z-index: 100;
+    transition: all 0.3s ease;
 }
 
 .player-left {
@@ -734,6 +776,8 @@ body {
     font-size: 11px;
     color: var(--text-secondary);
     min-width: 35px;
+    user-select: none;
+    touch-action: manipulation;
 }
 
 .progress {
@@ -744,6 +788,18 @@ body {
     cursor: pointer;
     position: relative;
     -webkit-app-region: no-drag;
+    touch-action: none;
+}
+
+.progress::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    transform: translateY(-50%);
+    height: 16px;
+    background: transparent;
 }
 
 .progress:hover .progress-fill {
@@ -771,6 +827,7 @@ body {
     align-items: center;
     width: 100px;
     position: relative;
+    touch-action: manipulation;
 }
 
 .volume-slider {
@@ -784,6 +841,7 @@ body {
     cursor: pointer;
     position: relative;
     z-index: 1;
+    touch-action: none;
 }
 
 .volume-slider::-webkit-slider-thumb {
@@ -797,6 +855,7 @@ body {
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     margin-top: -5px;
+    touch-action: none;
 }
 
 .volume-slider::-webkit-slider-thumb:hover {
@@ -848,16 +907,39 @@ body {
 
 
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
     .sidebar {
-        width: 80px;
-        padding: 24px 12px;
-        align-items: center;
+        width: 220px;
     }
 
-    .logo {
-        justify-content: center;
-        margin-bottom: 12px;
+    .player-left {
+        width: 35%;
+    }
+
+    .player-center {
+        width: 50%;
+    }
+
+    .player-right {
+        width: 15%;
+    }
+
+    .volume-slider-container {
+        width: 70px;
+    }
+
+    .track-info {
+        max-width: 160px;
+    }
+
+    .progress-bar {
+        max-width: 400px;
+    }
+}
+
+@media (max-width: 900px) {
+    .sidebar {
+        width: 200px;
     }
 
     .logo span,
@@ -865,38 +947,327 @@ body {
         display: none;
     }
 
-    .sidebar-nav,
-    .sidebar-section {
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+    .player-left {
+        width: 40%;
     }
 
-    .nav-item {
+    .player-center {
+        width: 60%;
+    }
+
+    .player-right {
+        display: none;
+    }
+
+    .track-info {
+        max-width: 120px;
+    }
+
+    .logo {
         justify-content: center;
         width: 100%;
-        padding: 14px 0;
-        border-radius: 8px;
     }
 
-    .nav-item svg {
-        margin: 0;
+    .logo svg {
+        width: 28px;
+        height: 28px;
     }
 
-    .language-selector {
+    .progress-bar {
+        max-width: 350px;
+    }
+}
+
+
+
+@media (max-width: 768px) {
+    .mobile-menu-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .sidebar {
+        position: fixed;
+        left: -280px;
+        top: 0;
+        height: 100%;
+        width: 280px;
+        z-index: 999;
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .sidebar.active {
+        left: 0;
+    }
+
+    .logo {
+        justify-content: center;
+        width: 100%;
+        margin-bottom: 20px;
+    }
+
+    .logo svg {
+        width: 26px;
+        height: 26px;
+    }
+
+    .logo span {
+        display: block;
+    }
+
+    .nav-item span {
+        display: block;
+    }
+
+    .main-content {
+        width: 100%;
+    }
+
+    .top-bar {
+        padding: 12px 16px;
+        padding-left: 60px;
+    }
+
+    .nav-buttons {
+        gap: 4px;
+    }
+
+    .main-content > section {
+        padding: 0 16px;
+    }
+
+    .player-bar {
         flex-direction: column;
-        width: 100%;
-        gap: 8px;
-        border-top: 1px solid var(--bg-elevated);
-        padding-top: 16px;
-        margin-top: auto;
-        margin-bottom: 90px;
+        height: auto;
+        padding: 12px 16px;
+        gap: 12px;
+        padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
     }
 
-    .lang-btn {
+    .player-left {
         width: 100%;
-        padding: 12px 0;
+        justify-content: flex-start;
+    }
+
+    .now-playing {
+        justify-content: flex-start;
+        gap: 12px;
+    }
+
+    .player-center {
+        width: 100%;
+    }
+
+    .player-right {
+        display: none;
+    }
+
+    .track-info {
+        max-width: calc(100% - 80px);
+        text-align: left;
+    }
+
+    .progress-bar {
+        max-width: 100%;
+    }
+
+    .time {
+        font-size: 10px;
+        min-width: 30px;
+    }
+
+    .like-btn,
+    .favorite-btn {
+        display: flex;
+    }
+
+    .history-btn {
+        display: none;
+    }
+
+    .window-controls {
+        right: 16px;
+        top: 16px;
+    }
+
+    .window-btn {
+        width: 32px;
+        height: 32px;
+    }
+
+    .history-dropdown {
+        width: 280px;
+        left: -240px;
+    }
+}
+
+
+
+@media (max-width: 600px) {
+    .player-bar {
+        padding: 10px 12px;
+        gap: 10px;
+    }
+
+    .player-controls {
+        gap: 12px;
+    }
+
+    .control-btn {
+        padding: 6px;
+    }
+
+    .control-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .play-btn {
+        width: 40px;
+        height: 40px;
+    }
+
+    .play-btn svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .album-art {
+        width: 48px;
+        height: 48px;
+    }
+
+    .track-name {
+        font-size: 13px;
+    }
+
+    .artist-name {
         font-size: 11px;
+    }
+
+    .progress {
+        height: 3px;
+    }
+
+    .time {
+        font-size: 10px;
+        min-width: 28px;
+    }
+
+    .top-bar {
+        padding: 10px 12px;
+        padding-left: 56px;
+    }
+
+    .nav-btn {
+        width: 28px;
+        height: 28px;
+    }
+
+    .main-content > section {
+        padding: 0 12px;
+    }
+
+    .mobile-menu-btn {
+        top: 16px;
+        left: 12px;
+        padding: 8px;
+    }
+
+    .mobile-menu-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .like-btn,
+    .favorite-btn {
+        padding: 6px;
+    }
+
+    .like-btn svg,
+    .favorite-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+@media (max-width: 400px) {
+    .player-controls {
+        gap: 8px;
+    }
+
+    .control-btn svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .play-btn {
+        width: 36px;
+        height: 36px;
+    }
+
+    .album-art {
+        width: 44px;
+        height: 44px;
+    }
+
+    .track-name {
+        font-size: 12px;
+    }
+
+    .artist-name {
+        font-size: 10px;
+    }
+
+    .progress-bar {
+        gap: 6px;
+    }
+
+    .time {
+        font-size: 9px;
+        min-width: 25px;
+    }
+
+    .track-info {
+        max-width: calc(100% - 70px);
+    }
+}
+
+@media (max-width: 360px) {
+    .player-bar {
+        padding: 8px 10px;
+    }
+
+    .player-controls {
+        gap: 6px;
+    }
+
+    .control-btn {
+        padding: 4px;
+    }
+
+    .control-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .play-btn {
+        width: 32px;
+        height: 32px;
+    }
+
+    .album-art {
+        width: 40px;
+        height: 40px;
+    }
+
+    .track-name {
+        font-size: 11px;
+    }
+
+    .artist-name {
+        font-size: 9px;
     }
 }

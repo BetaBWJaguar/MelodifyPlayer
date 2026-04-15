@@ -178,7 +178,47 @@ document.addEventListener('DOMContentLoaded', async () => {
             item.classList.add('active');
             const page = item.dataset.page;
             loadPage(page);
+            
+            const sidebar = document.querySelector('.sidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            if (sidebar) sidebar.classList.remove('active');
+            if (sidebarOverlay) sidebarOverlay.classList.remove('active');
         });
+    });
+
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const sidebar = document.querySelector('.sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    function toggleMobileMenu(show) {
+        if (show === undefined) {
+            sidebar?.classList.toggle('active');
+            sidebarOverlay?.classList.toggle('active');
+        } else if (show) {
+            sidebar?.classList.add('active');
+            sidebarOverlay?.classList.add('active');
+        } else {
+            sidebar?.classList.remove('active');
+            sidebarOverlay?.classList.remove('active');
+        }
+    }
+
+    if (mobileMenuBtn) {
+        mobileMenuBtn.addEventListener('click', () => {
+            toggleMobileMenu();
+        });
+    }
+
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', () => {
+            toggleMobileMenu(false);
+        });
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            toggleMobileMenu(false);
+        }
     });
     
     const originalLoadPage = loadPage;
@@ -431,21 +471,31 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const progress = document.querySelector('.progress');
     if (progress) {
-        progress.addEventListener('click', (e) => {
+        const handleProgressInteraction = (clientX) => {
             if (playerState.duration <= 0) return;
             
             const rect = progress.getBoundingClientRect();
-            const actualHeight = 4;
-            const offsetY = (rect.height - actualHeight) / 2;
-            const actualTop = rect.top + offsetY;
-            
-            const percent = (e.clientX - rect.left) / rect.width;
+            const percent = (clientX - rect.left) / rect.width;
             
             const clampedPercent = Math.max(0, Math.min(1, percent));
             const seekTime = clampedPercent * playerState.duration;
             
             ipcRenderer.send('request-seek', seekTime);
+        };
+
+        progress.addEventListener('click', (e) => {
+            handleProgressInteraction(e.clientX);
         });
+
+        progress.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+
+        progress.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            handleProgressInteraction(touch.clientX);
+        }, { passive: false });
     }
 
     ipcRenderer.on('player-play', async (event, data) => {

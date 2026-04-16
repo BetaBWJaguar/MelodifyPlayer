@@ -3,6 +3,7 @@ class Language {
         this.currentLang = localStorage.getItem('melodify-lang') || 'en';
         this.translations = {};
         this.isLoaded = false;
+        this.callbacks = [];
     }
 
     async loadTranslations(lang) {
@@ -60,6 +61,7 @@ class Language {
         const success = await this.loadTranslations(lang);
         if (success) {
             this.updateUI();
+            this.notifyCallbacks();
         }
 
         return success;
@@ -97,6 +99,22 @@ class Language {
     async toggleLanguage() {
         const newLang = this.currentLang === 'en' ? 'tr' : 'en';
         return await this.setLanguage(newLang);
+    }
+
+    onLanguageChange(callback) {
+        if (typeof callback === 'function') {
+            this.callbacks.push(callback);
+        }
+    }
+
+    notifyCallbacks() {
+        this.callbacks.forEach(callback => {
+            try {
+                callback(this.currentLang);
+            } catch (error) {
+                console.error('Error in language change callback:', error);
+            }
+        });
     }
 }
 

@@ -14,6 +14,15 @@ async function initLibraryPage() {
     setupDeleteModal();
     setupViewModal();
     await loadPlaylists();
+    
+    if (window.language && typeof window.language.onLanguageChange === 'function') {
+        window.language.onLanguageChange(() => {
+            applySearch();
+            if (currentViewingPlaylistId) {
+                updateViewModalLanguage();
+            }
+        });
+    }
 }
 
 function setupSearch() {
@@ -448,6 +457,18 @@ function closeViewModal() {
     
     modal.classList.remove('active');
     currentViewingPlaylistId = null;
+}
+
+function updateViewModalLanguage() {
+    const playlistViewCount = document.getElementById('playlistViewCount');
+    const lang = window.language || { t: (k) => k };
+    
+    if (playlistViewCount && currentViewingPlaylistId) {
+        const playlist = allPlaylists.find(p => p.id == currentViewingPlaylistId);
+        if (playlist) {
+            playlistViewCount.textContent = `${playlist.song_count || 0} ${lang.t('library.tracks')}`;
+        }
+    }
 }
 
 function createPlaylistTrackItem(track) {

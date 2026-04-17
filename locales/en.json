@@ -68,7 +68,14 @@
     "addCoverImage": "Add Cover Image",
     "changeCover": "Change Cover",
     "cancel": "Cancel",
-    "create": "Create"
+    "create": "Create",
+    "createdSuccessfully": "Playlist created successfully",
+    "nameRequired": "Please enter a playlist name",
+    "nameTooLong": "Playlist name must be 100 characters or less",
+    "descriptionTooLong": "Description must be 500 characters or less",
+    "invalidImage": "Please select an image file",
+    "imageTooLarge": "Image size must be less than 5MB",
+    "errorCreating": "Error creating playlist"
   },
   "player": {
     "selectSong": "Select a song",

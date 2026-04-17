@@ -29,11 +29,15 @@ function setupCoverImageUpload() {
         const file = e.target.files[0];
         if (file) {
             if (!file.type.startsWith('image/')) {
-                alert('Please select an image file.');
+                const lang = window.language || { t: (k) => k };
+                const errorMessage = lang.t('createPlaylist.invalidImage');
+                showNotification(errorMessage);
                 return;
             }
             if (file.size > 5 * 1024 * 1024) {
-                alert('Image size must be less than 5MB.');
+                const lang = window.language || { t: (k) => k };
+                const errorMessage = lang.t('createPlaylist.imageTooLarge');
+                showNotification(errorMessage);
                 return;
             }
 
@@ -141,17 +145,23 @@ async function savePlaylist() {
     const description = playlistDescription.value.trim();
 
     if (!name) {
-        alert('Please enter a playlist name.');
+        const lang = window.language || { t: (k) => k };
+        const errorMessage = lang.t('createPlaylist.nameRequired');
+        showNotification(errorMessage);
         return;
     }
 
     if (name.length > 100) {
-        alert('Playlist name must be 100 characters or less.');
+        const lang = window.language || { t: (k) => k };
+        const errorMessage = lang.t('createPlaylist.nameTooLong');
+        showNotification(errorMessage);
         return;
     }
 
     if (description.length > 500) {
-        alert('Description must be 500 characters or less.');
+        const lang = window.language || { t: (k) => k };
+        const errorMessage = lang.t('createPlaylist.descriptionTooLong');
+        showNotification(errorMessage);
         return;
     }
 
@@ -167,11 +177,15 @@ async function savePlaylist() {
 
         await ipcRenderer.invoke('create-playlist', playlistData);
         
-        alert('Playlist created successfully!');
+        const lang = window.language || { t: (k) => k };
+        const successMessage = lang.t('createPlaylist.createdSuccessfully');
+        showNotification(successMessage);
         navigateBack();
     } catch (error) {
         console.error('Error creating playlist:', error);
-        alert(`Error creating playlist: ${error.message}`);
+        const lang = window.language || { t: (k) => k };
+        const errorMessage = lang.t('createPlaylist.errorCreating') || `Error creating playlist: ${error.message}`;
+        showNotification(errorMessage);
     } finally {
         saveBtn.disabled = false;
         saveBtn.textContent = window.language?.t('createPlaylist.create') || 'Create';
@@ -180,6 +194,24 @@ async function savePlaylist() {
 
 function navigateBack() {
     ipcRenderer.send('navigate-to', 'library');
+}
+
+function showNotification(message) {
+    const notification = document.createElement('div');
+    notification.className = 'notification';
+    notification.textContent = message;
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 10);
+
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 300);
+    }, 2000);
 }
 
 function escapeHtml(text) {

@@ -68,7 +68,14 @@
     "addCoverImage": "Kapak Resmi Ekle",
     "changeCover": "Kapağı Değiştir",
     "cancel": "İptal",
-    "create": "Oluştur"
+    "create": "Oluştur",
+    "createdSuccessfully": "Çalma listesi oluşturuldu",
+    "nameRequired": "Lütfen bir çalma listesi adı girin",
+    "nameTooLong": "Çalma listesi adı 100 karakter veya daha az olmalıdır",
+    "descriptionTooLong": "Açıklama 500 karakter veya daha az olmalıdır",
+    "invalidImage": "Lütfen bir resim dosyası seçin",
+    "imageTooLarge": "Resim boyutu 5MB'den küçük olmalıdır",
+    "errorCreating": "Çalma listesi oluşturulurken hata oluştu"
   },
   "player": {
     "selectSong": "Bir şarkı seç",

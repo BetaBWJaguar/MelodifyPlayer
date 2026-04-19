@@ -522,6 +522,44 @@
     color: var(--text-secondary);
 }
 
+.playlist-select-container {
+    margin: 16px 0;
+}
+
+.playlist-select {
+    width: 100%;
+    padding: 12px 16px;
+    background: rgba(26, 26, 46, 0.6);
+    border: 1px solid rgba(233, 69, 96, 0.15);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    -webkit-app-region: no-drag;
+}
+
+.playlist-select:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.1);
+    background: rgba(22, 33, 62, 0.8);
+}
+
+.playlist-select option {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    padding: 8px 12px;
+}
+
+.selected-count-info {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 12px;
+    text-align: center;
+    font-weight: 500;
+}
+
 .playlist-view-header {
     display: flex;
     align-items: center;
@@ -647,6 +685,28 @@
     background: var(--bg-elevated);
     border-color: rgba(233, 69, 96, 0.4);
     transform: scale(1.05);
+}
+
+.bulk-action-btn.bulk-action-primary {
+    background: rgba(233, 69, 96, 0.15);
+    border-color: rgba(233, 69, 96, 0.3);
+    color: var(--accent-primary);
+}
+
+.bulk-action-btn.bulk-action-primary:hover {
+    background: rgba(233, 69, 96, 0.25);
+    border-color: rgba(233, 69, 96, 0.5);
+}
+
+.bulk-action-btn.bulk-action-secondary {
+    background: rgba(83, 52, 131, 0.15);
+    border-color: rgba(83, 52, 131, 0.3);
+    color: #a78bfa;
+}
+
+.bulk-action-btn.bulk-action-secondary:hover {
+    background: rgba(83, 52, 131, 0.25);
+    border-color: rgba(83, 52, 131, 0.5);
 }
 
 .bulk-action-btn.bulk-action-danger {

@@ -113,6 +113,15 @@
     "selectAll": "Select All",
     "removeSingleTrack": "Are you sure you want to remove this track?",
     "removeMultipleTracks": "Are you sure you want to remove {count} tracks?",
-    "removeTrack": "Remove Track"
+    "removeTrack": "Remove Track",
+    "moveToPlaylist": "Move to Another Playlist",
+    "copyToPlaylist": "Copy to Another Playlist",
+    "selectPlaylistToMove": "Select a playlist to move to",
+    "selectPlaylistToCopy": "Select a playlist to copy to",
+    "move": "Move",
+    "copy": "Copy",
+    "moveSingleTrack": "Are you sure you want to move this track?",
+    "moveMultipleTracks": "Are you sure you want to move {count} tracks?",
+    "selectedCount": "{count} track(s) selected"
   }
 }

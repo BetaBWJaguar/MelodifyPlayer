@@ -14,6 +14,8 @@ async function initLibraryPage() {
     setupEditModal();
     setupDeleteModal();
     setupViewModal();
+    setupMoveModal();
+    setupCopyModal();
     await loadPlaylists();
     
     if (window.language && typeof window.language.onLanguageChange === 'function') {
@@ -373,6 +375,9 @@ function setupViewModal() {
     const playBtn = document.getElementById('playPlaylistBtn');
     const selectAllCheckbox = document.getElementById('selectAllTracks');
     const removeSelectedBtn = document.getElementById('removeSelectedBtn');
+    const moveSelectedBtn = document.getElementById('moveSelectedBtn');
+    const copySelectedBtn = document.getElementById('copySelectedBtn');
+    const downloadSelectedBtn = document.getElementById('downloadSelectedBtn');
 
     closeBtn.addEventListener('click', closeViewModal);
     closeViewBtn.addEventListener('click', closeViewModal);
@@ -408,6 +413,19 @@ function setupViewModal() {
             }
         });
         updateBulkActionsVisibility();
+    });
+
+    moveSelectedBtn.addEventListener('click', () => {
+        openMoveModal();
+    });
+
+    copySelectedBtn.addEventListener('click', () => {
+        openCopyModal();
+    });
+
+    downloadSelectedBtn.addEventListener('click', () => {
+        const lang = window.language || { t: (k) => k };
+        alert("Downloaded");
     });
 
     removeSelectedBtn.addEventListener('click', async () => {
@@ -525,12 +543,167 @@ function updateViewModalLanguage() {
     }
 }
 
+function setupMoveModal() {
+    const modal = document.getElementById('moveToPlaylistModal');
+    const closeBtn = document.getElementById('closeMoveModal');
+    const cancelBtn = document.getElementById('cancelMoveBtn');
+    const confirmBtn = document.getElementById('confirmMoveBtn');
+    const playlistSelect = document.getElementById('movePlaylistSelect');
+
+    closeBtn.addEventListener('click', closeMoveModal);
+    cancelBtn.addEventListener('click', closeMoveModal);
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeMoveModal();
+        }
+    });
+
+    confirmBtn.addEventListener('click', async () => {
+        const targetPlaylistId = playlistSelect.value;
+        if (!targetPlaylistId) {
+            alert('Please select a playlist');
+            return;
+        }
+        
+        const lang = window.language || { t: (k) => k };
+        const message = selectedTrackIds.size === 1
+            ? lang.t('library.moveSingleTrack')
+            : lang.t('library.moveMultipleTracks').replace('{count}', selectedTrackIds.size);
+        
+        if (confirm(message)) {
+            try {
+                const tracks = await ipcRenderer.invoke('get-playlist-songs', currentViewingPlaylistId);
+                const tracksToMove = tracks.filter(t => selectedTrackIds.has(t.track_id));
+                
+                for (const track of tracksToMove) {
+                    await ipcRenderer.invoke('add-song-to-playlist', targetPlaylistId, {
+                        id: track.track_id,
+                        name: track.track_name,
+                        artist: track.artist_name,
+                        image: track.image,
+                        duration: track.duration
+                    });
+                }
+                
+                for (const trackId of selectedTrackIds) {
+                    await ipcRenderer.invoke('remove-song-from-playlist', currentViewingPlaylistId, trackId);
+                }
+                
+                selectedTrackIds.clear();
+                closeMoveModal();
+                await loadPlaylists();
+                await openViewModal(currentViewingPlaylistId);
+            } catch (error) {
+                console.error('Error moving tracks:', error);
+                alert('Error moving tracks: ' + error.message);
+            }
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeMoveModal();
+        }
+    });
+}
+
+function openMoveModal() {
+    const modal = document.getElementById('moveToPlaylistModal');
+    const playlistSelect = document.getElementById('movePlaylistSelect');
+    const countInfo = document.getElementById('moveCountInfo');
+    const lang = window.language || { t: (k) => k };
+
+    const otherPlaylists = allPlaylists.filter(p => p.id != currentViewingPlaylistId);
+    playlistSelect.innerHTML = '<option value="">-- Select Playlist --</option>' +
+        otherPlaylists.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+
+    countInfo.textContent = lang.t('library.selectedCount').replace('{count}', selectedTrackIds.size);
+    modal.classList.add('active');
+}
+
+function closeMoveModal() {
+    const modal = document.getElementById('moveToPlaylistModal');
+    modal.classList.remove('active');
+}
+
+function setupCopyModal() {
+    const modal = document.getElementById('copyToPlaylistModal');
+    const closeBtn = document.getElementById('closeCopyModal');
+    const cancelBtn = document.getElementById('cancelCopyBtn');
+    const confirmBtn = document.getElementById('confirmCopyBtn');
+    const playlistSelect = document.getElementById('copyPlaylistSelect');
+
+    closeBtn.addEventListener('click', closeCopyModal);
+    cancelBtn.addEventListener('click', closeCopyModal);
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeCopyModal();
+        }
+    });
+
+    confirmBtn.addEventListener('click', async () => {
+        const targetPlaylistId = playlistSelect.value;
+        if (!targetPlaylistId) {
+            alert('Please select a playlist');
+            return;
+        }
+        
+        try {
+            const tracks = await ipcRenderer.invoke('get-playlist-songs', currentViewingPlaylistId);
+            const tracksToCopy = tracks.filter(t => selectedTrackIds.has(t.track_id));
+            
+            for (const track of tracksToCopy) {
+                await ipcRenderer.invoke('add-song-to-playlist', targetPlaylistId, {
+                    id: track.track_id,
+                    name: track.track_name,
+                    artist: track.artist_name,
+                    image: track.image,
+                    duration: track.duration
+                });
+            }
+            
+            selectedTrackIds.clear();
+            closeCopyModal();
+            await loadPlaylists();
+            await openViewModal(currentViewingPlaylistId);
+        } catch (error) {
+            console.error('Error copying tracks:', error);
+            alert('Error copying tracks: ' + error.message);
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeCopyModal();
+        }
+    });
+}
+
+function openCopyModal() {
+    const modal = document.getElementById('copyToPlaylistModal');
+    const playlistSelect = document.getElementById('copyPlaylistSelect');
+    const countInfo = document.getElementById('copyCountInfo');
+    const lang = window.language || { t: (k) => k };
+
+    const otherPlaylists = allPlaylists.filter(p => p.id != currentViewingPlaylistId);
+    playlistSelect.innerHTML = '<option value="">-- Select Playlist --</option>' +
+        otherPlaylists.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+
+    countInfo.textContent = lang.t('library.selectedCount').replace('{count}', selectedTrackIds.size);
+    modal.classList.add('active');
+}
+
+function closeCopyModal() {
+    const modal = document.getElementById('copyToPlaylistModal');
+    modal.classList.remove('active');
+}
+
 function createPlaylistTrackItem(track) {
     const imageUrl = track.image || '';
     const trackName = track.track_name || '';
     const artistName = track.artist_name || '';
-    const isFavorite = track.isFavorite || false;
-    const isLiked = track.isLiked || false;
     const lang = window.language || { t: (k) => k };
 
     if (imageUrl) {
@@ -669,6 +842,9 @@ function setupTrackCheckboxes() {
 
 function updateBulkActionsVisibility() {
     const removeSelectedBtn = document.getElementById('removeSelectedBtn');
+    const moveSelectedBtn = document.getElementById('moveSelectedBtn');
+    const copySelectedBtn = document.getElementById('copySelectedBtn');
+    const downloadSelectedBtn = document.getElementById('downloadSelectedBtn');
     const selectAllCheckbox = document.getElementById('selectAllTracks');
     const trackCheckboxes = document.querySelectorAll('.track-checkbox');
     
@@ -681,8 +857,14 @@ function updateBulkActionsVisibility() {
     
     if (selectedTrackIds.size > 0) {
         removeSelectedBtn.style.display = 'flex';
+        moveSelectedBtn.style.display = 'flex';
+        copySelectedBtn.style.display = 'flex';
+        downloadSelectedBtn.style.display = 'flex';
     } else {
         removeSelectedBtn.style.display = 'none';
+        moveSelectedBtn.style.display = 'none';
+        copySelectedBtn.style.display = 'none';
+        downloadSelectedBtn.style.display = 'none';
     }
 }
 

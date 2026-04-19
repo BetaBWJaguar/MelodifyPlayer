@@ -113,6 +113,15 @@
     "selectAll": "Tümünü Seç",
     "removeSingleTrack": "Bu parçayı kaldırmak istediğine emin misin?",
     "removeMultipleTracks": "{count} parçayı kaldırmak istediğine emin misin?",
-    "removeTrack": "Parçayı Kaldır"
+    "removeTrack": "Parçayı Kaldır",
+    "moveToPlaylist": "Başka Listeye Taşı",
+    "copyToPlaylist": "Başka Listeye Kopyala",
+    "selectPlaylistToMove": "Taşımak için bir oynatma listesi seçin",
+    "selectPlaylistToCopy": "Kopyalamak için bir oynatma listesi seçin",
+    "move": "Taşı",
+    "copy": "Kopyala",
+    "moveSingleTrack": "Bu parçayı taşımak istediğine emin misin?",
+    "moveMultipleTracks": "{count} parçayı taşımak istediğine emin misin?",
+    "selectedCount": "{count} parça seçildi"
   }
 }

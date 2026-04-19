@@ -6,6 +6,7 @@ let currentEditingPlaylistId = null;
 let currentViewingPlaylistId = null;
 let draggedTrackId = null;
 let draggedTrackElement = null;
+let selectedTrackIds = new Set();
 
 async function initLibraryPage() {
     console.log('Initializing library page...');
@@ -370,6 +371,8 @@ function setupViewModal() {
     const closeBtn = document.getElementById('closePlaylistViewModal');
     const closeViewBtn = document.getElementById('closePlaylistViewBtn');
     const playBtn = document.getElementById('playPlaylistBtn');
+    const selectAllCheckbox = document.getElementById('selectAllTracks');
+    const removeSelectedBtn = document.getElementById('removeSelectedBtn');
 
     closeBtn.addEventListener('click', closeViewModal);
     closeViewBtn.addEventListener('click', closeViewModal);
@@ -392,6 +395,44 @@ function setupViewModal() {
         }
     });
 
+    selectAllCheckbox.addEventListener('change', (e) => {
+        const isChecked = e.target.checked;
+        const trackCheckboxes = document.querySelectorAll('.track-checkbox');
+        trackCheckboxes.forEach(checkbox => {
+            checkbox.checked = isChecked;
+            const trackId = checkbox.closest('.playlist-track-item').dataset.trackId;
+            if (isChecked) {
+                selectedTrackIds.add(trackId);
+            } else {
+                selectedTrackIds.delete(trackId);
+            }
+        });
+        updateBulkActionsVisibility();
+    });
+
+    removeSelectedBtn.addEventListener('click', async () => {
+        if (selectedTrackIds.size === 0) return;
+        
+        const lang = window.language || { t: (k) => k };
+        const message = selectedTrackIds.size === 1
+            ? lang.t('library.removeSingleTrack')
+            : lang.t('library.removeMultipleTracks').replace('{count}', selectedTrackIds.size);
+        
+        if (confirm(message)) {
+            try {
+                for (const trackId of selectedTrackIds) {
+                    await ipcRenderer.invoke('remove-song-from-playlist', currentViewingPlaylistId, trackId);
+                }
+                selectedTrackIds.clear();
+                await loadPlaylists();
+                await openViewModal(currentViewingPlaylistId);
+            } catch (error) {
+                console.error('Error removing selected tracks:', error);
+                alert('Error removing tracks: ' + error.message);
+            }
+        }
+    });
+
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && modal.classList.contains('active')) {
             closeViewModal();
@@ -406,12 +447,17 @@ async function openViewModal(playlistId) {
     const playlistViewDesc = document.getElementById('playlistViewDesc');
     const playlistViewCount = document.getElementById('playlistViewCount');
     const playlistTracksList = document.getElementById('playlistTracksList');
+    const playlistTracksHeader = document.getElementById('playlistTracksHeader');
+    const selectAllCheckbox = document.getElementById('selectAllTracks');
     const lang = window.language || { t: (k) => k };
 
     const playlist = allPlaylists.find(p => p.id == playlistId);
     if (!playlist) return;
 
     currentViewingPlaylistId = playlistId;
+    selectedTrackIds.clear();
+    selectAllCheckbox.checked = false;
+    
     playlistViewName.textContent = playlist.name;
     playlistViewDesc.textContent = playlist.description || '';
     playlistViewCount.textContent = `${playlist.song_count || 0} ${lang.t('library.tracks')}`;
@@ -432,13 +478,17 @@ async function openViewModal(playlistId) {
         const tracks = await ipcRenderer.invoke('get-playlist-songs', playlistId);
         if (tracks && tracks.length > 0) {
             playlistTracksList.innerHTML = tracks.map(track => createPlaylistTrackItem(track)).join('');
+            playlistTracksHeader.style.display = 'flex';
+            updateBulkActionsVisibility();
             setupTrackDragAndDrop();
+            setupTrackCheckboxes();
         } else {
             playlistTracksList.innerHTML = `
                 <div class="empty-state" style="padding: 40px 20px;">
                     <p>${lang.t('library.noTracks')}</p>
                 </div>
             `;
+            playlistTracksHeader.style.display = 'none';
         }
     } catch (error) {
         console.error('Error loading playlist tracks:', error);
@@ -447,6 +497,7 @@ async function openViewModal(playlistId) {
                 <p>Error loading tracks</p>
             </div>
         `;
+        playlistTracksHeader.style.display = 'none';
     }
 
     modal.classList.add('active');
@@ -454,9 +505,12 @@ async function openViewModal(playlistId) {
 
 function closeViewModal() {
     const modal = document.getElementById('playlistViewModal');
+    const playlistTracksHeader = document.getElementById('playlistTracksHeader');
     
     modal.classList.remove('active');
     currentViewingPlaylistId = null;
+    selectedTrackIds.clear();
+    playlistTracksHeader.style.display = 'none';
 }
 
 function updateViewModalLanguage() {
@@ -482,6 +536,7 @@ function createPlaylistTrackItem(track) {
     if (imageUrl) {
         return `
             <div class="playlist-track-item" draggable="true" data-track-name="${escapeHtml(trackName)}" data-track-artist="${escapeHtml(artistName)}" data-track-image="${escapeHtml(imageUrl)}" data-track-id="${escapeHtml(track.track_id)}">
+                <input type="checkbox" class="track-checkbox" data-track-id="${escapeHtml(track.track_id)}">
                 <div class="playlist-track-drag-handle">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
@@ -505,6 +560,7 @@ function createPlaylistTrackItem(track) {
     } else {
         return `
             <div class="playlist-track-item" draggable="true" data-track-name="${escapeHtml(trackName)}" data-track-artist="${escapeHtml(artistName)}" data-track-image="" data-track-id="${escapeHtml(track.track_id)}">
+                <input type="checkbox" class="track-checkbox" data-track-id="${escapeHtml(track.track_id)}">
                 <div class="playlist-track-drag-handle">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
@@ -554,7 +610,9 @@ function setupTrackDragAndDrop() {
         item.addEventListener('dragleave', handleDragLeave);
         
         item.addEventListener('click', async (e) => {
-            if (e.target.closest('.playlist-track-remove-btn') || e.target.closest('.playlist-track-drag-handle')) {
+            if (e.target.closest('.playlist-track-remove-btn') ||
+                e.target.closest('.playlist-track-drag-handle') ||
+                e.target.closest('.track-checkbox')) {
                 return;
             }
             const trackName = item.dataset.trackName;
@@ -591,6 +649,41 @@ function setupTrackDragAndDrop() {
             });
         }
     });
+}
+
+function setupTrackCheckboxes() {
+    const checkboxes = document.querySelectorAll('.track-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+            const trackId = e.target.dataset.trackId;
+            if (e.target.checked) {
+                selectedTrackIds.add(trackId);
+            } else {
+                selectedTrackIds.delete(trackId);
+            }
+            updateBulkActionsVisibility();
+        });
+    });
+}
+
+function updateBulkActionsVisibility() {
+    const removeSelectedBtn = document.getElementById('removeSelectedBtn');
+    const selectAllCheckbox = document.getElementById('selectAllTracks');
+    const trackCheckboxes = document.querySelectorAll('.track-checkbox');
+    
+    if (trackCheckboxes.length > 0) {
+        const allChecked = Array.from(trackCheckboxes).every(cb => cb.checked);
+        selectAllCheckbox.checked = allChecked && trackCheckboxes.length > 0;
+    } else {
+        selectAllCheckbox.checked = false;
+    }
+    
+    if (selectedTrackIds.size > 0) {
+        removeSelectedBtn.style.display = 'flex';
+    } else {
+        removeSelectedBtn.style.display = 'none';
+    }
 }
 
 function handleDragStart(e) {

@@ -109,6 +109,10 @@
     "cancel": "İptal",
     "save": "Kaydet",
     "error": "Oynatma listeleri yüklenirken hata oluştu",
-    "searchPlaceholder": "Oynatma listelerinde ara..."
+    "searchPlaceholder": "Oynatma listelerinde ara...",
+    "selectAll": "Tümünü Seç",
+    "removeSingleTrack": "Bu parçayı kaldırmak istediğine emin misin?",
+    "removeMultipleTracks": "{count} parçayı kaldırmak istediğine emin misin?",
+    "removeTrack": "Parçayı Kaldır"
   }
 }

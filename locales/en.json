@@ -109,6 +109,10 @@
     "cancel": "Cancel",
     "save": "Save",
     "error": "Error loading playlists",
-    "searchPlaceholder": "Search playlists..."
+    "searchPlaceholder": "Search playlists...",
+    "selectAll": "Select All",
+    "removeSingleTrack": "Are you sure you want to remove this track?",
+    "removeMultipleTracks": "Are you sure you want to remove {count} tracks?",
+    "removeTrack": "Remove Track"
   }
 }

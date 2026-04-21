@@ -123,5 +123,23 @@
     "moveSingleTrack": "Bu parçayı taşımak istediğine emin misin?",
     "moveMultipleTracks": "{count} parçayı taşımak istediğine emin misin?",
     "selectedCount": "{count} parça seçildi"
+  },
+  "download": {
+    "download": "İndir",
+    "downloading": "İndiriliyor...",
+    "downloadComplete": "İndirme tamamlandı",
+    "downloadFailed": "İndirme başarısız",
+    "downloadError": "İndirme hatası",
+    "ytDlpNotFound": "yt-dlp bulunamadı. İndirme özelliğini kullanmak için lütfen yt-dlp yükleyin.",
+    "alreadyDownloaded": "Zaten indirilmiş",
+    "downloadProgress": "{name} indiriliyor... %{percent}",
+    "cancelDownload": "İndirmeyi İptal Et",
+    "downloads": "İndirilenler",
+    "noDownloads": "Henüz indirilen şarkı yok",
+    "startDownloading": "Çevrimdışı dinlemek için şarkıları indir",
+    "deleteDownload": "İndirmeyi Sil",
+    "deleteDownloadConfirm": "Bu indirilen dosyayı silmek istediğine emin misin?",
+    "openDownloadFolder": "İndirme Klasörünü Aç",
+    "downloadDir": "İndirme Klasörü"
   }
 }

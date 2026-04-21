@@ -4,6 +4,8 @@ const player = require('./backend/utils/playSongs');
 const likedSongs = require('./backend/utils/likedSongs');
 const favorites = require('./backend/utils/favorites');
 const playlist = require('./backend/utils/playlist');
+const downloadModule = require('./backend/utils/downloadModule');
+const youtubeModule = require('./backend/utils/youtubeModule');
 
 let mainWindow;
 
@@ -345,6 +347,61 @@ player.on('playlist-updated', (data) => {
     if (mainWindow) {
         mainWindow.webContents.send('player-playlist-updated', data);
     }
+});
+
+ipcMain.handle('check-yt-dlp', () => {
+    return downloadModule.checkYtDlp();
+});
+
+ipcMain.handle('get-download-dir', () => {
+    return downloadModule.getDownloadDir();
+});
+
+ipcMain.handle('get-downloaded-tracks', () => {
+    return downloadModule.getDownloadedTracks();
+});
+
+ipcMain.handle('is-track-downloaded', (event, track) => {
+    return downloadModule.isTrackDownloaded(track);
+});
+
+ipcMain.handle('delete-downloaded-track', (event, fileName) => {
+    return downloadModule.deleteDownloadedTrack(fileName);
+});
+
+ipcMain.on('start-download', (event, track) => {
+    const downloadProcess = downloadModule.downloadTrack(
+        track,
+        (progress) => {
+            if (mainWindow) {
+                mainWindow.webContents.send('download-progress', progress);
+            }
+        },
+        (result) => {
+            if (mainWindow) {
+                mainWindow.webContents.send('download-complete', result);
+            }
+        },
+        (error) => {
+            if (mainWindow) {
+                mainWindow.webContents.send('download-error', { error: error.message, track });
+            }
+        }
+    );
+
+    event.sender.downloadProcess = downloadProcess;
+});
+
+ipcMain.on('cancel-download', (event) => {
+    if (event.sender.downloadProcess) {
+        event.sender.downloadProcess.kill();
+        event.sender.downloadProcess = null;
+    }
+});
+
+ipcMain.handle('get-youtube-video-id', (event, trackName, artistName) => {
+    const video = youtubeModule.getFromCache(trackName, artistName);
+    return video ? video.videoId : null;
 });
 
 app.on('before-quit', () => {

@@ -123,5 +123,23 @@
     "moveSingleTrack": "Are you sure you want to move this track?",
     "moveMultipleTracks": "Are you sure you want to move {count} tracks?",
     "selectedCount": "{count} track(s) selected"
+  },
+  "download": {
+    "download": "Download",
+    "downloading": "Downloading...",
+    "downloadComplete": "Download complete",
+    "downloadFailed": "Download failed",
+    "downloadError": "Download error",
+    "ytDlpNotFound": "yt-dlp not found. Please install yt-dlp to enable downloads.",
+    "alreadyDownloaded": "Already downloaded",
+    "downloadProgress": "Downloading {name}... {percent}%",
+    "cancelDownload": "Cancel Download",
+    "downloads": "Downloads",
+    "noDownloads": "No downloads yet",
+    "startDownloading": "Download songs to listen offline",
+    "deleteDownload": "Delete Download",
+    "deleteDownloadConfirm": "Delete this downloaded file?",
+    "openDownloadFolder": "Open Download Folder",
+    "downloadDir": "Download Directory"
   }
 }

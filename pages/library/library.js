@@ -7,6 +7,36 @@ let currentViewingPlaylistId = null;
 let draggedTrackId = null;
 let draggedTrackElement = null;
 let selectedTrackIds = new Set();
+let downloadingTracks = new Map();
+let currentPlaylistTracks = [];
+
+ipcRenderer.on("download-progress", (event, data) => {
+    const trackId = data.track.id || data.track.videoId;
+    if (trackId) {
+        downloadingTracks.set(trackId, data.percent);
+        updateDownloadButton(trackId, data.percent);
+    }
+});
+
+ipcRenderer.on("download-complete", (event, data) => {
+    const trackId = data.track.id || data.track.videoId;
+    if (trackId) {
+        downloadingTracks.delete(trackId);
+        updateDownloadButton(trackId, 'complete');
+        const lang = window.language || { t: (k) => k };
+        showNotification(lang.t('download.downloadComplete'));
+    }
+});
+
+ipcRenderer.on("download-error", (event, data) => {
+    const trackId = data.track.id || data.track.videoId;
+    if (trackId) {
+        downloadingTracks.delete(trackId);
+        updateDownloadButton(trackId, 'error');
+        const lang = window.language || { t: (k) => k };
+        showNotification(`${lang.t('download.downloadError')}: ${data.error}`);
+    }
+});
 
 async function initLibraryPage() {
     console.log('Initializing library page...');
@@ -423,9 +453,33 @@ function setupViewModal() {
         openCopyModal();
     });
 
-    downloadSelectedBtn.addEventListener('click', () => {
+    downloadSelectedBtn.addEventListener('click', async () => {
+        if (selectedTrackIds.size === 0) return;
+        
         const lang = window.language || { t: (k) => k };
-        alert("Downloaded");
+        
+        try {
+            const tracks = await ipcRenderer.invoke('get-playlist-songs', currentViewingPlaylistId);
+            const tracksToDownload = tracks.filter(t => selectedTrackIds.has(t.track_id));
+            
+
+            for (const track of tracksToDownload) {
+                const trackId = track.track_id;
+                if (!downloadingTracks.has(trackId)) {
+                    console.log('[Library] Starting download for:', track.track_name, 'by', track.artist_name);
+                    downloadTrack({
+                        name: track.track_name,
+                        artist: track.artist_name,
+                        image: track.image,
+                        id: trackId
+                    });
+                }
+            }
+            
+            showNotification(`${lang.t('download.downloading')} ${tracksToDownload.length} ${lang.t('library.tracks')}`);
+        } catch (error) {
+            showNotification(`${lang.t('download.downloadError')}: ${error.message}`);
+        }
     });
 
     removeSelectedBtn.addEventListener('click', async () => {
@@ -494,6 +548,7 @@ async function openViewModal(playlistId) {
 
     try {
         const tracks = await ipcRenderer.invoke('get-playlist-songs', playlistId);
+        currentPlaylistTracks = tracks || [];
         if (tracks && tracks.length > 0) {
             playlistTracksList.innerHTML = tracks.map(track => createPlaylistTrackItem(track)).join('');
             playlistTracksHeader.style.display = 'flex';
@@ -704,12 +759,14 @@ function createPlaylistTrackItem(track) {
     const imageUrl = track.image || '';
     const trackName = track.track_name || '';
     const artistName = track.artist_name || '';
+    const trackId = track.track_id;
     const lang = window.language || { t: (k) => k };
+    const downloadTitle = lang.t('download.download');
 
     if (imageUrl) {
         return `
-            <div class="playlist-track-item" draggable="true" data-track-name="${escapeHtml(trackName)}" data-track-artist="${escapeHtml(artistName)}" data-track-image="${escapeHtml(imageUrl)}" data-track-id="${escapeHtml(track.track_id)}">
-                <input type="checkbox" class="track-checkbox" data-track-id="${escapeHtml(track.track_id)}">
+            <div class="playlist-track-item" draggable="true" data-track-name="${escapeHtml(trackName)}" data-track-artist="${escapeHtml(artistName)}" data-track-image="${escapeHtml(imageUrl)}" data-track-id="${escapeHtml(trackId)}">
+                <input type="checkbox" class="track-checkbox" data-track-id="${escapeHtml(trackId)}">
                 <div class="playlist-track-drag-handle">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
@@ -723,6 +780,11 @@ function createPlaylistTrackItem(track) {
                     <span class="playlist-track-artist" title="${escapeHtml(artistName)}">${escapeHtml(artistName)}</span>
                 </div>
                 <span class="playlist-track-duration">${track.duration ? formatDuration(track.duration) : ''}</span>
+                <button class="playlist-track-download-btn" title="${downloadTitle}" data-track-id="${escapeHtml(trackId)}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                    </svg>
+                </button>
                 <button class="playlist-track-remove-btn" title="${lang.t('library.removeTrack')}">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
@@ -732,8 +794,8 @@ function createPlaylistTrackItem(track) {
         `;
     } else {
         return `
-            <div class="playlist-track-item" draggable="true" data-track-name="${escapeHtml(trackName)}" data-track-artist="${escapeHtml(artistName)}" data-track-image="" data-track-id="${escapeHtml(track.track_id)}">
-                <input type="checkbox" class="track-checkbox" data-track-id="${escapeHtml(track.track_id)}">
+            <div class="playlist-track-item" draggable="true" data-track-name="${escapeHtml(trackName)}" data-track-artist="${escapeHtml(artistName)}" data-track-image="" data-track-id="${escapeHtml(trackId)}">
+                <input type="checkbox" class="track-checkbox" data-track-id="${escapeHtml(trackId)}">
                 <div class="playlist-track-drag-handle">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
@@ -749,6 +811,11 @@ function createPlaylistTrackItem(track) {
                     <span class="playlist-track-artist" title="${escapeHtml(artistName)}">${escapeHtml(artistName)}</span>
                 </div>
                 <span class="playlist-track-duration">${track.duration ? formatDuration(track.duration) : ''}</span>
+                <button class="playlist-track-download-btn" title="${downloadTitle}" data-track-id="${escapeHtml(trackId)}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                    </svg>
+                </button>
                 <button class="playlist-track-remove-btn" title="${lang.t('library.removeTrack')}">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
@@ -838,6 +905,77 @@ function setupTrackCheckboxes() {
             updateBulkActionsVisibility();
         });
     });
+}
+
+
+async function downloadTrack(track) {
+    const trackId = track.id || track.videoId || track.track_id;
+
+    if (!trackId) {
+        return;
+    }
+
+    if (downloadingTracks.has(trackId)) {
+        return;
+    }
+
+    downloadingTracks.set(trackId, 0);
+    updateDownloadButton(trackId, 0);
+    
+    ipcRenderer.send('start-download', track);
+}
+
+function updateDownloadButton(trackId, status) {
+    const downloadBtn = document.querySelector(`.playlist-track-download-btn[data-track-id="${escapeHtml(trackId)}"]`);
+    if (!downloadBtn) return;
+
+    const lang = window.language || { t: (k) => k };
+
+    if (status === 'complete') {
+        downloadBtn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
+            </svg>
+        `;
+        downloadBtn.title = lang.t('download.downloadComplete');
+        downloadBtn.classList.add('download-complete');
+    } else if (status === 'error') {
+        downloadBtn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+            </svg>
+        `;
+        downloadBtn.title = lang.t('download.downloadError');
+        downloadBtn.classList.add('download-error');
+    } else if (typeof status === 'number') {
+        downloadBtn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+                <path d="M12 2a10 10 0 0 1 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="60" stroke-dashoffset="${60 - (60 * status / 100)}" stroke-linecap="round"/>
+            </svg>
+        `;
+        downloadBtn.title = `${lang.t('download.downloading')} ${status}%`;
+    }
+}
+
+function showNotification(message) {
+    const notification = document.createElement('div');
+    notification.className = 'notification';
+    notification.textContent = message;
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 10);
+
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+            }
+        }, 300);
+    }, 2000);
 }
 
 function updateBulkActionsVisibility() {

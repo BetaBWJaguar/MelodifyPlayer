@@ -383,7 +383,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (prevBtn) {
         prevBtn.addEventListener('click', () => {
-            if (playerState.historyIndex > 0) {
+            if (playerState.playlistMode || playerState.historyIndex > 0) {
                 ipcRenderer.send('request-previous');
             } else {
                 console.log('No previous tracks');
@@ -597,12 +597,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             playerState.playlistIndex = data.playlistIndex || 0;
             playerState.totalTracks = data.totalTracks || 0;
             updatePlaylistInfo();
+            updatePrevButton();
         });
         
         function updatePrevButton() {
             const prevBtn = document.getElementById('prevBtn');
             if (prevBtn) {
-                if (playerState.historyIndex > 0) {
+                const canGoPrevious = playerState.playlistMode || playerState.historyIndex > 0;
+                if (canGoPrevious) {
                     prevBtn.style.opacity = '1';
                     prevBtn.style.pointerEvents = 'auto';
                 } else {

@@ -630,6 +630,32 @@ class Player {
     }
 
     async playPrevious() {
+        if (this.playlistMode && this.playlistTracks.length > 0) {
+            this.playlistIndex--;
+
+            if (this.playlistIndex < 0) {
+                if (this.repeat) {
+                    this.playlistIndex = this.playlistTracks.length - 1;
+                } else {
+                    this.playlistIndex = 0;
+                    return;
+                }
+            }
+            
+            this.notifyListeners('playlist-updated', this.getPlaylistStatus());
+            const prevTrack = this.playlistTracks[this.playlistIndex];
+            const track = {
+                name: prevTrack.track_name,
+                artist: prevTrack.artist_name,
+                image: prevTrack.image,
+                id: prevTrack.track_id,
+                duration: prevTrack.duration
+            };
+            
+            await this.play(track, false, true);
+            return;
+        }
+
         if (this.historyIndex > 0) {
             this.historyIndex--;
             this.history = this.history.slice(0, this.historyIndex + 1);

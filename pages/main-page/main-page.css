@@ -1,0 +1,93 @@
+.main-page {
+    padding: 32px;
+    overflow-y: auto;
+}
+
+.main-header {
+    margin-bottom: 32px;
+}
+
+.greeting-section {
+    padding: 40px 32px;
+    background: linear-gradient(135deg, rgba(233, 69, 96, 0.15) 0%, rgba(83, 52, 131, 0.15) 100%);
+    border-radius: 16px;
+    border: 1px solid rgba(233, 69, 96, 0.2);
+}
+
+.greeting-title {
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    line-height: 1.2;
+}
+
+.greeting-subtitle {
+    font-size: 18px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+@media (max-width: 1024px) {
+    .main-page {
+        padding: 24px;
+    }
+
+    .greeting-section {
+        padding: 32px 24px;
+    }
+
+    .greeting-title {
+        font-size: 36px;
+    }
+
+    .greeting-subtitle {
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-page {
+        padding: 16px;
+    }
+
+    .greeting-section {
+        padding: 24px 16px;
+    }
+
+    .greeting-title {
+        font-size: 28px;
+    }
+
+    .greeting-subtitle {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 600px) {
+    .main-page {
+        padding: 12px;
+    }
+
+    .greeting-section {
+        padding: 20px 12px;
+    }
+
+    .greeting-title {
+        font-size: 24px;
+    }
+
+    .greeting-subtitle {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 400px) {
+    .greeting-title {
+        font-size: 20px;
+    }
+
+    .greeting-subtitle {
+        font-size: 12px;
+    }
+}

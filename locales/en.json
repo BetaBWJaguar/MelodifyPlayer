@@ -1,4 +1,11 @@
 {
+  "mainPage": {
+    "subtitle": "Ready to discover new music?",
+    "morning": "Good Morning",
+    "afternoon": "Good Afternoon",
+    "evening": "Good Evening",
+    "night": "Good Night"
+  },
   "sidebar": {
     "home": "Home",
     "search": "Search",

@@ -63,7 +63,7 @@ async function loadPage(page) {
         pageContainer.innerHTML = html;
 
         loadCSS(page);
-        loadJS(page);
+        await loadJS(page);
     } catch (error) {
         console.error(`error`);
     }
@@ -113,8 +113,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.ipcRenderer = ipcRenderer;
 
     await language.init();
-    language.updateUI();
-    
+
+
+    const originalLoadPage = loadPage;
+    loadPage = async function(page) {
+        await originalLoadPage(page);
+        setTimeout(() => language.updateUI(), 0);
+    };
+
+    await loadPage('main-page');
+
+
     const langEn = document.getElementById('langEn');
     const langTr = document.getElementById('langTr');
     if (langEn && langTr) {
@@ -220,12 +229,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             toggleMobileMenu(false);
         }
     });
-    
-    const originalLoadPage = loadPage;
-    loadPage = async function(page) {
-        await originalLoadPage(page);
-        setTimeout(() => language.updateUI(), 50);
-    };
+
 
 
     const playlistCards = document.querySelectorAll('.playlist-card');

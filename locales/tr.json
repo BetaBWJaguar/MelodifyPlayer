@@ -1,4 +1,11 @@
 {
+  "mainPage": {
+    "subtitle": "Yeni müzikler keşfetmeye hazır mısın?",
+    "morning": "Günaydın",
+    "afternoon": "İyi Günler",
+    "evening": "İyi Akşamlar",
+    "night": "İyi Geceler"
+  },
   "sidebar": {
     "home": "Ana Sayfa",
     "search": "Ara",

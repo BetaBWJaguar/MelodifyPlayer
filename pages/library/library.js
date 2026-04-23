@@ -737,17 +737,12 @@ function setupCopyModal() {
 }
 
 function openCopyModal() {
-    const modal = document.getElementById('copyToPlaylistModal');
-    const playlistSelect = document.getElementById('copyPlaylistSelect');
-    const countInfo = document.getElementById('copyCountInfo');
-    const lang = window.language || { t: (k) => k };
-
-    const otherPlaylists = allPlaylists.filter(p => p.id != currentViewingPlaylistId);
-    playlistSelect.innerHTML = '<option value="">-- Select Playlist --</option>' +
-        otherPlaylists.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
-
-    countInfo.textContent = lang.t('library.selectedCount').replace('{count}', selectedTrackIds.size);
-    modal.classList.add('active');
+    const lang = window.language?.t?.bind(window.language) || ((k) => k);
+    document.getElementById('copyPlaylistSelect').innerHTML =
+        '<option value="">-- Select Playlist --</option>' +
+        allPlaylists.filter(p => p.id != currentViewingPlaylistId).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+    document.getElementById('copyCountInfo').textContent = lang('library.selectedCount').replace('{count}', selectedTrackIds.size);
+    document.getElementById('copyToPlaylistModal').classList.add('active');
 }
 
 function closeCopyModal() {
@@ -834,60 +829,30 @@ function formatDuration(seconds) {
 }
 
 function setupTrackDragAndDrop() {
-    const trackItems = document.querySelectorAll('.playlist-track-item');
-    
-    trackItems.forEach(item => {
-        item.removeEventListener('dragstart', handleDragStart);
-        item.removeEventListener('dragend', handleDragEnd);
-        item.removeEventListener('dragover', handleDragOver);
-        item.removeEventListener('drop', handleDrop);
-        item.removeEventListener('dragleave', handleDragLeave);
-        
-        item.addEventListener('dragstart', handleDragStart);
-        item.addEventListener('dragend', handleDragEnd);
-        item.addEventListener('dragover', handleDragOver);
-        item.addEventListener('drop', handleDrop);
-        item.addEventListener('dragleave', handleDragLeave);
-        
+    const dragEvents = { dragstart: handleDragStart, dragend: handleDragEnd, dragover: handleDragOver, drop: handleDrop, dragleave: handleDragLeave };
+    document.querySelectorAll('.playlist-track-item').forEach(item => {
+        Object.entries(dragEvents).forEach(([event, handler]) => item.addEventListener(event, handler));
         item.addEventListener('click', async (e) => {
-            if (e.target.closest('.playlist-track-remove-btn') ||
-                e.target.closest('.playlist-track-drag-handle') ||
-                e.target.closest('.track-checkbox')) {
-                return;
-            }
-            const trackName = item.dataset.trackName;
-            const trackArtist = item.dataset.trackArtist;
-            const trackImage = item.dataset.trackImage;
-            const trackId = item.dataset.trackId;
-
+            if (e.target.closest('.playlist-track-remove-btn, .playlist-track-drag-handle, .track-checkbox')) return;
+            const { trackName, trackArtist, trackImage, trackId } = item.dataset;
             const playlist = allPlaylists.find(p => p.id == currentViewingPlaylistId);
             try {
                 const tracks = await ipcRenderer.invoke('get-playlist-songs', currentViewingPlaylistId);
-                if (tracks && tracks.length > 0) {
-                    const trackIndex = tracks.findIndex(t => t.track_id === trackId);
-                    if (trackIndex !== -1) {
-                        ipcRenderer.send('request-play-playlist', currentViewingPlaylistId, playlist?.name || '', tracks, trackIndex);
-                    } else {
-                        playTrack(trackName, trackArtist, trackImage, trackId);
-                    }
+                const trackIndex = tracks?.findIndex(t => t.track_id === trackId);
+                if (trackIndex !== -1) {
+                    ipcRenderer.send('request-play-playlist', currentViewingPlaylistId, playlist?.name || '', tracks, trackIndex);
                 } else {
                     playTrack(trackName, trackArtist, trackImage, trackId);
                 }
-            } catch (error) {
-                console.error('Error playing track:', error);
+            } catch {
                 playTrack(trackName, trackArtist, trackImage, trackId);
             }
         });
-        
-        const removeBtn = item.querySelector('.playlist-track-remove-btn');
-        if (removeBtn) {
-            removeBtn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const trackId = item.dataset.trackId;
-                await removeTrackFromPlaylist(trackId);
-            });
-        }
+        item.querySelector('.playlist-track-remove-btn')?.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            await removeTrackFromPlaylist(item.dataset.trackId);
+        });
     });
 }
 

@@ -118,6 +118,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const originalLoadPage = loadPage;
     loadPage = async function(page) {
         await originalLoadPage(page);
+
+        if (page === 'main-page') {
+            if (typeof window.initMainPage === 'function') {
+                window.initMainPage();
+            }
+        }
+
         setTimeout(() => language.updateUI(), 0);
     };
 

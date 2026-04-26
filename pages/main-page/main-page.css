@@ -1,6 +1,8 @@
 .main-page {
     padding: 32px;
     overflow-y: auto;
+    min-height: 100vh;
+    -webkit-app-region: no-drag;
 }
 
 .main-header {
@@ -8,29 +10,151 @@
 }
 
 .greeting-section {
-    padding: 40px 32px;
-    background: linear-gradient(135deg, rgba(233, 69, 96, 0.15) 0%, rgba(83, 52, 131, 0.15) 100%);
+    position: relative;
+    padding: 48px 40px;
+    background: linear-gradient(135deg, rgba(233, 69, 96, 0.2) 0%, rgba(83, 52, 131, 0.25) 50%, rgba(233, 69, 96, 0.15) 100%);
+    border-radius: 20px;
+    border: 1px solid rgba(233, 69, 96, 0.3);
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+    animation: fadeInUp 0.6s ease-out;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.greeting-decoration {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(233, 69, 96, 0.15) 0%, transparent 70%);
+    top: -100px;
+    right: -50px;
+    animation: float 6s ease-in-out infinite;
+}
+
+.greeting-decoration-2 {
+    width: 150px;
+    height: 150px;
+    background: radial-gradient(circle, rgba(83, 52, 131, 0.15) 0%, transparent 70%);
+    top: auto;
+    right: auto;
+    bottom: -75px;
+    left: -30px;
+    animation: float 8s ease-in-out infinite reverse;
+}
+
+.greeting-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.greeting-icon {
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(233, 69, 96, 0.3) 0%, rgba(83, 52, 131, 0.3) 100%);
     border-radius: 16px;
-    border: 1px solid rgba(233, 69, 96, 0.2);
+    color: var(--text-primary);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.greeting-icon svg {
+    animation: iconBounce 2s ease-in-out infinite;
 }
 
 .greeting-title {
-    font-size: 48px;
-    font-weight: 700;
+    font-size: 52px;
+    font-weight: 800;
     color: var(--text-primary);
-    margin-bottom: 8px;
-    line-height: 1.2;
+    margin: 0;
+    line-height: 1.1;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, var(--text-primary) 0%, rgba(255, 255, 255, 0.8) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 2px 20px rgba(233, 69, 96, 0.2);
 }
 
 .greeting-subtitle {
     font-size: 18px;
     color: var(--text-secondary);
     margin: 0;
+    font-weight: 400;
+    opacity: 0.9;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0) scale(1);
+    }
+    50% {
+        transform: translateY(-20px) scale(1.1);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(233, 69, 96, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 15px rgba(233, 69, 96, 0);
+    }
+}
+
+@keyframes iconBounce {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
 }
 
 @media (max-width: 1024px) {
     .main-page {
         padding: 24px;
+    }
+
+    .greeting-section {
+        padding: 40px 32px;
+    }
+
+    .greeting-title {
+        font-size: 42px;
+    }
+
+    .greeting-subtitle {
+        font-size: 16px;
+    }
+
+    .greeting-icon {
+        width: 56px;
+        height: 56px;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-page {
+        padding: 20px;
     }
 
     .greeting-section {
@@ -42,52 +166,518 @@
     }
 
     .greeting-subtitle {
-        font-size: 16px;
-    }
-}
-
-@media (max-width: 768px) {
-    .main-page {
-        padding: 16px;
+        font-size: 15px;
     }
 
-    .greeting-section {
-        padding: 24px 16px;
+    .greeting-icon {
+        width: 52px;
+        height: 52px;
     }
 
-    .greeting-title {
-        font-size: 28px;
+    .greeting-decoration {
+        width: 150px;
+        height: 150px;
+        top: -75px;
+        right: -40px;
     }
 
-    .greeting-subtitle {
-        font-size: 14px;
+    .greeting-decoration-2 {
+        width: 120px;
+        height: 120px;
+        bottom: -60px;
+        left: -25px;
     }
 }
 
 @media (max-width: 600px) {
     .main-page {
-        padding: 12px;
+        padding: 16px;
     }
 
     .greeting-section {
-        padding: 20px 12px;
+        padding: 28px 20px;
+        border-radius: 16px;
     }
 
     .greeting-title {
-        font-size: 24px;
+        font-size: 30px;
+    }
+
+    .greeting-subtitle {
+        font-size: 14px;
+    }
+
+    .greeting-icon {
+        width: 48px;
+        height: 48px;
+    }
+
+    .greeting-icon svg {
+        width: 36px;
+        height: 36px;
+    }
+
+    .greeting-decoration {
+        width: 120px;
+        height: 120px;
+        top: -60px;
+        right: -30px;
+    }
+
+    .greeting-decoration-2 {
+        width: 100px;
+        height: 100px;
+        bottom: -50px;
+        left: -20px;
+    }
+}
+
+@media (max-width: 400px) {
+    .greeting-section {
+        padding: 24px 16px;
+    }
+
+    .greeting-title {
+        font-size: 26px;
     }
 
     .greeting-subtitle {
         font-size: 13px;
     }
+
+    .greeting-icon {
+        width: 44px;
+        height: 44px;
+    }
+
+    .greeting-icon svg {
+        width: 32px;
+        height: 32px;
+    }
 }
 
-@media (max-width: 400px) {
-    .greeting-title {
+.main-page-content {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.section {
+    margin-bottom: 40px;
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 0 4px;
+}
+
+.section-header h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.see-all {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 8px;
+}
+
+.see-all:hover {
+    color: var(--text-primary);
+    background: rgba(233, 69, 96, 0.1);
+}
+
+.playlists-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+}
+
+.playlist-card {
+    background: linear-gradient(135deg, rgba(30, 30, 46, 0.6) 0%, rgba(30, 30, 46, 0.8) 100%);
+    border-radius: 12px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+}
+
+.playlist-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #e94560, #533483);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.playlist-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    border-color: rgba(233, 69, 96, 0.5);
+}
+
+.playlist-card:hover::before {
+    opacity: 1;
+}
+
+.playlist-card-image {
+    width: 100%;
+    aspect-ratio: 1;
+    background: linear-gradient(135deg, rgba(233, 69, 96, 0.15) 0%, rgba(83, 52, 131, 0.2) 100%);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+}
+
+.playlist-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.playlist-card:hover .playlist-card-image img {
+    transform: scale(1.05);
+}
+
+.playlist-card-image svg {
+    width: 40px;
+    height: 40px;
+    color: var(--text-secondary);
+}
+
+.playlist-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.playlist-card-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.playlist-card-count {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.recommendations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 14px;
+}
+
+.recommendation-card {
+    background: linear-gradient(135deg, rgba(30, 30, 46, 0.6) 0%, rgba(30, 30, 46, 0.8) 100%);
+    border-radius: 12px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+.recommendation-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #533483, #e94560);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.recommendation-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    border-color: rgba(83, 52, 131, 0.5);
+}
+
+.recommendation-card:hover::before {
+    opacity: 1;
+}
+
+.recommendation-card-image {
+    width: 100%;
+    aspect-ratio: 1;
+    background: linear-gradient(135deg, rgba(83, 52, 131, 0.15) 0%, rgba(233, 69, 96, 0.2) 100%);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+}
+
+.recommendation-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.recommendation-card:hover .recommendation-card-image img {
+    transform: scale(1.05);
+}
+
+.recommendation-card-image svg {
+    width: 36px;
+    height: 36px;
+    color: var(--text-secondary);
+}
+
+.recommendation-play-btn {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, #e94560 0%, #533483 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.recommendation-card:hover .recommendation-play-btn {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.recommendation-play-btn svg {
+    width: 16px;
+    height: 16px;
+    color: white;
+}
+
+.recommendation-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.recommendation-card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.recommendation-card-artist {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.recommendation-card-type {
+    font-size: 10px;
+    color: var(--text-secondary);
+    opacity: 0.6;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+}
+
+.loading-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(233, 69, 96, 0.2);
+    border-top-color: #e94560;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.empty-state svg {
+    width: 80px;
+    height: 80px;
+    color: var(--text-secondary);
+    opacity: 0.5;
+    margin-bottom: 20px;
+}
+
+.empty-state h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+}
+
+.empty-state p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+@media (max-width: 1024px) {
+    .section-header h2 {
+        font-size: 22px;
+    }
+
+    .playlists-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 14px;
+    }
+
+    .recommendations-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 12px;
+    }
+}
+
+@media (max-width: 768px) {
+    .section-header h2 {
         font-size: 20px;
     }
 
-    .greeting-subtitle {
+    .playlists-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 12px;
+    }
+
+    .recommendations-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 10px;
+    }
+
+    .playlist-card-image svg,
+    .recommendation-card-image svg {
+        width: 36px;
+        height: 36px;
+    }
+}
+
+@media (max-width: 600px) {
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .section-header h2 {
+        font-size: 18px;
+    }
+
+    .playlists-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .recommendations-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+
+    .playlist-card {
+        padding: 12px;
+    }
+
+    .recommendation-card {
+        padding: 10px;
+    }
+
+    .playlist-card-name {
+        font-size: 13px;
+    }
+
+    .playlist-card-count {
+        font-size: 11px;
+    }
+
+    .recommendation-card-title {
         font-size: 12px;
+    }
+
+    .recommendation-card-artist {
+        font-size: 11px;
+    }
+
+    .recommendation-play-btn {
+        width: 32px;
+        height: 32px;
+    }
+
+    .recommendation-play-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+}
+
+@media (max-width: 400px) {
+    .section-header h2 {
+        font-size: 16px;
+    }
+
+    .playlists-grid,
+    .recommendations-grid {
+        grid-template-columns: 1fr;
     }
 }

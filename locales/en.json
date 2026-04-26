@@ -4,7 +4,14 @@
     "morning": "Good Morning",
     "afternoon": "Good Afternoon",
     "evening": "Good Evening",
-    "night": "Good Night"
+    "night": "Good Night",
+    "yourPlaylists": "Your Playlists",
+    "seeAll": "See All",
+    "madeForYou": "Made For You",
+    "noPlaylists": "No playlists yet",
+    "createFirstPlaylist": "Create your first playlist to get started",
+    "noRecommendations": "No recommendations yet",
+    "startListening": "Start listening to get personalized recommendations"
   },
   "sidebar": {
     "home": "Home",

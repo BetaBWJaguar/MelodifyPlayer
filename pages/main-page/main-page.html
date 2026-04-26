@@ -1,8 +1,43 @@
 <div class="main-page">
     <div class="main-header">
         <div class="greeting-section">
-            <h1 class="greeting-title" id="greetingTitle"></h1>
-            <p class="greeting-subtitle" data-i18n="mainPage.subtitle"></p>
+            <div class="greeting-decoration"></div>
+            <div class="greeting-content">
+                <div class="greeting-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 18V5L12 8L15 5V18H9Z" fill="currentColor" opacity="0.8"/>
+                        <path d="M12 3L5 10V21H19V10L12 3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <h1 class="greeting-title" id="greetingTitle"></h1>
+                <p class="greeting-subtitle" data-i18n="mainPage.subtitle"></p>
+            </div>
+            <div class="greeting-decoration greeting-decoration-2"></div>
+        </div>
+    </div>
+
+    <div class="main-page-content">
+        <div class="section your-playlists">
+            <div class="section-header">
+                <h2 data-i18n="mainPage.yourPlaylists"></h2>
+                <a href="#" class="see-all" data-page="library" data-i18n="mainPage.seeAll"></a>
+            </div>
+            <div class="playlists-grid" id="playlistsGrid">
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section made-for-you">
+            <div class="section-header">
+                <h2 data-i18n="mainPage.madeForYou"></h2>
+            </div>
+            <div class="recommendations-grid" id="recommendationsGrid">
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

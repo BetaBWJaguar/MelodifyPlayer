@@ -142,7 +142,7 @@ async function loadRecommendations() {
     try {
         const likedSongs = await ipcRenderer.invoke('get-liked-songs');
         
-        const favorites = await ipcRenderer.invoke('get-all-favorites');
+        const favorites = await ipcRenderer.invoke('get-favorites');
         
         recommendations = createRecommendations(likedSongs, favorites);
         renderRecommendations(recommendations);

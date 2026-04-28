@@ -3,7 +3,6 @@ import time
 import subprocess
 import threading
 import json
-import socket
 from urllib.parse import urlparse
 import signal
 import atexit
@@ -34,64 +33,12 @@ class YouTubeAudioPlayer:
         if hasattr(signal, 'SIGBREAK'):
             signal.signal(signal.SIGBREAK, signal_handler)
 
-    def _send_ipc_command(self, command):
-        if not self.ipc_path or not self.mpv_process:
-            return None
-        
-        try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(1.0)
-            sock.connect(self.ipc_path)
-            
-            cmd_json = json.dumps({"command": command}) + "\n"
-            sock.sendall(cmd_json.encode('utf-8'))
-            
-            response = b""
-            while True:
-                try:
-                    data = sock.recv(1024)
-                    if not data:
-                        break
-                    response += data
-                except socket.timeout:
-                    break
-            
-            sock.close()
-            
-            if response:
-                try:
-                    return json.loads(response.decode('utf-8'))
-                except json.JSONDecodeError:
-                    return None
-            return None
-        except Exception as e:
-            print(f"[Python Player] IPC command error: {e}")
-            return None
-
-    def get_duration(self):
-        response = self._send_ipc_command(["get_property", "duration"])
-        if response and "data" in response:
-            return response["data"]
-        return None
-
-    def get_position(self):
-        response = self._send_ipc_command(["get_property", "time-pos"])
-        if response and "data" in response:
-            return response["data"]
-        return None
-
     def wait_until_ready(self, timeout=3):
-        start = time.time()
-        while time.time() - start < timeout:
-            if self.get_duration() is not None:
-                return True
-            time.sleep(0.1)
-        return False
+        time.sleep(min(timeout, 1.0))
+        return True
 
     def play(self, youtube_url, start_time=0):
 
-        if self.is_playing:
-            self.stop()
 
         if not self._is_valid_youtube_url(youtube_url):
             return False
@@ -105,12 +52,10 @@ class YouTubeAudioPlayer:
                 "--no-video",
                 "--ytdl=yes",
                 "--ytdl-format=bestaudio[ext=m4a]",
+                "--idle=yes",
                 "--force-window=no",
-                "--idle=no",
+                f"--input-ipc-server={self.ipc_path}",
                 "--cache=yes",
-                "--cache-secs=20",
-                "--demuxer-readahead-secs=30",
-                f"--input-ipc-server={ipc_path}",
             ]
 
             if start_time > 0:
@@ -124,8 +69,7 @@ class YouTubeAudioPlayer:
             self.mpv_process = subprocess.Popen(
                 mpv_cmd,
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.PIPE,
-                text=True
+                stderr=subprocess.DEVNULL,
             )
 
             time.sleep(0.4)

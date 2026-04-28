@@ -173,35 +173,50 @@ async function loadRecommendations() {
 }
 
 function createRecommendations(likedSongs, favorites) {
-    const recs = [];
-    
+    const MAX_RECOMMENDATIONS = 8;
+    const songMap = new Map();
+
     if (likedSongs && likedSongs.length > 0) {
-        likedSongs.slice(0, 4).forEach((song, index) => {
-            recs.push({
-                id: song.id || song.videoId,
-                title: song.name || song.track_name,
-                artist: song.artist,
-                image: song.image,
-                type: 'liked'
-            });
+        likedSongs.forEach(song => {
+            const trackId = song.track_id;
+            if (!trackId) return;
+            if (!songMap.has(trackId)) {
+                songMap.set(trackId, {
+                    id: trackId,
+                    title: song.track_name || song.name,
+                    artist: song.artist_name || song.artist,
+                    image: song.image,
+                    type: 'liked'
+                });
+            }
         });
     }
-    
+
     if (favorites && favorites.length > 0) {
-        favorites.slice(0, 4).forEach((fav, index) => {
-            if (recs.length < 8) {
-                recs.push({
-                    id: fav.id || fav.videoId,
-                    title: fav.name || fav.track_name,
-                    artist: fav.artist,
+        favorites.forEach(fav => {
+            const trackId = fav.track_id;
+            if (!trackId) return;
+            if (songMap.has(trackId)) {
+                songMap.get(trackId).type = 'both';
+            } else {
+                songMap.set(trackId, {
+                    id: trackId,
+                    title: fav.track_name || fav.name,
+                    artist: fav.artist_name || fav.artist,
                     image: fav.image,
                     type: 'favorite'
                 });
             }
         });
     }
-    
-    return recs;
+
+    const allSongs = Array.from(songMap.values());
+    for (let i = allSongs.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [allSongs[i], allSongs[j]] = [allSongs[j], allSongs[i]];
+    }
+
+    return allSongs.slice(0, MAX_RECOMMENDATIONS);
 }
 
 function renderRecommendations(recs) {
@@ -214,8 +229,8 @@ function renderRecommendations(recs) {
                 <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"/>
                 </svg>
-                <h3>${lang.getTranslation('mainPage.noRecommendations') || 'No recommendations yet'}</h3>
-                <p>${lang.getTranslation('mainPage.startListening') || 'Start listening to get personalized recommendations'}</p>
+                <h3>${lang.getTranslation('mainPage.noRecommendations') || ''}</h3>
+                <p>${lang.getTranslation('mainPage.startListening') || ''}</p>
             </div>
         `;
         return;
@@ -241,7 +256,21 @@ function renderRecommendations(recs) {
 
 function createRecommendationCard(rec, index) {
     const imageUrl = rec.image || '';
-    const typeLabel = rec.type === 'liked' ? 'Liked' : 'Favorite';
+    const lang = window.language || { getTranslation: (k) => k };
+    let typeLabel;
+    switch (rec.type) {
+        case 'liked':
+            typeLabel = lang.getTranslation('mainPage.liked');
+            break;
+        case 'favorite':
+            typeLabel = lang.getTranslation('mainPage.favorite');
+            break;
+        case 'both':
+            typeLabel = lang.getTranslation('mainPage.likedAndFavorite');
+            break;
+        default:
+            typeLabel = '';
+    }
 
     if (imageUrl) {
         return `

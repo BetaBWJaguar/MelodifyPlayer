@@ -122,6 +122,10 @@ ipcMain.on('request-repeat', (event, repeat) => {
     player.setRepeat(repeat);
 });
 
+ipcMain.on('request-playlist-repeat', (event, mode) => {
+    player.setPlaylistRepeat(mode);
+});
+
 ipcMain.on('request-shuffle', (event, shuffle) => {
     player.setShuffle(shuffle);
 });

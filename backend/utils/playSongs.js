@@ -12,6 +12,7 @@ class Player {
         this.isPlayingPromise = false;
         this.pendingPlayRequest = null;
         this.repeat = false;
+        this.playlistRepeat = 'none'; // 'none', 'all', 'one'
         this.shuffle = false;
         this.history = [];
         this.historyIndex = -1;
@@ -20,6 +21,7 @@ class Player {
         this.playlistName = null;
         this.playlistTracks = [];
         this.playlistIndex = 0;
+        this._isSeeking = false;
 
         pythonPlayer.on('play', (data) => {
             this.notifyListeners('play', data);
@@ -29,7 +31,17 @@ class Player {
             this.stopProgressUpdates();
             
             if (data.reason === 'ended') {
+                if (this._isSeeking) {
+                    this.notifyListeners('stop', data);
+                    return;
+                }
+
                 if (this.repeat && !this.playlistMode && this.currentTrack) {
+                    this.play(this.currentTrack, false, false);
+                    return;
+                }
+                
+                if (this.playlistMode && this.playlistRepeat === 'one' && this.currentTrack) {
                     this.play(this.currentTrack, false, false);
                     return;
                 }
@@ -239,28 +251,39 @@ class Player {
         }
         
         console.log('[Player] Seeking to', position);
+        this._isSeeking = true;
         
-        const success = await pythonPlayer.seek(position);
-        
-        if (success) {
-            const duration = pythonPlayer.getStatus().actualDuration !== null
-                ? pythonPlayer.getStatus().actualDuration
-                : (this.currentTrack.duration || 0);
+        try {
+            const success = await pythonPlayer.seek(position);
             
-            this.notifyListeners('progress', {
-                currentTime: position,
-                duration: duration
-            });
-        } else {
-            console.log('[Player] IPC seek failed, falling back to restart');
-            this.stopProgressUpdates();
-            await pythonPlayer.stop();
-            await new Promise(r => setTimeout(r, 300));
-            await pythonPlayer.play(this.currentTrack.streamUrl, position);
+            if (success) {
+                const duration = pythonPlayer.getStatus().actualDuration !== null
+                    ? pythonPlayer.getStatus().actualDuration
+                    : (this.currentTrack.duration || 0);
+                
+                this.notifyListeners('progress', {
+                    currentTime: position,
+                    duration: duration
+                });
 
-            setTimeout(() => {
-                this.startProgressUpdates();
-            }, 1000);
+                setTimeout(() => {
+                    this._isSeeking = false;
+                }, 2000);
+            } else {
+                console.log('[Player] IPC seek failed, falling back to restart');
+                this.stopProgressUpdates();
+                await pythonPlayer.stop();
+                await new Promise(r => setTimeout(r, 300));
+                await pythonPlayer.play(this.currentTrack.streamUrl, position);
+
+                setTimeout(() => {
+                    this.startProgressUpdates();
+                    this._isSeeking = false;
+                }, 1500);
+            }
+        } catch (error) {
+            console.error('[Player] Seek error:', error);
+            this._isSeeking = false;
         }
     }
 
@@ -280,7 +303,7 @@ class Player {
             this.playlistIndex++;
 
             if (this.playlistIndex >= this.playlistTracks.length) {
-                if (this.repeat) {
+                if (this.playlistRepeat === 'all') {
                     this.playlistIndex = 0;
                 } else {
 
@@ -500,7 +523,8 @@ class Player {
             currentPlaylistId: this.currentPlaylistId,
             playlistName: this.playlistName,
             playlistIndex: this.playlistIndex,
-            totalTracks: this.playlistTracks.length
+            totalTracks: this.playlistTracks.length,
+            playlistRepeat: this.playlistRepeat
         };
     }
 
@@ -624,6 +648,11 @@ class Player {
         }
     }
 
+    setPlaylistRepeat(mode) {
+        this.playlistRepeat = mode;
+        console.log('[Player] Playlist repeat mode set to:', mode);
+    }
+
     setShuffle(shuffle) {
         this.shuffle = shuffle;
         console.log('[Player] Shuffle mode set to:', shuffle);
@@ -634,7 +663,7 @@ class Player {
             this.playlistIndex--;
 
             if (this.playlistIndex < 0) {
-                if (this.repeat) {
+                if (this.playlistRepeat === 'all') {
                     this.playlistIndex = this.playlistTracks.length - 1;
                 } else {
                     this.playlistIndex = 0;

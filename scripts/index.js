@@ -11,6 +11,7 @@ let playerState = {
     isMuted: false,
     previousVolume: 100,
     repeat: false,
+    playlistRepeat: 'none', // 'none', 'all', 'one'
     shuffle: false,
     history: [],
     historyIndex: -1,
@@ -351,19 +352,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     const updateRepeatButton = () => {
         if (!repeatBtn) return;
         
-        if (playerState.repeat) {
-            repeatBtn.classList.add('active', 'repeat-one');
+        repeatBtn.classList.remove('active', 'repeat-one', 'repeat-all');
+        
+        if (playerState.playlistMode) {
+            if (playerState.playlistRepeat === 'all') {
+                repeatBtn.classList.add('active', 'repeat-all');
+            } else if (playerState.playlistRepeat === 'one') {
+                repeatBtn.classList.add('active', 'repeat-one');
+            }
         } else {
-            repeatBtn.classList.remove('active', 'repeat-one');
+            if (playerState.repeat) {
+                repeatBtn.classList.add('active', 'repeat-one');
+            }
         }
     };
     
     if (repeatBtn) {
         repeatBtn.addEventListener('click', () => {
-            playerState.repeat = !playerState.repeat;
-            updateRepeatButton();
-            ipcRenderer.send('request-repeat', playerState.repeat);
-            console.log('Repeat mode:', playerState.repeat);
+            if (playerState.playlistMode) {
+                const modes = ['none', 'all', 'one'];
+                const currentIndex = modes.indexOf(playerState.playlistRepeat);
+                playerState.playlistRepeat = modes[(currentIndex + 1) % modes.length];
+                updateRepeatButton();
+                ipcRenderer.send('request-playlist-repeat', playerState.playlistRepeat);
+                console.log('Playlist repeat mode:', playerState.playlistRepeat);
+            } else {
+                playerState.repeat = !playerState.repeat;
+                updateRepeatButton();
+                ipcRenderer.send('request-repeat', playerState.repeat);
+                console.log('Repeat mode:', playerState.repeat);
+            }
         });
         updateRepeatButton();
     }
@@ -607,8 +625,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             playerState.playlistName = data.playlistName || null;
             playerState.playlistIndex = data.playlistIndex || 0;
             playerState.totalTracks = data.totalTracks || 0;
+            if (data.playlistRepeat) {
+                playerState.playlistRepeat = data.playlistRepeat;
+            }
             updatePlaylistInfo();
             updatePrevButton();
+            updateRepeatButton();
         });
         
         function updatePrevButton() {

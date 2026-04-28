@@ -11,7 +11,10 @@
     "noPlaylists": "No playlists yet",
     "createFirstPlaylist": "Create your first playlist to get started",
     "noRecommendations": "No recommendations yet",
-    "startListening": "Start listening to get personalized recommendations"
+    "startListening": "Start listening to get personalized recommendations",
+    "liked": "Liked",
+    "favorite": "Favorite",
+    "likedAndFavorite": "Liked & Favorite"
   },
   "sidebar": {
     "home": "Home",

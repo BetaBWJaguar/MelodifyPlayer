@@ -11,7 +11,10 @@
     "noPlaylists": "Henüz çalma listesi yok",
     "createFirstPlaylist": "Başlamak için ilk çalma listeni oluştur",
     "noRecommendations": "Henüz öneri yok",
-    "startListening": "Kişiselleştirilmiş öneriler almak için dinlemeye başla"
+    "startListening": "Kişiselleştirilmiş öneriler almak için dinlemeye başla",
+    "liked": "Beğenilen",
+    "favorite": "Favori",
+    "likedAndFavorite": "Beğenilen & Favori"
   },
   "sidebar": {
     "home": "Ana Sayfa",

@@ -12,8 +12,19 @@ export function initMainPage() {
         if (text) el.textContent = text;
     });
     
+    setupSeeAllButton();
     loadPlaylists();
     loadRecommendations();
+}
+
+function setupSeeAllButton() {
+    const seeAllBtn = document.querySelector('.see-all');
+    if (seeAllBtn) {
+        seeAllBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            navigateToLibrary();
+        });
+    }
 }
 
 export function updateGreeting() {
@@ -131,6 +142,7 @@ function createPlaylistCard(playlist, index) {
 function navigateToLibrary(playlistId = null) {
     const navItem = document.querySelector(`[data-page="library"]`);
     if (navItem) {
+        window.pendingPlaylistId = playlistId;
         navItem.click();
     }
 }

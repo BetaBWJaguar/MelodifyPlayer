@@ -56,6 +56,12 @@ async function initLibraryPage() {
             }
         });
     }
+    
+    if (window.pendingPlaylistId) {
+        const playlistId = window.pendingPlaylistId;
+        window.pendingPlaylistId = null;
+        setTimeout(() => openViewModal(playlistId), 100);
+    }
 }
 
 function setupSearch() {

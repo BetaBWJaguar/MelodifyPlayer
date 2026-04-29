@@ -236,6 +236,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (e.key === 'Escape') {
             toggleMobileMenu(false);
         }
+
+        if (e.key === 'MediaPlayPause') {
+            e.preventDefault();
+            if (playerState.isPlaying && !playerState.isPaused) {
+                ipcRenderer.send('request-pause');
+            } else if (playerState.isPaused) {
+                ipcRenderer.send('request-resume');
+            }
+        }
+
+        if (e.key === 'MediaStop') {
+            e.preventDefault();
+            ipcRenderer.send('request-stop');
+        }
+
+        if (e.key === 'MediaTrackNext') {
+            e.preventDefault();
+            ipcRenderer.send('request-next');
+        }
+
+        if (e.key === 'MediaTrackPrevious') {
+            e.preventDefault();
+            ipcRenderer.send('request-previous');
+        }
+
+        if (e.key === ' ' && !e.target.closest('input, textarea, [contenteditable]')) {
+            e.preventDefault();
+            if (playerState.isPlaying && !playerState.isPaused) {
+                ipcRenderer.send('request-pause');
+            } else if (playerState.isPaused) {
+                ipcRenderer.send('request-resume');
+            }
+        }
     });
 
 

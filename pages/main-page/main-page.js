@@ -15,6 +15,24 @@ export function initMainPage() {
     setupSeeAllButton();
     loadPlaylists();
     loadRecommendations();
+
+    if (window.language && !window._mainPageLangCallbackRegistered) {
+        window._mainPageLangCallbackRegistered = true;
+        window.language.onLanguageChange(() => {
+            if (!document.getElementById('greetingTitle')) return;
+            updateGreeting();
+            if (allPlaylists.length > 0) {
+                renderPlaylists(allPlaylists);
+            } else {
+                loadPlaylists();
+            }
+            if (recommendations.length > 0) {
+                renderRecommendations(recommendations);
+            } else {
+                loadRecommendations();
+            }
+        });
+    }
 }
 
 function setupSeeAllButton() {

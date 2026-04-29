@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, globalShortcut } = require('electron');
 const { searchTrack } = require('./backend/utils/searchModule');
 const player = require('./backend/utils/playSongs');
 const likedSongs = require('./backend/utils/likedSongs');
@@ -53,7 +53,32 @@ app.whenReady().then(async () => {
         });
     });
     createWindow();
+
+    registerMediaKeys();
 });
+
+function registerMediaKeys() {
+    globalShortcut.register('MediaPlayPause', () => {
+        const status = player.getStatus();
+        if (status.playing) {
+            player.pause();
+        } else if (status.paused) {
+            player.resume();
+        }
+    });
+
+    globalShortcut.register('MediaStop', () => {
+        player.stop();
+    });
+
+    globalShortcut.register('MediaNextTrack', () => {
+        player.playNext();
+    });
+
+    globalShortcut.register('MediaPreviousTrack', () => {
+        player.playPrevious();
+    });
+}
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
@@ -409,5 +434,6 @@ ipcMain.handle('get-youtube-video-id', (event, trackName, artistName) => {
 });
 
 app.on('before-quit', () => {
+    globalShortcut.unregisterAll();
     player.stop();
 });

@@ -56,6 +56,7 @@ class YouTubeAudioPlayer:
                 "--force-window=no",
                 f"--input-ipc-server={self.ipc_path}",
                 "--cache=yes",
+                "--input-media-keys=no",
             ]
 
             if start_time > 0:

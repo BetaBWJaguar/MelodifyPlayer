@@ -53,6 +53,15 @@ class PythonPlayer {
             const client = net.createConnection(this.ipcSocketPath, () => {
                 this.socket = client;
                 this.isConnecting = false;
+
+                try {
+                    client.write(JSON.stringify({
+                        command: ["observe_property", 1, "pause"]
+                    }) + '\n');
+                } catch (e) {
+                    console.error('[PythonPlayer] Failed to send observe_property:', e);
+                }
+
                 resolve(client);
             });
 
@@ -81,6 +90,23 @@ class PythonPlayer {
                             this.isPlaying = false;
                             this.isPaused = false;
                             this.notifyListeners('stop', { reason: 'ended' });
+                        }
+
+                        if (msg.event === "property-change" && msg.name === "pause") {
+                            if (msg.data === true && this.isPlaying) {
+                                console.log('[PythonPlayer] Detected external pause via property observation');
+                                this.isPlaying = false;
+                                this.isPaused = true;
+                                const actualPos = this.getCurrentPosition();
+                                this.basePosition = actualPos;
+                                this.notifyListeners('pause', {});
+                            } else if (msg.data === false && this.isPaused) {
+                                console.log('[PythonPlayer] Detected external resume via property observation');
+                                this.isPlaying = true;
+                                this.isPaused = false;
+                                this.playStartTime = Date.now();
+                                this.notifyListeners('resume', {});
+                            }
                         }
                     }
                 } catch (e) {

@@ -1,7 +1,7 @@
 const language = require('../backend/utils/language');
 window.language = language;
 
-let playerState = {
+window.playerState = {
     isPlaying: false,
     isPaused: false,
     currentTrack: null,
@@ -21,6 +21,7 @@ let playerState = {
     playlistIndex: 0,
     totalTracks: 0
 };
+const playerState = window.playerState;
 
 function formatTime(seconds) {
     if (!seconds || isNaN(seconds)) return '0:00';
@@ -49,6 +50,8 @@ function updateProgressBar() {
     }
 }
 
+let currentPageCleanup = null;
+
 
 async function loadPage(page) {
     const pageContainer = document.getElementById("page-container");
@@ -57,45 +60,66 @@ async function loadPage(page) {
         return;
     }
 
+    if (currentPageCleanup) {
+        try {
+            currentPageCleanup();
+        } catch (e) {
+            console.error('Cleanup error:', e);
+        }
+        currentPageCleanup = null;
+    }
+
     try {
         const html = await fetch(`../pages/${page}/${page}.html`)
-            .then(res => res.text());
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.text();
+            });
 
         pageContainer.innerHTML = html;
-
         loadCSS(page);
-        await loadJS(page);
+
+        const module = await loadJS(page);
+
+        if (module && module.cleanupLyricsPage) {
+            currentPageCleanup = module.cleanupLyricsPage;
+        }
+
     } catch (error) {
-        console.error(`error`);
+        console.error(`[LoadPage] Error loading ${page}:`, error);
+        pageContainer.innerHTML = `<div style="padding: 40px; text-align: center; color: #888;">Error loading page: ${page}</div>`;
     }
 }
 
+
 function loadCSS(page) {
-
     const existing = document.getElementById("page-css");
-
     if (existing) existing.remove();
 
     const link = document.createElement("link");
-
     link.rel = "stylesheet";
     link.href = `../pages/${page}/${page}.css`;
     link.id = "page-css";
-
     document.head.appendChild(link);
-
 }
 
 async function loadJS(page) {
+    try {
+        const module = await import(`../pages/${page}/${page}.js`);
+        const initFunction = `init${toPascalCase(page)}Page`;
 
-    const module = await import(`../pages/${page}/${page}.js`);
 
-    const initFunction = `init${toPascalCase(page)}Page`;
+        if (module[initFunction]) {
+            await module[initFunction]();
+        } else {
+            console.warn(`[LoadJS] ${initFunction} not found in module`);
+        }
 
-    if (module[initFunction]) {
-        module[initFunction]();
+        return module;
+    } catch (error) {
+        console.error(`[LoadJS] Error loading ${page}.js:`, error);
+        return null;
     }
-
 }
 
 function capitalize(text) {
@@ -114,6 +138,48 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.ipcRenderer = ipcRenderer;
 
     await language.init();
+
+    window.lyricsCache = {};
+
+    function preFetchLyrics(trackName, artistName) {
+        if (!trackName) return;
+
+        const key = `${trackName.toLowerCase()}__${artistName?.toLowerCase()}`;
+        if (window.lyricsCache[key]) return;
+
+        let cleanName = trackName
+            .replace(/\(.*?(feat|ft|featuring).*?\)/gi, '')
+            .replace(/\[.*?(feat|ft|featuring).*?\]/gi, '')
+            .replace(/official\s*(music\s*)?video/gi, '')
+            .replace(/lyrics?\s*(video)?/gi, '')
+            .replace(/\(.*?remaster.*?\)/gi, '')
+            .replace(/\[.*?remaster.*?\]/gi, '')
+            .trim();
+
+        let cleanArtist = artistName ? artistName.replace(/\(.*?\)/g, '').trim() : '';
+        const query = cleanArtist ? `${cleanName} ${cleanArtist}` : cleanName;
+
+        fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(query)}`, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
+        })
+            .then(res => res.json())
+            .then(results => {
+                if (results && results.length > 0) {
+                    let bestMatch = results.find(r => r.syncedLyrics && r.syncedLyrics.trim().length > 10);
+                    if (!bestMatch) {
+                        bestMatch = results.find(r => r.plainLyrics && r.plainLyrics.trim().length > 10);
+                    }
+
+                    if (bestMatch) {
+                        window.lyricsCache[key] = {
+                            synced: !!bestMatch.syncedLyrics,
+                            text: bestMatch.syncedLyrics || bestMatch.plainLyrics
+                        };
+                    }
+                }
+            })
+            .catch(err => console.log('[Prefetch] Lyrics background fetch failed'));
+    }
 
 
     const originalLoadPage = loadPage;
@@ -381,6 +447,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    const lyricsBtn = document.getElementById('lyricsBtn');
+    if (lyricsBtn) {
+        lyricsBtn.addEventListener('click', () => {
+            loadPage('lyrics');
+        });
+    }
+
     const repeatBtn = document.getElementById('repeatBtn');
     const updateRepeatButton = () => {
         if (!repeatBtn) return;
@@ -601,6 +674,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         await updateLikeButton();
         await updateFavoriteButton();
         updatePrevButton();
+
+        preFetchLyrics(data.name, data.artist);
     });
         
         ipcRenderer.on('player-pause', (event, data) => {

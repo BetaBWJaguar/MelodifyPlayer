@@ -158,5 +158,12 @@
     "deleteDownloadConfirm": "Delete this downloaded file?",
     "openDownloadFolder": "Open Download Folder",
     "downloadDir": "Download Directory"
+  },
+  "lyrics": {
+    "noTrackPlaying": "No track playing",
+    "playToSee": "Play a song to see its lyrics",
+    "searching": "Searching for lyrics...",
+    "notFound": "Lyrics not found",
+    "tryManual": "Try searching manually using the search bar above"
   }
 }

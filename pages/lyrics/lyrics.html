@@ -1,0 +1,41 @@
+<section class="lyrics-page">
+    <div class="lyrics-header">
+        <div class="lyrics-track-info">
+            <div class="lyrics-album-art" id="lyricsAlbumArt"></div>
+            <div class="lyrics-track-details">
+                <h2 class="lyrics-track-name" id="lyricsTrackName"></h2>
+                <p class="lyrics-artist-name" id="lyricsArtistName"></p>
+            </div>
+        </div>
+        <div class="lyrics-search-bar">
+            <input type="text" class="lyrics-search-input" id="lyricsSearchInput">
+            <button class="lyrics-search-btn" id="lyricsSearchBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="lyrics-content" id="lyricsContent">
+        <div class="lyrics-empty-state" id="lyricsEmptyState">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor" opacity="0.5">
+                <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+            </svg>
+            <p data-i18n="lyrics.noTrackPlaying"></p>
+            <span data-i18n="lyrics.playToSee"></span>
+        </div>
+        <div class="lyrics-loading" id="lyricsLoading" style="display: none;">
+            <div class="lyrics-spinner"></div>
+            <p data-i18n="lyrics.searching"></p>
+        </div>
+        <div class="lyrics-text" id="lyricsText" style="display: none;"></div>
+        <div class="lyrics-not-found" id="lyricsNotFound" style="display: none;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" opacity="0.5">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            <p data-i18n="lyrics.notFound"></p>
+            <span data-i18n="lyrics.tryManual"></span>
+        </div>
+    </div>
+</section>

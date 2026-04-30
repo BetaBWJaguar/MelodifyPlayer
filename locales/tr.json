@@ -158,5 +158,12 @@
     "deleteDownloadConfirm": "Bu indirilen dosyayı silmek istediğine emin misin?",
     "openDownloadFolder": "İndirme Klasörünü Aç",
     "downloadDir": "İndirme Klasörü"
+  },
+  "lyrics": {
+    "noTrackPlaying": "Çalan şarkı yok",
+    "playToSee": "Şarkı sözlerini görmek için bir şarkı çal",
+    "searching": "Şarkı sözleri aranıyor...",
+    "notFound": "Şarkı sözleri bulunamadı",
+    "tryManual": "Yukarıdaki arama çubuğunu kullanarak manuel aramayı dene"
   }
 }

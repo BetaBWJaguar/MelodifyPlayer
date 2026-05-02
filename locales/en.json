@@ -160,6 +160,8 @@
     "downloadDir": "Download Directory"
   },
   "lyrics": {
+    "nowPlaying": "Now Playing",
+    "searchPlaceholder": "Search lyrics...",
     "noTrackPlaying": "No track playing",
     "playToSee": "Play a song to see its lyrics",
     "searching": "Searching for lyrics...",

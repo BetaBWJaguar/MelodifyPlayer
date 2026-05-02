@@ -6,6 +6,8 @@ let syncedLyrics = null;
 let lyricsLines = [];
 let isInitialized = false;
 let cleanupFunctions = [];
+let activeLineIndex = -1;
+let fadeObserver = null;
 
 function httpGetJson(url, timeout = 10000) {
     return new Promise((resolve, reject) => {
@@ -49,6 +51,10 @@ function cleanup() {
     cleanupFunctions.forEach(fn => fn());
     cleanupFunctions = [];
     isInitialized = false;
+    if (fadeObserver) {
+        fadeObserver.disconnect();
+        fadeObserver = null;
+    }
 }
 
 function addListener(channel, callback) {
@@ -82,11 +88,14 @@ export async function initLyricsPage() {
         });
     }
 
+    setupFadeMasks();
+
     try {
         const status = await ipcRenderer.invoke('get-player-status');
         if (status && status.currentTrack) {
             currentTrack = status.currentTrack;
             updateTrackInfo(currentTrack);
+            activateBgGlow(true);
 
             const key = `${currentTrack.name.toLowerCase()}__${currentTrack.artist?.toLowerCase()}`;
             if (window.lyricsCache && window.lyricsCache[key]) {
@@ -99,6 +108,7 @@ export async function initLyricsPage() {
         } else {
             showEmptyState();
             updateTrackInfo(null);
+            activateBgGlow(false);
         }
     } catch (error) {
         console.error('[Lyrics] Player status error:', error);
@@ -109,6 +119,7 @@ export async function initLyricsPage() {
         console.log('[Lyrics] Play event received:', data?.name);
         currentTrack = data;
         updateTrackInfo(data);
+        activateBgGlow(true);
 
         const key = `${data.name.toLowerCase()}__${data.artist?.toLowerCase()}`;
         if (window.lyricsCache && window.lyricsCache[key]) {
@@ -125,8 +136,10 @@ export async function initLyricsPage() {
         currentTrack = null;
         syncedLyrics = null;
         lyricsLines = [];
+        activeLineIndex = -1;
         showEmptyState();
         updateTrackInfo(null);
+        activateBgGlow(false);
     };
     addListener('player-stop', onStop);
 
@@ -144,11 +157,38 @@ export function cleanupLyricsPage() {
     cleanup();
 }
 
+function setupFadeMasks() {
+    const container = document.querySelector('.lyrics-page');
+    const fadeTop = document.querySelector('.lyrics-fade-top');
+    const fadeBottom = document.querySelector('.lyrics-fade-bottom');
+    if (!container || !fadeTop || !fadeBottom) return;
+
+    const updateFades = () => {
+        const { scrollTop, scrollHeight, clientHeight } = container;
+        fadeTop.classList.toggle('visible', scrollTop > 10);
+        fadeBottom.classList.toggle('visible', scrollTop < scrollHeight - clientHeight - 10);
+    };
+
+    container.addEventListener('scroll', updateFades, { passive: true });
+    updateFades();
+
+    cleanupFunctions.push(() => {
+        container.removeEventListener('scroll', updateFades);
+    });
+}
+
+function activateBgGlow(active) {
+    const glow = document.querySelector('.lyrics-bg-glow');
+    if (glow) {
+        glow.classList.toggle('active', active);
+    }
+}
+
 function forceSyncLyrics(currentTime) {
     if (!syncedLyrics || syncedLyrics.length === 0 || !currentTime || currentTime <= 0) return;
 
     document.querySelectorAll('#lyricsText .lyrics-line[data-index]').forEach(el => {
-        el.classList.remove('active');
+        el.classList.remove('active', 'near-1', 'near-2', 'far');
     });
 
     let activeIndex = -1;
@@ -160,6 +200,8 @@ function forceSyncLyrics(currentTime) {
     }
 
     if (activeIndex >= 0) {
+        activeLineIndex = activeIndex;
+        applyLineClasses(activeIndex);
         const activeLine = document.querySelector(`#lyricsText .lyrics-line[data-index="${activeIndex}"]`);
         if (activeLine) {
             activeLine.classList.add('active');
@@ -169,7 +211,6 @@ function forceSyncLyrics(currentTime) {
                 const containerRect = container.getBoundingClientRect();
                 const lineRect = activeLine.getBoundingClientRect();
                 const offset = lineRect.top - containerRect.top - (containerRect.height / 2) + (lineRect.height / 2);
-
                 container.scrollTop += offset;
             }
         }
@@ -180,6 +221,8 @@ function updateTrackInfo(track) {
     const trackNameEl = document.getElementById('lyricsTrackName');
     const artistNameEl = document.getElementById('lyricsArtistName');
     const albumArtEl = document.getElementById('lyricsAlbumArt');
+    const albumArtGlow = document.getElementById('lyricsAlbumArtGlow');
+    const nowPlayingBadge = document.getElementById('lyricsNowPlayingBadge');
 
     if (trackNameEl) {
         trackNameEl.textContent = track ? track.name : 'No track playing';
@@ -187,14 +230,29 @@ function updateTrackInfo(track) {
     if (artistNameEl) {
         artistNameEl.textContent = track ? track.artist : 'Select a song to view lyrics';
     }
+    if (nowPlayingBadge) {
+        nowPlayingBadge.style.display = track ? 'inline-flex' : 'none';
+    }
     if (albumArtEl) {
         if (track && track.image) {
             albumArtEl.style.backgroundImage = `url(${track.image})`;
             albumArtEl.style.backgroundSize = 'cover';
             albumArtEl.style.backgroundPosition = 'center';
+            albumArtEl.classList.add('has-image');
+            if (albumArtGlow) {
+                albumArtGlow.style.backgroundImage = `url(${track.image})`;
+                albumArtGlow.style.backgroundSize = 'cover';
+                albumArtGlow.style.backgroundPosition = 'center';
+                albumArtGlow.classList.add('active');
+            }
         } else {
             albumArtEl.style.backgroundImage = '';
             albumArtEl.style.background = 'var(--gradient-1, linear-gradient(135deg, #667eea 0%, #764ba2 100%))';
+            albumArtEl.classList.remove('has-image');
+            if (albumArtGlow) {
+                albumArtGlow.style.backgroundImage = '';
+                albumArtGlow.classList.remove('active');
+            }
         }
     }
 }
@@ -234,6 +292,8 @@ function showLyrics(text, synced) {
     if (lyricsText) lyricsText.style.display = 'block';
     if (notFound) notFound.style.display = 'none';
 
+    activeLineIndex = -1;
+
     if (synced) {
         renderSyncedLyrics(text);
     } else {
@@ -262,14 +322,14 @@ function renderPlainLyrics(text) {
 
     const lines = text.split('\n');
 
-    const notice = `<div style="text-align:center; padding: 12px; margin-bottom: 20px; font-size: 12px; color: var(--text-secondary); background: rgba(255,255,255,0.03); border-radius: 8px;">Senkronize söz bulunamadı</div>`;
+    const notice = `<div class="lyrics-plain-notice">Synchronized words not found.</div>`;
 
     const content = lines.map(line => {
         const trimmed = line.trim();
         if (trimmed === '') {
             return '<div class="lyrics-line empty-line"></div>';
         }
-        return `<div class="lyrics-line">${escapeHtml(trimmed)}</div>`;
+        return `<div class="lyrics-line" style="opacity:0.65;">${escapeHtml(trimmed)}</div>`;
     }).join('');
 
     lyricsText.innerHTML = notice + content;
@@ -286,7 +346,7 @@ function renderSyncedLyrics(lrcText) {
         if (line.text === '') {
             return `<div class="lyrics-line empty-line" data-index="${index}"></div>`;
         }
-        return `<div class="lyrics-line" data-index="${index}" data-time="${line.time}">${escapeHtml(line.text)}</div>`;
+        return `<div class="lyrics-line far" data-index="${index}" data-time="${line.time}">${escapeHtml(line.text)}</div>`;
     }).join('');
 }
 
@@ -321,6 +381,26 @@ function parseLRC(lrcText) {
     return parsed;
 }
 
+function applyLineClasses(activeIndex) {
+    const allLines = document.querySelectorAll('#lyricsText .lyrics-line[data-index]');
+    allLines.forEach(el => {
+        const idx = parseInt(el.dataset.index, 10);
+        const diff = Math.abs(idx - activeIndex);
+
+        el.classList.remove('active', 'near-1', 'near-2', 'far');
+
+        if (diff === 0) {
+            el.classList.add('active');
+        } else if (diff === 1) {
+            el.classList.add('near-1');
+        } else if (diff === 2) {
+            el.classList.add('near-2');
+        } else {
+            el.classList.add('far');
+        }
+    });
+}
+
 function highlightCurrentLine(currentTime) {
     if (currentTime === undefined || currentTime <= 0) return;
 
@@ -333,26 +413,27 @@ function highlightCurrentLine(currentTime) {
         }
     }
 
-    const allLines = document.querySelectorAll('#lyricsText .lyrics-line[data-index]');
+    if (activeIndex === activeLineIndex) return;
+    activeLineIndex = activeIndex;
 
-    allLines.forEach(el => {
-        if (el.classList.contains('active')) {
-            el.classList.remove('active');
-        }
-    });
+    if (activeIndex < 0) {
+        document.querySelectorAll('#lyricsText .lyrics-line[data-index]').forEach(el => {
+            el.classList.remove('active', 'near-1', 'near-2');
+            el.classList.add('far');
+        });
+        return;
+    }
 
-    if (activeIndex >= 0) {
-        const activeLine = document.querySelector(`#lyricsText .lyrics-line[data-index="${activeIndex}"]`);
-        if (activeLine && !activeLine.classList.contains('active')) {
-            activeLine.classList.add('active');
+    applyLineClasses(activeIndex);
 
-            const container = document.getElementById('lyricsContent');
-            if (container) {
-                const containerRect = container.getBoundingClientRect();
-                const lineRect = activeLine.getBoundingClientRect();
-                const offset = lineRect.top - containerRect.top - (containerRect.height / 2) + (lineRect.height / 2);
-                container.scrollBy({ top: offset, behavior: 'smooth' });
-            }
+    const activeLine = document.querySelector(`#lyricsText .lyrics-line[data-index="${activeIndex}"]`);
+    if (activeLine) {
+        const container = document.getElementById('lyricsContent');
+        if (container) {
+            const containerRect = container.getBoundingClientRect();
+            const lineRect = activeLine.getBoundingClientRect();
+            const offset = lineRect.top - containerRect.top - (containerRect.height / 2) + (lineRect.height / 2);
+            container.scrollBy({ top: offset, behavior: 'smooth' });
         }
     }
 }

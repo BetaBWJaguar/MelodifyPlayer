@@ -160,6 +160,8 @@
     "downloadDir": "İndirme Klasörü"
   },
   "lyrics": {
+    "nowPlaying": "Şimdi Çalınıyor",
+    "searchPlaceholder": "Şarkı sözü ara...",
     "noTrackPlaying": "Çalan şarkı yok",
     "playToSee": "Şarkı sözlerini görmek için bir şarkı çal",
     "searching": "Şarkı sözleri aranıyor...",

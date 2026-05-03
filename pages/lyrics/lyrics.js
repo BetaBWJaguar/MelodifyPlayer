@@ -9,6 +9,15 @@ let cleanupFunctions = [];
 let activeLineIndex = -1;
 let fadeObserver = null;
 
+function t(key) {
+    if (window.i18n && window.i18n[key]) {
+        return window.i18n[key];
+    }
+    const el = document.querySelector(`[data-i18n="${key}"]`);
+    if (el) return el.textContent;
+    return key;
+}
+
 function httpGetJson(url, timeout = 10000) {
     return new Promise((resolve, reject) => {
         const timeoutId = setTimeout(() => {
@@ -158,7 +167,7 @@ export function cleanupLyricsPage() {
 }
 
 function setupFadeMasks() {
-    const container = document.querySelector('.lyrics-page');
+    const container = document.querySelector('.lyrics-content');
     const fadeTop = document.querySelector('.lyrics-fade-top');
     const fadeBottom = document.querySelector('.lyrics-fade-bottom');
     if (!container || !fadeTop || !fadeBottom) return;
@@ -174,6 +183,33 @@ function setupFadeMasks() {
 
     cleanupFunctions.push(() => {
         container.removeEventListener('scroll', updateFades);
+    });
+}
+
+function setupLyricsSeek() {
+    const lyricsText = document.getElementById('lyricsText');
+    if (!lyricsText) return;
+
+    const handleLyricClick = (e) => {
+        const line = e.target.closest('.lyrics-line[data-time]');
+        if (!line) return;
+
+        const time = parseFloat(line.dataset.time);
+        if (isNaN(time) || time < 0) return;
+
+        line.classList.add('seek-flash');
+        setTimeout(() => {
+            line.classList.remove('seek-flash');
+        }, 500);
+
+        ipcRenderer.send('request-seek', time);
+        console.log('[Lyrics] Seek to:', time, 's');
+    };
+
+    lyricsText.addEventListener('click', handleLyricClick);
+
+    cleanupFunctions.push(() => {
+        lyricsText.removeEventListener('click', handleLyricClick);
     });
 }
 
@@ -206,7 +242,7 @@ function forceSyncLyrics(currentTime) {
         if (activeLine) {
             activeLine.classList.add('active');
 
-            const container = document.querySelector('.lyrics-page');
+            const container = document.querySelector('.lyrics-content');
             if (container) {
                 const containerRect = container.getBoundingClientRect();
                 const lineRect = activeLine.getBoundingClientRect();
@@ -225,10 +261,10 @@ function updateTrackInfo(track) {
     const nowPlayingBadge = document.getElementById('lyricsNowPlayingBadge');
 
     if (trackNameEl) {
-        trackNameEl.textContent = track ? track.name : 'No track playing';
+        trackNameEl.textContent = track ? track.name : t('lyrics.noTrackPlaying');
     }
     if (artistNameEl) {
-        artistNameEl.textContent = track ? track.artist : 'Select a song to view lyrics';
+        artistNameEl.textContent = track ? track.artist : t('lyrics.playToSee');
     }
     if (nowPlayingBadge) {
         nowPlayingBadge.style.display = track ? 'inline-flex' : 'none';
@@ -322,7 +358,7 @@ function renderPlainLyrics(text) {
 
     const lines = text.split('\n');
 
-    const notice = `<div class="lyrics-plain-notice">Synchronized words not found.</div>`;
+    const notice = `<div class="lyrics-plain-notice">${t('lyrics.syncNotFound')}</div>`;
 
     const content = lines.map(line => {
         const trimmed = line.trim();
@@ -348,6 +384,8 @@ function renderSyncedLyrics(lrcText) {
         }
         return `<div class="lyrics-line far" data-index="${index}" data-time="${line.time}">${escapeHtml(line.text)}</div>`;
     }).join('');
+
+    setupLyricsSeek();
 }
 
 function parseLRC(lrcText) {

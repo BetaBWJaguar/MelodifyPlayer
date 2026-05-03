@@ -166,6 +166,7 @@
     "playToSee": "Play a song to see its lyrics",
     "searching": "Searching for lyrics...",
     "notFound": "Lyrics not found",
-    "tryManual": "Try searching manually using the search bar above"
+    "tryManual": "Try searching manually using the search bar above",
+    "syncNotFound": "Synchronized lyrics not found."
   }
 }

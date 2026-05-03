@@ -37,7 +37,19 @@
     }
 }
 
+.lyrics-line.seek-flash {
+    background: rgba(233, 69, 96, 0.15) !important;
+    color: var(--accent-primary, #e94560) !important;
+    transition: background 0.1s ease, color 0.1s ease;
+}
 
+.lyrics-line[data-time]:not(.empty-line) {
+    cursor: pointer;
+}
+
+.lyrics-line[data-time]:not(.empty-line):hover {
+    background: rgba(255, 255, 255, 0.06);
+}
 
 .lyrics-header {
     margin-bottom: 28px;

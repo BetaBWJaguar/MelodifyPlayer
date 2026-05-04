@@ -1,5 +1,5 @@
 const { app, BrowserWindow, ipcMain, globalShortcut } = require('electron');
-const { searchTrack } = require('./backend/utils/searchModule');
+const { searchTrack,cancelActiveSearch } = require('./backend/utils/searchModule');
 const player = require('./backend/utils/playSongs');
 const likedSongs = require('./backend/utils/likedSongs');
 const favorites = require('./backend/utils/favorites');
@@ -116,6 +116,10 @@ ipcMain.handle('search-track', async (event, query) => {
         console.error('Search error:', error);
         throw error;
     }
+});
+
+ipcMain.handle('cancel-search', async () => {
+    cancelActiveSearch();
 });
 
 

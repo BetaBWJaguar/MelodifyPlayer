@@ -8,6 +8,7 @@ let isInitialized = false;
 let cleanupFunctions = [];
 let activeLineIndex = -1;
 let fadeObserver = null;
+let resyncInterval = null;
 
 function t(key) {
     if (window.i18n && window.i18n[key]) {
@@ -60,10 +61,18 @@ function cleanup() {
     cleanupFunctions.forEach(fn => fn());
     cleanupFunctions = [];
     isInitialized = false;
+
     if (fadeObserver) {
         fadeObserver.disconnect();
         fadeObserver = null;
     }
+
+    if (resyncInterval) {
+        clearInterval(resyncInterval);
+        resyncInterval = null;
+    }
+
+    activeLineIndex = -1;
 }
 
 function addListener(channel, callback) {
@@ -99,6 +108,16 @@ export async function initLyricsPage() {
 
     setupFadeMasks();
 
+    resyncInterval = setInterval(() => {
+        if (syncedLyrics && syncedLyrics.length > 0 &&
+            window.playerState?.isPlaying && !window.playerState?.isPaused) {
+            const ct = window.playerState?.currentTime;
+            if (ct !== undefined && ct > 0) {
+                highlightCurrentLine(ct, false);
+            }
+        }
+    }, 500);
+
     try {
         const status = await ipcRenderer.invoke('get-player-status');
         if (status && status.currentTrack) {
@@ -110,7 +129,11 @@ export async function initLyricsPage() {
             if (window.lyricsCache && window.lyricsCache[key]) {
                 const cached = window.lyricsCache[key];
                 showLyrics(cached.text, cached.synced);
-                if (cached.synced) forceSyncLyrics(window.playerState?.currentTime || 0);
+                if (cached.synced) {
+                    setTimeout(() => {
+                        forceSyncLyrics(window.playerState?.currentTime || status.currentTime || 0);
+                    }, 100);
+                }
             } else {
                 fetchLyrics(currentTrack.name, currentTrack.artist);
             }
@@ -134,12 +157,31 @@ export async function initLyricsPage() {
         if (window.lyricsCache && window.lyricsCache[key]) {
             const cached = window.lyricsCache[key];
             showLyrics(cached.text, cached.synced);
-            if (cached.synced) forceSyncLyrics(window.playerState?.currentTime || 0);
+            if (cached.synced) {
+                setTimeout(() => {
+                    forceSyncLyrics(window.playerState?.currentTime || 0);
+                }, 200);
+            }
         } else {
             fetchLyrics(data.name, data.artist);
         }
     };
     addListener('player-play', onPlay);
+
+    const onResume = () => {
+        console.log('[Lyrics] Resume event - re-syncing lyrics');
+        if (syncedLyrics && syncedLyrics.length > 0) {
+            setTimeout(() => {
+                forceSyncLyrics(window.playerState?.currentTime || 0);
+            }, 150);
+        }
+    };
+    addListener('player-resume', onResume);
+
+    const onPause = () => {
+        console.log('[Lyrics] Paused - keeping current line highlighted');
+    };
+    addListener('player-pause', onPause);
 
     const onStop = () => {
         currentTrack = null;
@@ -154,7 +196,7 @@ export async function initLyricsPage() {
 
     const onProgress = (event, data) => {
         if (syncedLyrics && syncedLyrics.length > 0) {
-            highlightCurrentLine(data.currentTime);
+            highlightCurrentLine(data.currentTime, true);
         }
     };
     addListener('player-progress', onProgress);
@@ -203,6 +245,13 @@ function setupLyricsSeek() {
         }, 500);
 
         ipcRenderer.send('request-seek', time);
+
+        const index = parseInt(line.dataset.index, 10);
+        if (!isNaN(index)) {
+            activeLineIndex = index;
+            applyLineClasses(index);
+        }
+
         console.log('[Lyrics] Seek to:', time, 's');
     };
 
@@ -221,7 +270,9 @@ function activateBgGlow(active) {
 }
 
 function forceSyncLyrics(currentTime) {
-    if (!syncedLyrics || syncedLyrics.length === 0 || !currentTime || currentTime <= 0) return;
+    if (!syncedLyrics || syncedLyrics.length === 0) return;
+
+    if (!currentTime || currentTime <= 0) return;
 
     document.querySelectorAll('#lyricsText .lyrics-line[data-index]').forEach(el => {
         el.classList.remove('active', 'near-1', 'near-2', 'far');
@@ -238,6 +289,7 @@ function forceSyncLyrics(currentTime) {
     if (activeIndex >= 0) {
         activeLineIndex = activeIndex;
         applyLineClasses(activeIndex);
+
         const activeLine = document.querySelector(`#lyricsText .lyrics-line[data-index="${activeIndex}"]`);
         if (activeLine) {
             activeLine.classList.add('active');
@@ -250,6 +302,11 @@ function forceSyncLyrics(currentTime) {
                 container.scrollTop += offset;
             }
         }
+    } else {
+        activeLineIndex = -1;
+        document.querySelectorAll('#lyricsText .lyrics-line[data-index]').forEach(el => {
+            el.classList.add('far');
+        });
     }
 }
 
@@ -439,7 +496,7 @@ function applyLineClasses(activeIndex) {
     });
 }
 
-function highlightCurrentLine(currentTime) {
+function highlightCurrentLine(currentTime, shouldScroll = true) {
     if (currentTime === undefined || currentTime <= 0) return;
 
     let activeIndex = -1;
@@ -451,7 +508,28 @@ function highlightCurrentLine(currentTime) {
         }
     }
 
-    if (activeIndex === activeLineIndex) return;
+
+    if (activeIndex === activeLineIndex) {
+        if (shouldScroll && activeIndex >= 0) {
+            const activeLine = document.querySelector(`#lyricsText .lyrics-line[data-index="${activeIndex}"]`);
+            if (activeLine) {
+                const container = document.getElementById('lyricsContent');
+                if (container) {
+                    const containerRect = container.getBoundingClientRect();
+                    const lineRect = activeLine.getBoundingClientRect();
+                    const lineCenter = lineRect.top + lineRect.height / 2;
+                    const containerCenter = containerRect.top + containerRect.height / 2;
+                    const diff = Math.abs(lineCenter - containerCenter);
+                    if (diff > containerRect.height * 0.3) {
+                        const offset = lineRect.top - containerRect.top - (containerRect.height / 2) + (lineRect.height / 2);
+                        container.scrollBy({ top: offset, behavior: 'smooth' });
+                    }
+                }
+            }
+        }
+        return;
+    }
+
     activeLineIndex = activeIndex;
 
     if (activeIndex < 0) {
@@ -464,14 +542,16 @@ function highlightCurrentLine(currentTime) {
 
     applyLineClasses(activeIndex);
 
-    const activeLine = document.querySelector(`#lyricsText .lyrics-line[data-index="${activeIndex}"]`);
-    if (activeLine) {
-        const container = document.getElementById('lyricsContent');
-        if (container) {
-            const containerRect = container.getBoundingClientRect();
-            const lineRect = activeLine.getBoundingClientRect();
-            const offset = lineRect.top - containerRect.top - (containerRect.height / 2) + (lineRect.height / 2);
-            container.scrollBy({ top: offset, behavior: 'smooth' });
+    if (shouldScroll) {
+        const activeLine = document.querySelector(`#lyricsText .lyrics-line[data-index="${activeIndex}"]`);
+        if (activeLine) {
+            const container = document.getElementById('lyricsContent');
+            if (container) {
+                const containerRect = container.getBoundingClientRect();
+                const lineRect = activeLine.getBoundingClientRect();
+                const offset = lineRect.top - containerRect.top - (containerRect.height / 2) + (lineRect.height / 2);
+                container.scrollBy({ top: offset, behavior: 'smooth' });
+            }
         }
     }
 }
@@ -535,7 +615,9 @@ async function fetchLyrics(trackName, artistName) {
 
             if (bestMatch && bestMatch.syncedLyrics) {
                 showLyrics(bestMatch.syncedLyrics, true);
-                forceSyncLyrics(window.playerState?.currentTime || 0);
+                setTimeout(() => {
+                    forceSyncLyrics(window.playerState?.currentTime || 0);
+                }, 150);
                 return;
             }
 
@@ -573,7 +655,9 @@ async function searchLyrics(query) {
 
             if (result.syncedLyrics && result.syncedLyrics.trim().length > 10) {
                 showLyrics(result.syncedLyrics, true);
-                forceSyncLyrics(window.playerState?.currentTime || 0);
+                setTimeout(() => {
+                    forceSyncLyrics(window.playerState?.currentTime || 0);
+                }, 150);
                 return;
             }
             else if (result.plainLyrics && result.plainLyrics.trim().length > 10) {

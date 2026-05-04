@@ -56,9 +56,7 @@ let currentPageCleanup = null;
 async function loadPage(page) {
     const pageContainer = document.getElementById("page-container");
 
-    if (!pageContainer) {
-        return;
-    }
+    if (!pageContainer) return;
 
     if (currentPageCleanup) {
         try {
@@ -81,8 +79,21 @@ async function loadPage(page) {
 
         const module = await loadJS(page);
 
-        if (module && module.cleanupLyricsPage) {
-            currentPageCleanup = module.cleanupLyricsPage;
+        if (module) {
+            const pascalPage = toPascalCase(page);
+
+            if (module.cleanupLyricsPage) {
+                currentPageCleanup = module.cleanupLyricsPage;
+            }
+
+            if (module.cleanupSearchPage) {
+                currentPageCleanup = module.cleanupSearchPage;
+            }
+
+            const cleanupName = `cleanup${pascalPage}Page`;
+            if (module[cleanupName]) {
+                currentPageCleanup = module[cleanupName];
+            }
         }
 
     } catch (error) {

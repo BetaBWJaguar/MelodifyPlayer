@@ -7,24 +7,12 @@ let displayedTracks = [];
 let selectedTrackForPlaylist = null;
 let allPlaylists = [];
 
-ipcRenderer.on("player-play", (event, data) => {
-    isPlaying = true;
-    updatePlayerUI(data);
-});
-
-ipcRenderer.on("player-stop", (event, data) => {
-    isPlaying = false;
-});
-
-ipcRenderer.on("player-error", (event, data) => {
-    alert(`Playback error: ${data.error}`);
-    isPlaying = false;
-});
-
-ipcRenderer.on("search-new-track-found", (event, track) => {
-    addNewTrack(track);
-});
-
+let currentSearchQuery = null;
+let searchNewTrackListener = null;
+let playerPlayListener = null;
+let playerStopListener = null;
+let playerErrorListener = null;
+let escapeKeyHandler = null;
 
 function initSearchPage() {
     const searchInput = document.getElementById('searchInput');
@@ -35,6 +23,28 @@ function initSearchPage() {
 
     setupAddToPlaylistModal();
     loadPlaylists();
+
+    searchNewTrackListener = (event, track) => {
+        addNewTrack(track);
+    };
+    ipcRenderer.on("search-new-track-found", searchNewTrackListener);
+
+    playerPlayListener = (event, data) => {
+        isPlaying = true;
+        updatePlayerUI(data);
+    };
+    ipcRenderer.on("player-play", playerPlayListener);
+
+    playerStopListener = (event, data) => {
+        isPlaying = false;
+    };
+    ipcRenderer.on("player-stop", playerStopListener);
+
+    playerErrorListener = (event, data) => {
+        alert(`Playback error: ${data.error}`);
+        isPlaying = false;
+    };
+    ipcRenderer.on("player-error", playerErrorListener);
 
     searchInput.focus();
 
@@ -50,6 +60,8 @@ function initSearchPage() {
         }
 
         if (query.length === 0) {
+            currentSearchQuery = null;
+            displayedTracks = [];
             showEmptyState();
             return;
         }
@@ -62,16 +74,19 @@ function initSearchPage() {
         searchContent.style.display = 'none';
 
         searchTimeout = setTimeout(() => {
+            currentSearchQuery = query;
             performSearch(query);
-        }, 150);
+        }, 350);
     });
 
     clearBtn.addEventListener('click', () => {
         searchInput.value = '';
         clearBtn.style.display = 'none';
+        currentSearchQuery = null;
+        displayedTracks = [];
         showEmptyState();
         searchInput.focus();
-        
+
         if (currentSearchRequest) {
             currentSearchRequest = null;
         }
@@ -82,12 +97,49 @@ function initSearchPage() {
             clearTimeout(searchTimeout);
             const query = searchInput.value.trim();
             if (query.length >= 2) {
+                currentSearchQuery = query;
                 loadingState.style.display = 'flex';
                 searchContent.style.display = 'none';
                 performSearch(query);
             }
         }
     });
+}
+
+function cleanupSearchPage() {
+    clearTimeout(searchTimeout);
+    searchTimeout = null;
+
+    currentSearchRequest = null;
+    currentSearchQuery = null;
+
+    ipcRenderer.invoke('cancel-search').catch(() => {});
+
+    if (searchNewTrackListener) {
+        ipcRenderer.removeListener("search-new-track-found", searchNewTrackListener);
+        searchNewTrackListener = null;
+    }
+    if (playerPlayListener) {
+        ipcRenderer.removeListener("player-play", playerPlayListener);
+        playerPlayListener = null;
+    }
+    if (playerStopListener) {
+        ipcRenderer.removeListener("player-stop", playerStopListener);
+        playerStopListener = null;
+    }
+    if (playerErrorListener) {
+        ipcRenderer.removeListener("player-error", playerErrorListener);
+        playerErrorListener = null;
+    }
+
+    if (escapeKeyHandler) {
+        document.removeEventListener('keydown', escapeKeyHandler);
+        escapeKeyHandler = null;
+    }
+
+    displayedTracks = [];
+    selectedTrackForPlaylist = null;
+
 }
 
 async function performSearch(query) {
@@ -97,7 +149,7 @@ async function performSearch(query) {
     try {
         const searchPromise = ipcRenderer.invoke('search-track', query);
         const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Search timeout')), 120000)
+            setTimeout(() => reject(new Error('Search timeout')), 30000)
         );
 
         const tracks = await Promise.race([searchPromise, timeoutPromise]);
@@ -107,7 +159,7 @@ async function performSearch(query) {
         }
     } catch (error) {
         console.error('Search error:', error);
-        
+
         if (currentSearchRequest === requestId) {
             showErrorState(error.message);
         }
@@ -155,16 +207,13 @@ function displayResults(tracks) {
         card.style.animationDelay = `${index * 0.05}s`;
 
         card.addEventListener('click', (e) => {
-            if (e.target.closest('.add-to-playlist-btn')) {
-                return;
-            }
+            if (e.target.closest('.add-to-playlist-btn')) return;
             e.preventDefault();
             e.stopPropagation();
             const trackName = card.dataset.trackName;
             const artistName = card.dataset.artistName;
             const imageUrl = card.dataset.imageUrl;
             const trackId = card.dataset.trackId;
-            console.log('Track clicked:', trackName, artistName, imageUrl);
             playTrack(trackName, artistName, imageUrl, trackId);
         });
     });
@@ -187,18 +236,18 @@ function updateTrackWithVideo(updatedTrack) {
     const trackIndex = displayedTracks.findIndex(t =>
         t.name === updatedTrack.name && t.artist === updatedTrack.artist
     );
-    
+
     if (trackIndex === -1) return;
-    
+
     displayedTracks[trackIndex] = updatedTrack;
-    
+
     const trackCards = document.querySelectorAll('.track-card');
     const card = trackCards[trackIndex];
-    
+
     if (card) {
         const imageUrl = updatedTrack.image || '';
         const imageDiv = card.querySelector('.track-card-image');
-        
+
         if (imageDiv) {
             if (imageUrl) {
                 imageDiv.innerHTML = `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(updatedTrack.name)}" loading="lazy">`;
@@ -211,17 +260,19 @@ function updateTrackWithVideo(updatedTrack) {
                 `;
                 imageDiv.classList.add('no-image');
             }
-            
+
             card.dataset.imageUrl = escapeHtml(imageUrl);
         }
     }
 }
 
 function addNewTrack(track) {
+    if (displayedTracks.length === 0) return;
+
     const exists = displayedTracks.some(t =>
         t.name === track.name && t.artist === track.artist
     );
-    
+
     if (exists) {
         updateTrackWithVideo(track);
         return;
@@ -233,14 +284,14 @@ function addNewTrack(track) {
     
     const searchResults = document.querySelector('.search-results');
     if (!searchResults) return;
-    
+
     const cardHTML = createTrackCard(track, displayedTracks.length - 1);
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = cardHTML;
     const card = tempDiv.firstElementChild;
-    
+
     card.style.animationDelay = '0s';
-    
+
     card.addEventListener('click', (e) => {
         if (e.target.closest('.add-to-playlist-btn')) {
             return;
@@ -251,7 +302,6 @@ function addNewTrack(track) {
         const artistName = card.dataset.artistName;
         const imageUrl = card.dataset.imageUrl;
         const trackId = card.dataset.trackId;
-        console.log('Track clicked:', trackName, artistName, imageUrl);
         playTrack(trackName, artistName, imageUrl, trackId);
     });
 
@@ -409,8 +459,6 @@ function updatePlayerUI(track) {
             albumArtElement.style.backgroundImage = '';
         }
     }
-
-    console.log(`Playing: ${track.name} by ${track.artist}`);
 }
 
 function escapeHtml(text) {
@@ -440,11 +488,12 @@ function setupAddToPlaylistModal() {
         }
     });
 
-    document.addEventListener('keydown', (e) => {
+    escapeKeyHandler = (e) => {
         if (e.key === 'Escape' && modal.classList.contains('active')) {
             closeAddToPlaylistModal();
         }
-    });
+    };
+    document.addEventListener('keydown', escapeKeyHandler);
 }
 
 function openAddToPlaylistModal(track) {
@@ -557,7 +606,7 @@ async function loadPlaylists() {
 async function addTrackToPlaylist(playlistId, track) {
     try {
         const result = await ipcRenderer.invoke('add-song-to-playlist', playlistId, track);
-        
+
         if (!result) {
             const lang = window.language || { t: (k) => k };
             const errorMessage = lang.t('search.alreadyInPlaylist');
@@ -568,7 +617,7 @@ async function addTrackToPlaylist(playlistId, track) {
         const lang = window.language || { t: (k) => k };
         const successMessage = lang.t('search.addedToPlaylist');
         showNotification(successMessage);
-        
+
         await loadPlaylists();
     } catch (error) {
         console.error('Error adding track to playlist:', error);
@@ -591,9 +640,11 @@ function showNotification(message) {
     setTimeout(() => {
         notification.classList.remove('show');
         setTimeout(() => {
-            document.body.removeChild(notification);
+            if (notification.parentNode) {
+                document.body.removeChild(notification);
+            }
         }, 300);
     }, 2000);
 }
 
-export { initSearchPage };
+export { initSearchPage, cleanupSearchPage };

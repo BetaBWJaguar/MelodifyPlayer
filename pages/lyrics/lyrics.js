@@ -11,8 +11,8 @@ let fadeObserver = null;
 let resyncInterval = null;
 
 function t(key) {
-    if (window.i18n && window.i18n[key]) {
-        return window.i18n[key];
+    if (window.language && typeof window.language.t === 'function') {
+        return window.language.t(key);
     }
     const el = document.querySelector(`[data-i18n="${key}"]`);
     if (el) return el.textContent;

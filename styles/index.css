@@ -50,7 +50,7 @@ body {
     width: var(--sidebar-width);
     background-color: var(--bg-secondary);
     padding: 24px;
-    padding-bottom: calc(var(--player-height) + 24px);
+    padding-bottom: 24px;
     display: flex;
     flex-direction: column;
     gap: 24px;
@@ -59,11 +59,24 @@ body {
     overflow-x: hidden;
     flex-shrink: 0;
     transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    height: calc(100vh - var(--player-height));
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 }
 
 .sidebar::-webkit-scrollbar {
-    width: 0px;
-    background: transparent;
+    display: none;
+}
+
+
+.language-selector {
+    display: flex;
+    gap: 8px;
+    padding: 16px 0 0 0;
+    border-top: 1px solid var(--bg-elevated);
+    margin-top: auto;
+    flex-shrink: 0;
+    min-height: 45px;
 }
 
 
@@ -169,6 +182,7 @@ body {
     font-size: 24px;
     font-weight: 700;
     color: var(--text-primary);
+    white-space: nowrap;
 }
 
 .logo svg {
@@ -214,13 +228,6 @@ body {
     padding-top: 16px;
 }
 
-.language-selector {
-    display: flex;
-    gap: 8px;
-    padding: 8px 0;
-    border-top: 1px solid var(--bg-elevated);
-    margin-top: 8px;
-}
 
 .lang-btn {
     flex: 1;
@@ -960,6 +967,16 @@ body {
         padding: 20px;
     }
 
+    .logo {
+        font-size: 18px;
+        gap: 8px;
+    }
+
+    .logo svg {
+        width: 24px;
+        height: 24px;
+    }
+
     .player-left {
         width: 32%;
     }
@@ -1005,12 +1022,22 @@ body {
         left: 0;
         top: 0;
         height: 100vh;
-        height: 100dvh;
         width: 280px;
         z-index: 999;
         transform: translateX(-100%);
         box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
-        padding-bottom: 24px;
+        padding: 16px;
+        padding-bottom: 160px;
+    }
+
+    .language-selector {
+        position: absolute !important;
+        bottom: 20px;
+        left: 16px;
+        right: 16px;
+        background-color: var(--bg-secondary);
+        z-index: 10;
+        margin-top: 0 !important;
     }
 
     .sidebar.active {
@@ -1221,6 +1248,7 @@ body {
     .sidebar {
         width: 260px;
         padding: 16px;
+        padding-bottom: 150px;
     }
 
     .logo {
@@ -1313,6 +1341,7 @@ body {
 
     .sidebar {
         width: 240px;
+        padding-bottom: 140px;
     }
 
     .top-bar {

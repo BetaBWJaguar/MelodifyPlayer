@@ -3,6 +3,7 @@ const pythonPlayer = require('./pythonPlayer');
 const lastfmModule = require('./lastfmModule');
 const likedSongs = require('./likedSongs');
 const favorites = require('./favorites');
+const historyModule = require('./historyModule');
 
 class Player {
     constructor() {
@@ -111,6 +112,17 @@ class Player {
                 id: track.id || track.videoId
             });
             this.historyIndex = this.history.length - 1;
+
+            try {
+                historyModule.addToHistory({
+                    id: track.id || track.videoId,
+                    name: track.name,
+                    artist: track.artist,
+                    image: track.image || track.thumbnail
+                });
+            } catch (e) {
+                console.error('Failed to save history to database:', e);
+            }
         }
 
         this.pendingPlayRequest = null;

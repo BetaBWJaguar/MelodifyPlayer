@@ -12,6 +12,11 @@
     "createFirstPlaylist": "Create your first playlist to get started",
     "noRecommendations": "No recommendations yet",
     "startListening": "Start listening to get personalized recommendations",
+    "recentlyPlayed": "Recently Played",
+    "topArtists": "Top Artists",
+    "noRecent": "No recent plays",
+    "noArtists": "No artists yet",
+    "plays": "plays",
     "liked": "Liked",
     "favorite": "Favorite",
     "likedAndFavorite": "Liked & Favorite"

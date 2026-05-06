@@ -6,6 +6,7 @@ const favorites = require('./backend/utils/favorites');
 const playlist = require('./backend/utils/playlist');
 const downloadModule = require('./backend/utils/downloadModule');
 const youtubeModule = require('./backend/utils/youtubeModule');
+const historyModule = require('./backend/utils/historyModule');
 
 let mainWindow;
 
@@ -45,6 +46,7 @@ app.whenReady().then(async () => {
     likedSongs.initDatabase();
     favorites.initDatabase();
     playlist.initDatabase();
+    historyModule.initDatabase();
     
     
     app.on('browser-window-created', (_, window) => {
@@ -185,6 +187,18 @@ ipcMain.on('request-play-history', (event, index) => {
 
 ipcMain.handle('get-history', () => {
     return player.getHistory();
+});
+
+ipcMain.handle('get-db-recent-tracks', (event, limit) => {
+    return historyModule.getRecentTracks(limit || 6);
+});
+
+ipcMain.handle('get-db-top-artists', (event, limit) => {
+    return historyModule.getTopArtists(limit || 6);
+});
+
+ipcMain.handle('get-db-history', (event, limit) => {
+    return historyModule.getHistory(limit || 50);
 });
 
 ipcMain.handle('get-player-status', () => {

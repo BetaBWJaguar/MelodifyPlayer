@@ -2,6 +2,8 @@ const { ipcRenderer } = require('electron');
 
 let allPlaylists = [];
 let recommendations = [];
+let recentTracks = [];
+
 
 export function initMainPage() {
     updateGreeting();
@@ -14,7 +16,9 @@ export function initMainPage() {
     
     setupSeeAllButton();
     loadPlaylists();
+    loadRecentlyPlayed();
     loadRecommendations();
+    loadTopArtists();
 
     if (window.language && !window._mainPageLangCallbackRegistered) {
         window._mainPageLangCallbackRegistered = true;
@@ -26,13 +30,195 @@ export function initMainPage() {
             } else {
                 loadPlaylists();
             }
+            if (recentTracks.length > 0) {
+                renderRecentlyPlayed(recentTracks);
+            } else {
+                loadRecentlyPlayed();
+            }
             if (recommendations.length > 0) {
                 renderRecommendations(recommendations);
             } else {
                 loadRecommendations();
             }
+            loadTopArtists();
         });
     }
+
+    if (!window._mainPageHistoryListenerRegistered) {
+        window._mainPageHistoryListenerRegistered = true;
+        ipcRenderer.on('player-history-updated', () => {
+            if (!document.getElementById('greetingTitle')) return;
+            loadRecentlyPlayed();
+            loadTopArtists();
+        });
+    }
+}
+
+
+async function loadRecentlyPlayed() {
+    const grid = document.getElementById('recentlyPlayedGrid');
+    const lang = window.language || { getTranslation: (k) => k };
+
+    try {
+        const dbTracks = await ipcRenderer.invoke('get-db-recent-tracks', 6);
+        recentTracks = dbTracks || [];
+        renderRecentlyPlayed(recentTracks);
+    } catch (error) {
+        console.error('Error loading recent tracks:', error);
+        grid.innerHTML = `
+            <div class="empty-state">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
+                </svg>
+                <h3>${lang.getTranslation('mainPage.noRecent') || 'No recent plays'}</h3>
+                <p>${lang.getTranslation('mainPage.startListening') || 'Start listening to see your history'}</p>
+            </div>
+        `;
+    }
+}
+
+function renderRecentlyPlayed(tracks) {
+    const grid = document.getElementById('recentlyPlayedGrid');
+    const lang = window.language || { getTranslation: (k) => k };
+
+    if (!tracks || tracks.length === 0) {
+        grid.innerHTML = `
+            <div class="empty-state">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
+                </svg>
+                <h3>${lang.getTranslation('mainPage.noRecent') || ''}</h3>
+                <p>${lang.getTranslation('mainPage.startListening') || ''}</p>
+            </div>
+        `;
+        return;
+    }
+
+    grid.innerHTML = tracks.map((track, index) => createRecentCard(track, index)).join('');
+
+    grid.querySelectorAll('.recent-card').forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.05}s`;
+        card.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const track = tracks[index];
+            if (track) {
+                ipcRenderer.send('request-exit-playlist-mode');
+                ipcRenderer.send('request-play', {
+                    name: track.name,
+                    artist: track.artist,
+                    image: track.image,
+                    id: track.id
+                });
+            }
+        });
+    });
+}
+
+function createRecentCard(track, index) {
+    const imageUrl = track.image || '';
+    if (imageUrl) {
+        return `
+            <div class="recent-card" data-index="${index}">
+                <div class="recommendation-card-image">
+                    <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(track.name)}" loading="lazy">
+                    <button class="recommendation-play-btn" title="Play">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    </button>
+                </div>
+                <div class="recommendation-card-info">
+                    <h3 class="recommendation-card-title" title="${escapeHtml(track.name)}">${escapeHtml(track.name)}</h3>
+                    <p class="recommendation-card-artist" title="${escapeHtml(track.artist)}">${escapeHtml(track.artist)}</p>
+                </div>
+            </div>
+        `;
+    } else {
+        return `
+            <div class="recent-card" data-index="${index}">
+                <div class="recommendation-card-image">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                    </svg>
+                    <button class="recommendation-play-btn" title="Play">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    </button>
+                </div>
+                <div class="recommendation-card-info">
+                    <h3 class="recommendation-card-title" title="${escapeHtml(track.name)}">${escapeHtml(track.name)}</h3>
+                    <p class="recommendation-card-artist" title="${escapeHtml(track.artist)}">${escapeHtml(track.artist)}</p>
+                </div>
+            </div>
+        `;
+    }
+}
+
+async function loadTopArtists() {
+    const grid = document.getElementById('topArtistsGrid');
+    const lang = window.language || { getTranslation: (k) => k };
+
+    try {
+        const artists = await ipcRenderer.invoke('get-db-top-artists', 6);
+        renderTopArtists(artists);
+    } catch (error) {
+        console.error('Error loading top artists:', error);
+        grid.innerHTML = `
+            <div class="empty-state">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+                <h3>${lang.getTranslation('mainPage.noArtists') || 'No artists yet'}</h3>
+                <p>${lang.getTranslation('mainPage.startListening') || 'Listen to music to see your top artists'}</p>
+            </div>
+        `;
+    }
+}
+
+function getTopArtists(history, limit = 6) {
+    const artistCount = {};
+
+    (history || []).forEach(track => {
+        const artist = track.artist || 'Unknown';
+        artistCount[artist] = (artistCount[artist] || 0) + 1;
+    });
+
+    return Object.entries(artistCount)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, limit)
+        .map(([name, count]) => ({ name, count }));
+}
+
+function renderTopArtists(artists) {
+    const grid = document.getElementById('topArtistsGrid');
+    const lang = window.language || { getTranslation: (k) => k };
+    const colors = ['#e94560', '#533483', '#27ae60', '#f39c12', '#3498db', '#9b59b6'];
+
+    if (!artists || artists.length === 0) {
+        grid.innerHTML = `
+            <div class="empty-state">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+                <h3>${lang.getTranslation('mainPage.noArtists') || ''}</h3>
+                <p>${lang.getTranslation('mainPage.startListening') || ''}</p>
+            </div>
+        `;
+        return;
+    }
+
+    grid.innerHTML = artists.map((artist, i) => {
+        const color = colors[i % colors.length];
+        return `
+            <div class="artist-card" style="animation-delay: ${i * 0.06}s">
+                <div class="artist-avatar" style="background: ${color}18; border-color: ${color}50;">
+                    <span style="color: ${color}">${artist.name.charAt(0).toUpperCase()}</span>
+                </div>
+                <div class="artist-info">
+                    <span class="artist-name" title="${escapeHtml(artist.name)}">${escapeHtml(artist.name)}</span>
+                    <span class="artist-count">${artist.count} ${lang.getTranslation('mainPage.plays') || 'plays'}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 function setupSeeAllButton() {

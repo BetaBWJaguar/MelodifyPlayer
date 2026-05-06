@@ -1,6 +1,7 @@
 .main-page {
     padding: 32px;
     overflow-y: auto;
+    padding-bottom: 110px;
     min-height: 100vh;
     -webkit-app-region: no-drag;
 }
@@ -150,6 +151,7 @@
 @media (max-width: 1024px) {
     .main-page {
         padding: 24px;
+        padding-bottom: 100px;
     }
 
     .greeting-section {
@@ -173,6 +175,7 @@
 @media (max-width: 768px) {
     .main-page {
         padding: 20px;
+        padding-bottom: 100px;
     }
 
     .greeting-section {
@@ -210,6 +213,7 @@
 @media (max-width: 600px) {
     .main-page {
         padding: 16px;
+        padding-bottom: 96px;
     }
 
     .greeting-section {
@@ -253,6 +257,7 @@
 @media (max-width: 400px) {
     .greeting-section {
         padding: 24px 16px;
+        padding-bottom: 92px;
     }
 
     .greeting-title {
@@ -548,6 +553,170 @@
     align-items: center;
     justify-content: center;
     padding: 40px;
+}
+
+.recent-card {
+    background: linear-gradient(135deg, rgba(30, 30, 46, 0.6) 0%, rgba(30, 30, 46, 0.8) 100%);
+    border-radius: 12px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: relative;
+    overflow: hidden;
+    animation: fadeInUp 0.6s ease-out backwards;
+}
+
+.recent-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #27ae60, #2ecc71);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.recent-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    border-color: rgba(39, 174, 96, 0.5);
+}
+
+.recent-card:hover::before {
+    opacity: 1;
+}
+
+.artists-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.artist-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, rgba(30, 30, 46, 0.6) 0%, rgba(30, 30, 46, 0.8) 100%);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+    animation: fadeInUp 0.6s ease-out backwards;
+    position: relative;
+    overflow: hidden;
+}
+
+.artist-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    background: linear-gradient(180deg, #e94560, #533483);
+}
+
+.artist-card:hover {
+    transform: translateX(6px);
+    border-color: rgba(233, 69, 96, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.artist-card:hover::before {
+    opacity: 1;
+}
+
+.artist-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid;
+    font-size: 20px;
+    font-weight: 700;
+    flex-shrink: 0;
+    transition: transform 0.3s ease;
+}
+
+.artist-card:hover .artist-avatar {
+    transform: scale(1.1);
+}
+
+.artist-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.artist-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.artist-count {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+@media (max-width: 1024px) {
+    .artists-grid {
+        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+        gap: 10px;
+    }
+}
+
+@media (max-width: 768px) {
+    .artists-grid {
+        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+        gap: 10px;
+    }
+}
+
+@media (max-width: 600px) {
+    .artists-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+
+    .artist-card {
+        padding: 12px;
+        gap: 10px;
+    }
+
+    .artist-avatar {
+        width: 40px;
+        height: 40px;
+        font-size: 17px;
+    }
+
+    .artist-name {
+        font-size: 13px;
+    }
+
+    .artist-count {
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 400px) {
+    .artists-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .spinner {

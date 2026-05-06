@@ -12,6 +12,11 @@
     "createFirstPlaylist": "Başlamak için ilk çalma listeni oluştur",
     "noRecommendations": "Henüz öneri yok",
     "startListening": "Kişiselleştirilmiş öneriler almak için dinlemeye başla",
+    "recentlyPlayed": "Son Çalınanlar",
+    "topArtists": "En Çok Dinlenen Sanatçılar",
+    "noRecent": "Henüz dinlenen şarkı yok",
+    "noArtists": "Henüz sanatçı yok",
+    "plays": "çalma",
     "liked": "Beğenilen",
     "favorite": "Favori",
     "likedAndFavorite": "Beğenilen & Favori"

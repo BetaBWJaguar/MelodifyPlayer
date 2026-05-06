@@ -106,6 +106,7 @@ ipcMain.on('window-maximize', () => {
 
 ipcMain.on('window-close', () => {
     if (mainWindow) {
+        player.destroy();
         mainWindow.close();
     }
 });
@@ -453,5 +454,5 @@ ipcMain.handle('get-youtube-video-id', (event, trackName, artistName) => {
 
 app.on('before-quit', () => {
     globalShortcut.unregisterAll();
-    player.stop();
+    player.destroy();
 });

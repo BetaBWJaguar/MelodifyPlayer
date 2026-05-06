@@ -4,6 +4,7 @@ const lastfmModule = require('./lastfmModule');
 const likedSongs = require('./likedSongs');
 const favorites = require('./favorites');
 const historyModule = require('./historyModule');
+const playlist = require('./playlist');
 
 class Player {
     constructor() {
@@ -96,6 +97,22 @@ class Player {
     }
 
     async play(track, fromHistory = false, addToHistory = true) {
+        if (!track.id && !track.videoId) {
+            try {
+                const videoData = await youtubeModule.getVideoForTrack(track.name, track.artist);
+                if (videoData) {
+                    track.videoId = videoData.videoId;
+                    track.id = videoData.videoId;
+                    track.thumbnail = videoData.thumbnail || track.thumbnail;
+                    track.image = videoData.thumbnail || track.image;
+                    track.duration = videoData.duration || track.duration;
+                }
+            } catch (err) {
+                console.error('[Player] Youtube ID Error:', err.message);
+            }
+        }
+
+
         if (this.isPlayingPromise) {
             this.pendingPlayRequest = track;
             return;
@@ -109,7 +126,12 @@ class Player {
                 name: track.name,
                 artist: track.artist,
                 image: track.image || track.thumbnail,
-                id: track.id || track.videoId
+                id: track.id || track.videoId,
+                ...(this.playlistMode ? {
+                    playlistId: this.currentPlaylistId,
+                    playlistName: this.playlistName,
+                    playlistIndex: this.playlistIndex
+                } : {})
             });
             this.historyIndex = this.history.length - 1;
 
@@ -247,6 +269,12 @@ class Player {
         this.pendingPlayRequest = null;
         this.stopProgressUpdates();
         pythonPlayer.stop();
+    }
+
+    destroy() {
+        this.pendingPlayRequest = null;
+        this.stopProgressUpdates();
+        pythonPlayer.destroy();
     }
 
     pause() {
@@ -700,8 +728,20 @@ class Player {
         if (this.historyIndex > 0) {
             this.historyIndex--;
             this.history = this.history.slice(0, this.historyIndex + 1);
-            this.notifyListeners('history-updated', this.getHistory());
             const track = this.history[this.historyIndex];
+
+            try {
+                historyModule.addToHistory({
+                    id: track.id || track.videoId,
+                    name: track.name,
+                    artist: track.artist,
+                    image: track.image || track.thumbnail
+                });
+            } catch (e) {
+                 console.error('Failed to save history to database:', e);
+            }
+
+            this.notifyListeners('history-updated', this.getHistory());
             await this.play(track, true, false);
         }
     }
@@ -710,8 +750,57 @@ class Player {
         if (index >= 0 && index < this.history.length) {
             this.historyIndex = index;
             this.history = this.history.slice(0, this.historyIndex + 1);
-            this.notifyListeners('history-updated', this.getHistory());
             const track = this.history[this.historyIndex];
+
+            if (track.playlistId) {
+                try {
+                    const playlistSongs = playlist.getPlaylistSongs(track.playlistId);
+                    if (playlistSongs && playlistSongs.length > 0) {
+                        const trackIndex = playlistSongs.findIndex(
+                            s => s.track_id === (track.id || track.videoId)
+                        );
+                        const startIndex = trackIndex >= 0 ? trackIndex : 0;
+
+                        this.playlistMode = true;
+                        this.currentPlaylistId = track.playlistId;
+                        this.playlistName = track.playlistName;
+                        this.playlistTracks = playlistSongs;
+                        this.playlistIndex = startIndex;
+
+                        console.log('[Player] Restored playlist context from history:', {
+                            playlistId: track.playlistId,
+                            playlistName: track.playlistName,
+                            trackIndex: startIndex,
+                            totalTracks: playlistSongs.length
+                        });
+
+                        this.notifyListeners('playlist-updated', this.getPlaylistStatus());
+                    } else {
+                        console.log('[Player] Playlist no longer available, playing without playlist context');
+                        this.exitPlaylistMode();
+                    }
+                } catch (e) {
+                    console.error('[Player] Failed to restore playlist context:', e);
+                    this.exitPlaylistMode();
+                }
+            } else {
+                if (this.playlistMode) {
+                    this.exitPlaylistMode();
+                }
+            }
+
+            try {
+                historyModule.addToHistory({
+                    id: track.id || track.videoId,
+                    name: track.name,
+                    artist: track.artist,
+                    image: track.image || track.thumbnail
+                });
+            } catch (e) {
+                console.error('Failed to save history to database:', e);
+            }
+
+            this.notifyListeners('history-updated', this.getHistory());
             await this.play(track, true, false);
         }
     }

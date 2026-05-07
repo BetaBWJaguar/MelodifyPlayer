@@ -106,6 +106,8 @@ class Player {
                     track.thumbnail = videoData.thumbnail || track.thumbnail;
                     track.image = videoData.thumbnail || track.image;
                     track.duration = videoData.duration || track.duration;
+
+                    track.youtube = videoData;
                 }
             } catch (err) {
                 console.error('[Player] Youtube ID Error:', err.message);
@@ -167,6 +169,8 @@ class Player {
                 if (video) {
                     console.log('[Player] Using cached video for:', track.name);
                     url = `https://www.youtube.com/watch?v=${video.videoId}`;
+                } else if (track.videoId) {
+                    url = `https://www.youtube.com/watch?v=${track.videoId}`;
                 }
             }
 

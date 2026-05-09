@@ -85,11 +85,14 @@ class PythonPlayer {
                         if (!line.trim()) continue;
                         const msg = JSON.parse(line);
 
-                        if (msg.event === "end-file" && msg.reason === "eof") {
-                            console.log('[PythonPlayer] Auto-detected track end via IPC (EOF)');
+                        if (msg.event === "end-file") {
+                            console.log('[PythonPlayer] IPC Ended:', msg.reason);
                             this.isPlaying = false;
                             this.isPaused = false;
-                            this.notifyListeners('stop', { reason: 'ended' });
+
+                            if (msg.reason === "eof" || msg.reason === "quit" || msg.reason === "error") {
+                                this.notifyListeners('stop', { reason: 'ended' });
+                            }
                         }
 
                         if (msg.event === "property-change" && msg.name === "pause") {
@@ -139,33 +142,40 @@ class PythonPlayer {
 
         try {
             if (this.process && this.socket && !this.socket.destroyed) {
-
                 let loadCmd = ["loadfile", url];
                 if (startTime > 0) {
                     loadCmd = ["loadfile", url, "replace", `start=${startTime}`];
                 }
 
-                await this._sendMpvCommand({ command: loadCmd });
+                try {
+                    await this._sendMpvCommand({ command: loadCmd });
 
-                if (this.isPaused) {
-                    await this._sendMpvCommand({ command: ["set_property", "pause", false] });
+                    if (this.isPaused) {
+                        await this._sendMpvCommand({ command: ["set_property", "pause", false] });
+                    }
+
+                    this.isPlaying = true;
+                    this.isPaused = false;
+                    this.currentUrl = url;
+                    this.basePosition = startTime;
+                    this.playStartTime = Date.now();
+                    this.actualDuration = null;
+
+                    setTimeout(() => this.setVolume(this.volume), 500);
+                    setTimeout(() => this.getActualDuration(), 2000);
+
+                    return true;
+                } catch (ipcError) {
+                    console.error('[PythonPlayer] IPC loadfile Error:', ipcError.message);
+                    if (this.socket) {
+                        this.socket.destroy();
+                        this.socket = null;
+                    }
                 }
-
-                this.isPlaying = true;
-                this.isPaused = false;
-                this.currentUrl = url;
-                this.basePosition = startTime;
-                this.playStartTime = Date.now();
-                this.actualDuration = null;
-
-                setTimeout(() => this.setVolume(this.volume), 500);
-                setTimeout(() => this.getActualDuration(), 2000);
-
-                return true;
             }
 
             if (this.process) {
-                console.log('[PythonPlayer] Killing broken player');
+                console.log('[PythonPlayer] Broken player clearing...');
                 this.process._exitReason = 'replace';
             }
 
@@ -209,26 +219,20 @@ class PythonPlayer {
 
                 proc.stdout.on('data', async (d) => {
                     const msg = d.toString();
-                    console.log('[Python stdout]', msg.trim());
-
                     if (msg.includes('IPC Socket:')) {
                         const match = msg.match(/IPC Socket: (.+)/);
                         if (match) {
                             this.ipcSocketPath = match[1].trim();
-                            console.log('[PythonPlayer] Captured IPC socket:', this.ipcSocketPath);
                             await this._getSocket();
                         }
                     }
                 });
 
                 proc.stderr.on('data', d => {
-                    const msg = d.toString();
-                    errorBuffer += msg;
-                    console.error('[Python stderr]', msg.trim());
+                    errorBuffer += d.toString();
                 });
 
                 proc.on('close', (code, signal) => {
-                    console.log(`[PythonPlayer] Process closed. code=${code}, signal=${signal}`);
                     const wasCurrent = this.process === proc;
                     if (wasCurrent) {
                         this.process = null;
@@ -248,7 +252,6 @@ class PythonPlayer {
                 });
 
                 proc.on('spawn', () => {
-                    console.log('[PythonPlayer] Process spawned');
                     if (resolvedOrRejected) return;
 
                     setTimeout(() => {
@@ -272,7 +275,7 @@ class PythonPlayer {
 
                         setTimeout(() => this.setVolume(this.volume), 500);
                         setTimeout(() => this.getActualDuration(), 2000);
-                    }, 1000);
+                    }, 1500);
                 });
             });
 
@@ -471,13 +474,12 @@ class PythonPlayer {
                 };
 
                 client.on('data', onData);
-
                 client.write(jsonCommand);
 
                 const timeout = setTimeout(() => {
                     client.removeListener('data', onData);
-                    resolve({ error: "timeout", data: null });
-                }, 1000);
+                    reject(new Error("IPC Command Timeout"));
+                }, 2000);
             });
 
         } catch (error) {

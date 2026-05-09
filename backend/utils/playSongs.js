@@ -71,15 +71,35 @@ class Player {
 
     startProgressUpdates() {
         this.stopProgressUpdates();
+        let lastPosition = -1;
+        let stuckCounter = 0;
+
         this.progressInterval = setInterval(async () => {
             if (!pythonPlayer.process) return;
             const status = pythonPlayer.getStatus();
-            if (status.playing && this.currentTrack) {
+
+            if (status.playing && !status.paused && this.currentTrack) {
                 const actualPosition = await pythonPlayer.getActualPosition();
-                
+
                 if (actualPosition !== null) {
                     const duration = status.actualDuration !== null ? status.actualDuration : (this.currentTrack.duration || 0);
-                    
+
+                    if (actualPosition === lastPosition) {
+                        stuckCounter++;
+                    } else {
+                        stuckCounter = 0;
+                        lastPosition = actualPosition;
+                    }
+
+                    if (duration > 0 && actualPosition >= (duration - 3) && stuckCounter >= 2) {
+                        console.log('[Player] WATCHDOG: Player stucked!');
+                        stuckCounter = 0;
+                        pythonPlayer.isPlaying = false;
+
+                        pythonPlayer.notifyListeners('stop', { reason: 'ended' });
+                        return;
+                    }
+
                     this.notifyListeners('progress', {
                         currentTime: actualPosition,
                         duration: duration
@@ -156,8 +176,10 @@ class Player {
             
             if (pythonPlayer.getStatus().playing) {
                 pythonPlayer.stop();
-                while (pythonPlayer.getStatus().playing) {
+                let timeoutAttempts = 0;
+                while (pythonPlayer.getStatus().playing && timeoutAttempts < 15) {
                     await new Promise(r => setTimeout(r, 100));
+                    timeoutAttempts++;
                 }
             }
             

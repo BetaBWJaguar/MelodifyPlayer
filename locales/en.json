@@ -19,7 +19,13 @@
     "plays": "plays",
     "liked": "Liked",
     "favorite": "Favorite",
-    "likedAndFavorite": "Liked & Favorite"
+    "likedAndFavorite": "Liked & Favorite",
+    "discoverTitle": "Other Songs You Might Like",
+    "noDiscover": "No recommendations yet",
+    "discoverReason": "Recommended for you",
+    "reasonArtist": "Because you listen to {artist}",
+    "reasonSimilar": "Similar to what you like",
+    "reasonDefault": "Recommended for you"
   },
   "sidebar": {
     "home": "Home",

@@ -548,6 +548,64 @@
     font-weight: 500;
 }
 
+.discover-section .section-header {
+    position: relative;
+}
+
+.refresh-recommendations-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 6px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.refresh-recommendations-btn:hover {
+    background: rgba(233, 69, 96, 0.15);
+    border-color: rgba(233, 69, 96, 0.4);
+    color: #e94560;
+    transform: scale(1.05);
+}
+
+.refresh-recommendations-btn:active {
+    transform: scale(0.95);
+}
+
+.refresh-recommendations-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.refresh-recommendations-btn.spinning svg {
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.discover-card .discover-card-reason {
+    font-size: 10px;
+    color: rgba(233, 69, 96, 0.7);
+    margin: 2px 0 0 0;
+    font-style: italic;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    letter-spacing: 0.3px;
+}
+
+.discover-card:hover .discover-card-reason {
+    color: rgba(233, 69, 96, 0.9);
+}
+
 .loading-state {
     display: flex;
     align-items: center;

@@ -7,6 +7,7 @@ const playlist = require('./backend/utils/playlist');
 const downloadModule = require('./backend/utils/downloadModule');
 const youtubeModule = require('./backend/utils/youtubeModule');
 const historyModule = require('./backend/utils/historyModule');
+const recommendationModule = require('./backend/utils/recommendationModule');
 
 let mainWindow;
 
@@ -450,6 +451,27 @@ ipcMain.on('cancel-download', (event) => {
 ipcMain.handle('get-youtube-video-id', (event, trackName, artistName) => {
     const video = youtubeModule.getFromCache(trackName, artistName);
     return video ? video.videoId : null;
+});
+
+ipcMain.handle('get-personalized-recommendations', async (event, limit) => {
+    try {
+        const recommendations = await recommendationModule.getPersonalizedRecommendations(limit || 8);
+        return recommendations;
+    } catch (error) {
+        console.error('Error getting recommendations:', error);
+        return [];
+    }
+});
+
+ipcMain.handle('refresh-recommendations', async () => {
+    try {
+        recommendationModule.clearRecommendationCache();
+        const recommendations = await recommendationModule.getPersonalizedRecommendations(8);
+        return recommendations;
+    } catch (error) {
+        console.error('Error refreshing recommendations:', error);
+        return [];
+    }
 });
 
 app.on('before-quit', () => {

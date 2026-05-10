@@ -51,7 +51,7 @@ class YouTubeAudioPlayer:
                 self.mpv_path,
                 "--no-video",
                 "--ytdl=yes",
-                "--ytdl-format=bestaudio[ext=m4a]",
+                "--ytdl-format=bestaudio[ext=m4a]/bestaudio[ext=aac]/bestaudio[ext=mp4]/bestaudio[ext=webm]/bestaudio/best",
                 "--idle=yes",
                 "--force-window=no",
                 f"--input-ipc-server={self.ipc_path}",

@@ -19,7 +19,13 @@
     "plays": "çalma",
     "liked": "Beğenilen",
     "favorite": "Favori",
-    "likedAndFavorite": "Beğenilen & Favori"
+    "likedAndFavorite": "Beğenilen & Favori",
+    "discoverTitle": "Diğer Dinleyebileceğin Şarkılar",
+    "noDiscover": "Henüz öneri yok",
+    "discoverReason": "Senin için önerildi",
+    "reasonArtist": "{artist} dinlediğin için",
+    "reasonSimilar": "Beğendiklerine benzer",
+    "reasonDefault": "Senin için önerildi"
   },
   "sidebar": {
     "home": "Ana Sayfa",

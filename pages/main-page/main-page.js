@@ -3,6 +3,7 @@ const { ipcRenderer } = require('electron');
 let allPlaylists = [];
 let recommendations = [];
 let recentTracks = [];
+let discoverRecommendations = [];
 
 
 export function initMainPage() {
@@ -15,9 +16,11 @@ export function initMainPage() {
     });
     
     setupSeeAllButton();
+    setupRefreshDiscoverButton();
     loadPlaylists();
     loadRecentlyPlayed();
     loadRecommendations();
+    loadDiscoverRecommendations();
     loadTopArtists();
 
     if (window.language && !window._mainPageLangCallbackRegistered) {
@@ -40,6 +43,11 @@ export function initMainPage() {
             } else {
                 loadRecommendations();
             }
+            if (discoverRecommendations.length > 0) {
+                renderDiscoverRecommendations(discoverRecommendations);
+            } else {
+                loadDiscoverRecommendations();
+            }
             loadTopArtists();
         });
     }
@@ -50,6 +58,7 @@ export function initMainPage() {
             if (!document.getElementById('greetingTitle')) return;
             loadRecentlyPlayed();
             loadTopArtists();
+            loadDiscoverRecommendations();
         });
     }
 }
@@ -523,6 +532,157 @@ function playTrack(rec) {
         artist: rec.artist,
         image: rec.image,
         id: rec.id
+    };
+    ipcRenderer.send('request-exit-playlist-mode');
+    ipcRenderer.send('request-play', track);
+}
+
+function setupRefreshDiscoverButton() {
+    const refreshBtn = document.getElementById('refreshDiscoverBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const btn = e.currentTarget;
+            btn.classList.add('spinning');
+            btn.disabled = true;
+
+            const grid = document.getElementById('discoverGrid');
+            grid.innerHTML = `<div class="loading-state"><div class="spinner"></div></div>`;
+
+            try {
+                discoverRecommendations = await ipcRenderer.invoke('refresh-recommendations');
+                renderDiscoverRecommendations(discoverRecommendations);
+            } catch (error) {
+                console.error('Error refreshing discover recommendations:', error);
+            } finally {
+                btn.classList.remove('spinning');
+                btn.disabled = false;
+            }
+        });
+    }
+}
+
+async function loadDiscoverRecommendations() {
+    const grid = document.getElementById('discoverGrid');
+    const lang = window.language || { getTranslation: (k) => k };
+
+    if (!grid) return;
+
+    try {
+        discoverRecommendations = await ipcRenderer.invoke('get-personalized-recommendations', 8);
+        renderDiscoverRecommendations(discoverRecommendations);
+    } catch (error) {
+        console.error('Error loading discover recommendations:', error);
+        grid.innerHTML = `
+            <div class="empty-state">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"/>
+                </svg>
+                <h3>${lang.getTranslation('mainPage.noDiscover') || 'No recommendations yet'}</h3>
+                <p>${lang.getTranslation('mainPage.startListening') || 'Start listening to get personalized recommendations'}</p>
+            </div>
+        `;
+    }
+}
+
+function renderDiscoverRecommendations(recs) {
+    const grid = document.getElementById('discoverGrid');
+    const lang = window.language || { getTranslation: (k) => k };
+
+    if (!grid) return;
+
+    if (!recs || recs.length === 0) {
+        grid.innerHTML = `
+            <div class="empty-state">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"/>
+                </svg>
+                <h3>${lang.getTranslation('mainPage.noDiscover') || ''}</h3>
+                <p>${lang.getTranslation('mainPage.startListening') || ''}</p>
+            </div>
+        `;
+        return;
+    }
+
+    const recsHTML = recs.map((rec, index) => createDiscoverCard(rec, index)).join('');
+    grid.innerHTML = recsHTML;
+
+    const cards = grid.querySelectorAll('.discover-card');
+    cards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.05}s`;
+        card.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const rec = recs[index];
+            if (rec) {
+                playDiscoverTrack(rec);
+            }
+        });
+    });
+}
+
+function createDiscoverCard(rec, index) {
+    const imageUrl = rec.image || '';
+    const lang = window.language || { getTranslation: (k) => k };
+    let reasonText = '';
+    if (rec.reasonKey) {
+        const template = lang.getTranslation(`mainPage.${rec.reasonKey}`) || '';
+        if (template && rec.reasonArtist) {
+            reasonText = template.replace('{artist}', rec.reasonArtist);
+        } else {
+            reasonText = template || lang.getTranslation('mainPage.discoverReason') || '';
+        }
+    } else {
+        reasonText = rec.reason || lang.getTranslation('mainPage.discoverReason') || '';
+    }
+
+    if (imageUrl) {
+        return `
+            <div class="recommendation-card discover-card" data-index="${index}">
+                <div class="recommendation-card-image">
+                    <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(rec.name)}" loading="lazy">
+                    <button class="recommendation-play-btn" title="Play">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="recommendation-card-info">
+                    <h3 class="recommendation-card-title" title="${escapeHtml(rec.name)}">${escapeHtml(rec.name)}</h3>
+                    <p class="recommendation-card-artist" title="${escapeHtml(rec.artist)}">${escapeHtml(rec.artist)}</p>
+                    <p class="discover-card-reason">${escapeHtml(reasonText)}</p>
+                </div>
+            </div>
+        `;
+    } else {
+        return `
+            <div class="recommendation-card discover-card" data-index="${index}">
+                <div class="recommendation-card-image">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                    </svg>
+                    <button class="recommendation-play-btn" title="Play">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="recommendation-card-info">
+                    <h3 class="recommendation-card-title" title="${escapeHtml(rec.name)}">${escapeHtml(rec.name)}</h3>
+                    <p class="recommendation-card-artist" title="${escapeHtml(rec.artist)}">${escapeHtml(rec.artist)}</p>
+                    <p class="discover-card-reason">${escapeHtml(reasonText)}</p>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function playDiscoverTrack(rec) {
+    const track = {
+        name: rec.name,
+        artist: rec.artist,
+        image: rec.image
     };
     ipcRenderer.send('request-exit-playlist-mode');
     ipcRenderer.send('request-play', track);

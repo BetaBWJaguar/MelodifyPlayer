@@ -87,6 +87,11 @@ class PythonPlayer {
 
                         if (msg.event === "end-file") {
                             console.log('[PythonPlayer] IPC Ended:', msg.reason);
+
+                            if (msg.reason === "error") {
+                                console.error(`[PythonPlayer ERROR] File-Error: ${msg.file_error || 'None'}, Error: ${msg.error || 'Unknown'}`);
+                            }
+
                             this.isPlaying = false;
                             this.isPaused = false;
 

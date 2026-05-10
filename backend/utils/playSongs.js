@@ -38,6 +38,10 @@ class Player {
                     return;
                 }
 
+                if (this.isPlayingPromise || this.pendingPlayRequest) {
+                    return;
+                }
+
                 if (this.repeat && !this.playlistMode && this.currentTrack) {
                     this.play(this.currentTrack, false, false);
                     return;
@@ -265,6 +269,10 @@ class Player {
                     thumbnail: this.currentTrack.image || video.thumbnail,
                     image: this.currentTrack.image || video.thumbnail
                 };
+
+                if (this.pendingPlayRequest) {
+                    return;
+                }
 
                 if (!pythonPlayer.getStatus().playing) {
                     await pythonPlayer.play(url, 0);
@@ -597,36 +605,26 @@ class Player {
     async playRandomFromYouTube(manual = true) {
         try {
             const yts = require("yt-search");
-            
+
             const randomQueries = [
-                "music 2024",
-                "top hits",
-                "popular songs",
-                "trending music",
-                "best songs",
-                "new music",
-                "chart hits"
+                "billboard hot 100 official music video",
+                "spotify global top 50 official audio",
+                "vevo hot this week official",
+                "top pop hit songs official video",
+                "best new music official audio",
+                "hit songs 2024 official vevo"
             ];
-            
+
             const banned = [
-                "reaction",
-                "interview",
-                "podcast",
-                "karaoke",
-                "cover",
-                "playlist",
-                "mix",
-                "dj",
-                "remix",
-                "hour",
-                "hours",
-                "live",
-                "concert",
-                "medley",
-                "compilation",
-                "nonstop",
-                "continuous",
-                "loop"
+                "reaction", "interview", "podcast", "karaoke", "cover",
+                "playlist", "mix", "dj", "remix", "hour", "hours",
+                "live", "concert", "medley", "compilation", "nonstop",
+                "continuous", "loop", "radio", "full album", "1 hr", "2 hr", "3 hr",
+                "tiktok", "tik tok", "shorts", "viral", "trend", "meme", "funny",
+                "songs that", "everyone knows", "mashup", "challenge", "dance",
+                "sped up", "speed up", "slowed", "reverb", "8d", "bass boosted",
+                "parody", "tutorial", "how to", "vlog", "type beat", "free beat",
+                "gaming", "montage", "amv", "edit", "ncs", "no copyright"
             ];
             
             const randomQuery = randomQueries[Math.floor(Math.random() * randomQueries.length)];
@@ -751,10 +749,10 @@ class Player {
             return;
         }
 
-        if (this.historyIndex > 0) {
-            this.historyIndex--;
-            this.history = this.history.slice(0, this.historyIndex + 1);
-            const track = this.history[this.historyIndex];
+            if (this.historyIndex > 0) {
+                this.historyIndex--;
+                this.history = this.history.slice(0, this.historyIndex + 1);
+                const track = this.history[this.historyIndex];
 
             try {
                 historyModule.addToHistory({

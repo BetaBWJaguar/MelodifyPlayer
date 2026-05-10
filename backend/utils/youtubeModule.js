@@ -63,11 +63,10 @@ class YouTubeModule {
         ];
 
         const banned = [
-            "reaction",
-            "interview",
-            "podcast",
-            "karaoke",
-            "cover"
+            "reaction", "interview", "podcast", "karaoke", "cover",
+            "radio", "hour", "hours", "1 hr", "2 hr", "full album",
+            "nonstop", "continuous", "loop", "live stream", "compilation",
+            "medley", "mix"
         ];
 
         for (const query of queries) {
@@ -92,23 +91,18 @@ class YouTubeModule {
             for (const video of videos) {
                 if (!video || !video.title) continue;
 
-
                 const title = video.title.toLowerCase();
-                const channel = (video.author?.name || "").toLowerCase();
 
-                if (banned.some(word => title.includes(word))) {
-                    continue;
-                }
+                if (banned.some(word => title.includes(word))) continue;
+
+                const duration = video.seconds || 0;
+                if (duration < 60 || duration > 600) continue;
 
                 const artistLower = artistName.toLowerCase();
                 const trackLower = trackName.toLowerCase();
 
-                const titleLooksRelevant =
-                    title.includes(artistLower) || title.includes(trackLower);
-
-                if (!titleLooksRelevant) {
-                    continue;
-                }
+                const titleLooksRelevant = title.includes(artistLower) || title.includes(trackLower);
+                if (!titleLooksRelevant) continue;
 
                 return {
                     videoId: video.videoId,
@@ -121,7 +115,6 @@ class YouTubeModule {
             }
         } catch (err) {
             console.log(`[YouTubeModule] Search failed for query: ${query}`);
-            console.log(`[YouTubeModule] Error: ${err.message}`);
         }
 
         return null;

@@ -147,6 +147,11 @@
     color: #00f2fe;
 }
 
+.stat-card .stat-icon.duration {
+    background: rgba(67, 233, 123, 0.15);
+    color: #43e97b;
+}
+
 .stat-card .stat-value {
     font-size: 28px;
     font-weight: 700;
@@ -218,6 +223,10 @@
 
 .activity-bar:hover {
     filter: brightness(1.2);
+}
+
+.activity-bar.duration-bar {
+    background: linear-gradient(180deg, #43e97b, rgba(67, 233, 123, 0.4));
 }
 
 .activity-bar .bar-tooltip {

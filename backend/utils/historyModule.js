@@ -16,22 +16,23 @@ function initDatabase() {
             track_name TEXT,
             artist_name TEXT,
             image TEXT,
+            duration_seconds REAL DEFAULT 0,
             played_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `);
 
     db.exec(`
-        CREATE INDEX IF NOT EXISTS idx_play_history_played_at 
+        CREATE INDEX IF NOT EXISTS idx_play_history_played_at
         ON play_history(played_at DESC)
     `);
 
     db.exec(`
-        CREATE INDEX IF NOT EXISTS idx_play_history_track_id 
+        CREATE INDEX IF NOT EXISTS idx_play_history_track_id
         ON play_history(track_id)
     `);
 
     db.exec(`
-        CREATE INDEX IF NOT EXISTS idx_play_history_artist_name 
+        CREATE INDEX IF NOT EXISTS idx_play_history_artist_name
         ON play_history(artist_name)
     `);
 
@@ -44,23 +45,33 @@ function addToHistory(track) {
     const trackId = track.id || track.videoId || null;
     if (!trackId) {
         console.warn('Cannot add to history: missing track id');
-        return false;
+        return null;
     }
 
     const stmt = db.prepare(`
-        INSERT INTO play_history (track_id, track_name, artist_name, image)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO play_history (track_id, track_name, artist_name, image, duration_seconds)
+        VALUES (?, ?, ?, ?, 0)
     `);
 
     const image = track.image || track.thumbnail || null;
-    stmt.run(
+    const result = stmt.run(
         trackId,
         track.name || track.title || null,
         track.artist || track.artist_name || null,
         image
     );
 
-    return true;
+    return result.lastInsertRowid || null;
+}
+
+function updateListeningDuration(rowId, seconds) {
+    if (!db) initDatabase();
+    if (!rowId) return;
+
+    const stmt = db.prepare(`
+        UPDATE play_history SET duration_seconds = ? WHERE id = ?
+    `);
+    stmt.run(Math.round(seconds * 10) / 10, rowId);
 }
 
 function getRecentTracks(limit = 6) {
@@ -117,6 +128,7 @@ function clearHistory() {
 module.exports = {
     initDatabase,
     addToHistory,
+    updateListeningDuration,
     getRecentTracks,
     getTopArtists,
     getHistory,

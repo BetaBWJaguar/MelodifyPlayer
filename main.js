@@ -491,6 +491,10 @@ ipcMain.handle('get-stats-listening-activity', (event, days) => {
     return statsModule.getListeningActivity(days || 7);
 });
 
+ipcMain.handle('get-stats-daily-listening-duration', (event, days) => {
+    return statsModule.getDailyListeningDuration(days || 7);
+});
+
 app.on('before-quit', () => {
     globalShortcut.unregisterAll();
     player.destroy();

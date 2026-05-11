@@ -4,26 +4,29 @@ let cachedOverview = null;
 let cachedTopTracks = null;
 let cachedTopArtists = null;
 let cachedActivity = null;
+let cachedDailyDuration = null;
 let languageCallback = null;
 
 async function initStatsPage() {
     try {
-        const [overview, topTracks, topArtists, activity] = await Promise.all([
+        const [overview, topTracks, topArtists, activity, dailyDuration] = await Promise.all([
             ipcRenderer.invoke('get-stats-overview'),
             ipcRenderer.invoke('get-stats-top-tracks', 10),
             ipcRenderer.invoke('get-stats-top-artists', 10),
-            ipcRenderer.invoke('get-stats-listening-activity', 7)
+            ipcRenderer.invoke('get-stats-listening-activity', 7),
+            ipcRenderer.invoke('get-stats-daily-listening-duration', 7)
         ]);
 
         cachedOverview = overview;
         cachedTopTracks = topTracks;
         cachedTopArtists = topArtists;
         cachedActivity = activity;
+        cachedDailyDuration = dailyDuration;
 
-        renderStats(overview, topTracks, topArtists, activity);
+        renderStats(overview, topTracks, topArtists, activity, dailyDuration);
 
         languageCallback = () => {
-            renderStats(cachedOverview, cachedTopTracks, cachedTopArtists, cachedActivity);
+            renderStats(cachedOverview, cachedTopTracks, cachedTopArtists, cachedActivity, cachedDailyDuration);
         };
         window.language.onLanguageChange(languageCallback);
 
@@ -43,7 +46,7 @@ function cleanupStatsPage() {
     }
 }
 
-function renderStats(overview, topTracks, topArtists, activity) {
+function renderStats(overview, topTracks, topArtists, activity, dailyDuration) {
     const lang = window.language || { t: (k) => k };
     const container = document.getElementById('statsContent');
 
@@ -63,6 +66,7 @@ function renderStats(overview, topTracks, topArtists, activity) {
     container.innerHTML = `
         ${renderOverviewCards(overview, lang)}
         ${renderActivityChart(activity, lang)}
+        ${renderDurationChart(dailyDuration, lang)}
         <div class="stats-grid">
             ${renderTopTracks(topTracks, lang)}
             ${renderTopArtists(topArtists, lang)}
@@ -71,6 +75,8 @@ function renderStats(overview, topTracks, topArtists, activity) {
 }
 
 function renderOverviewCards(overview, lang) {
+    const listeningTime = formatDuration(overview.totalListeningSeconds || 0, lang);
+
     return `
         <div class="stats-overview">
             <div class="stat-card">
@@ -81,6 +87,15 @@ function renderOverviewCards(overview, lang) {
                 </div>
                 <span class="stat-value">${formatNumber(overview.totalPlays)}</span>
                 <span class="stat-label">${lang.t('stats.totalPlays')}</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon duration">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+                    </svg>
+                </div>
+                <span class="stat-value">${listeningTime}</span>
+                <span class="stat-label">${lang.t('stats.totalListeningTime')}</span>
             </div>
             <div class="stat-card">
                 <div class="stat-icon tracks">
@@ -164,6 +179,50 @@ function renderActivityChart(activity, lang) {
         <div class="stats-section">
             <div class="stats-section-header">
                 <h2>${lang.t('stats.listeningActivity')}</h2>
+            </div>
+            <div class="activity-chart">
+                <div class="activity-bars">
+                    ${bars}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderDurationChart(dailyDuration, lang) {
+    if (!dailyDuration || dailyDuration.length === 0) {
+        return `
+            <div class="stats-section">
+                <div class="stats-section-header">
+                    <h2>${lang.t('stats.listeningDuration')}</h2>
+                </div>
+                <div class="activity-chart">
+                    <div class="activity-empty">${lang.t('stats.noActivity')}</div>
+                </div>
+            </div>
+        `;
+    }
+
+    const maxSeconds = Math.max(...dailyDuration.map(d => d.total_seconds), 1);
+
+    const bars = dailyDuration.map(day => {
+        const heightPercent = (day.total_seconds / maxSeconds) * 100;
+        const dateLabel = formatDateLabel(day.date);
+        const durationLabel = formatDurationShort(day.total_seconds, lang);
+        return `
+            <div class="activity-bar-wrapper">
+                <div class="activity-bar duration-bar" style="height: ${Math.max(heightPercent, 3)}%">
+                    <span class="bar-tooltip">${durationLabel}</span>
+                </div>
+                <span class="activity-bar-label">${dateLabel}</span>
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <div class="stats-section">
+            <div class="stats-section-header">
+                <h2>${lang.t('stats.listeningDuration')}</h2>
             </div>
             <div class="activity-chart">
                 <div class="activity-bars">
@@ -310,6 +369,46 @@ function formatNumber(num) {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
     if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
     return num.toString();
+}
+
+function formatDuration(totalSeconds, lang) {
+    if (!totalSeconds || totalSeconds <= 0) return '0';
+
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+    if (hours > 0) {
+        const hLabel = hours === 1 ? lang.t('stats.hour') : lang.t('stats.hours');
+        if (minutes > 0) {
+            const mLabel = lang.t('stats.minutesShort');
+            return `${hours} ${hLabel} ${minutes} ${mLabel}`;
+        }
+        return `${hours} ${hLabel}`;
+    }
+    
+    if (minutes > 0) {
+        const mLabel = minutes === 1 ? lang.t('stats.minute') : lang.t('stats.minutes');
+        return `${minutes} ${mLabel}`;
+    }
+
+    const secs = Math.floor(totalSeconds);
+    const sLabel = lang.t('stats.seconds');
+    return `${secs} ${sLabel}`;
+}
+
+function formatDurationShort(totalSeconds, lang) {
+    if (!totalSeconds || totalSeconds <= 0) return '0m';
+
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+    if (hours > 0) {
+        const hShort = lang.t('stats.hoursShort');
+        const mShort = lang.t('stats.minutesShort');
+        return `${hours}${hShort} ${minutes}${mShort}`;
+    }
+
+    return `${minutes}${lang.t('stats.minutesShort')}`;
 }
 
 function formatDateLabel(dateStr) {

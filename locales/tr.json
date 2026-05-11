@@ -191,7 +191,9 @@
     "likedSongs": "Beğenilen Şarkı",
     "favorites": "Favori Şarkı",
     "playlists": "Çalma Listesi",
+    "totalListeningTime": "Dinleme Süresi",
     "listeningActivity": "Dinleme Aktivitesi",
+    "listeningDuration": "Günlük Dinleme Süresi",
     "topTracks": "En Çok Dinlenen Şarkılar",
     "topArtists": "En Çok Dinlenen Sanatçılar",
     "plays": "çalma",
@@ -201,6 +203,13 @@
     "noTopTracks": "Henüz dinlenen şarkı yok",
     "noTopArtists": "Henüz dinlenen sanatçı yok",
     "error": "Hata Oluştu",
-    "errorMessage": "İstatistikler yüklenirken bir hata oluştu. Lütfen tekrar deneyin."
+    "errorMessage": "İstatistikler yüklenirken bir hata oluştu. Lütfen tekrar deneyin.",
+    "hours": "saat",
+    "minutes": "dakika",
+    "seconds": "saniye",
+    "hour": "saat",
+    "minute": "dakika",
+    "hoursShort": "sa",
+    "minutesShort": "dk"
   }
 }

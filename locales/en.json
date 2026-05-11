@@ -191,7 +191,9 @@
     "likedSongs": "Liked Songs",
     "favorites": "Favorites",
     "playlists": "Playlists",
+    "totalListeningTime": "Listening Time",
     "listeningActivity": "Listening Activity",
+    "listeningDuration": "Daily Listening Duration",
     "topTracks": "Top Tracks",
     "topArtists": "Top Artists",
     "plays": "plays",
@@ -201,6 +203,13 @@
     "noTopTracks": "No tracks played yet",
     "noTopArtists": "No artists listened to yet",
     "error": "Error Occurred",
-    "errorMessage": "An error occurred while loading statistics. Please try again."
+    "errorMessage": "An error occurred while loading statistics. Please try again.",
+    "hours": "hours",
+    "minutes": "minutes",
+    "seconds": "seconds",
+    "hour": "hour",
+    "minute": "minute",
+    "hoursShort": "h",
+    "minutesShort": "m"
   }
 }

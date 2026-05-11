@@ -21,6 +21,12 @@ function getOverviewStats() {
 
     const uniqueArtists = database.prepare("SELECT COUNT(DISTINCT artist_name) as count FROM play_history WHERE artist_name IS NOT NULL AND artist_name != ''").get().count;
 
+    let totalListeningSeconds = 0;
+    try {
+        totalListeningSeconds = database.prepare('SELECT COALESCE(SUM(duration_seconds), 0) as total FROM play_history').get().total;
+    } catch (e) {
+    }
+
     let likedCount = 0;
     try {
         likedCount = database.prepare('SELECT COUNT(*) as count FROM liked_songs').get().count;
@@ -43,6 +49,7 @@ function getOverviewStats() {
         totalPlays,
         uniqueTracks,
         uniqueArtists,
+        totalListeningSeconds,
         likedCount,
         favoritesCount,
         playlistsCount
@@ -83,7 +90,23 @@ function getListeningActivity(days = 7) {
     const database = getDb();
 
     const stmt = database.prepare(`
-        SELECT DATE(played_at) as date, COUNT(*) as count
+        SELECT DATE(played_at) as date, COUNT(*) as count,
+               COALESCE(SUM(duration_seconds), 0) as total_seconds
+        FROM play_history
+        WHERE played_at >= datetime('now', '-' || ? || ' days')
+        GROUP BY DATE(played_at)
+        ORDER BY date ASC
+    `);
+
+    return stmt.all(days);
+}
+
+function getDailyListeningDuration(days = 7) {
+    const database = getDb();
+
+    const stmt = database.prepare(`
+        SELECT DATE(played_at) as date,
+               COALESCE(SUM(duration_seconds), 0) as total_seconds
         FROM play_history
         WHERE played_at >= datetime('now', '-' || ? || ' days')
         GROUP BY DATE(played_at)
@@ -111,5 +134,6 @@ module.exports = {
     getTopTracks,
     getTopArtists,
     getListeningActivity,
+    getDailyListeningDuration,
     getRecentTracks
 };

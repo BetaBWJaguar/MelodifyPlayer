@@ -25,6 +25,10 @@ class Player {
         this.playlistIndex = 0;
         this._isSeeking = false;
 
+        this._playStartTime = null;
+        this._accumulatedDuration = 0;
+        this._currentHistoryRowId = null;
+
         pythonPlayer.on('play', (data) => {
             this.notifyListeners('play', data);
         });
@@ -33,6 +37,8 @@ class Player {
             this.stopProgressUpdates();
             
             if (data.reason === 'ended') {
+                this._flushDuration();
+
                 if (this._isSeeking) {
                     this.notifyListeners('stop', data);
                     return;
@@ -120,6 +126,32 @@ class Player {
         }
     }
 
+    _flushDuration() {
+        if (this._playStartTime && this._currentHistoryRowId) {
+            const elapsed = (Date.now() - this._playStartTime) / 1000;
+            const totalDuration = this._accumulatedDuration + elapsed;
+            try {
+                historyModule.updateListeningDuration(this._currentHistoryRowId, totalDuration);
+            } catch (e) {
+                console.error('[Player] Failed to flush listening duration:', e);
+            }
+        }
+        this._playStartTime = null;
+        this._accumulatedDuration = 0;
+    }
+
+    _pauseDurationTracking() {
+        if (this._playStartTime) {
+            const elapsed = (Date.now() - this._playStartTime) / 1000;
+            this._accumulatedDuration += elapsed;
+            this._playStartTime = null;
+        }
+    }
+
+    _resumeDurationTracking() {
+        this._playStartTime = Date.now();
+    }
+
     async play(track, fromHistory = false, addToHistory = true) {
         if (!track.id && !track.videoId) {
             try {
@@ -146,6 +178,11 @@ class Player {
 
         this.isPlayingPromise = true;
 
+        this._flushDuration();
+        this._currentHistoryRowId = null;
+        this._accumulatedDuration = 0;
+        this._playStartTime = null;
+
         if (addToHistory && !fromHistory) {
             this.history = this.history.slice(0, this.historyIndex + 1);
             this.history.push({
@@ -162,12 +199,13 @@ class Player {
             this.historyIndex = this.history.length - 1;
 
             try {
-                historyModule.addToHistory({
+                const rowId = historyModule.addToHistory({
                     id: track.id || track.videoId,
                     name: track.name,
                     artist: track.artist,
                     image: track.image || track.thumbnail
                 });
+                this._currentHistoryRowId = rowId;
             } catch (e) {
                 console.error('Failed to save history to database:', e);
             }
@@ -225,6 +263,7 @@ class Player {
             if (url) {
                 this.notifyListeners('play', this.currentTrack);
                 await pythonPlayer.play(url, 0);
+                this._resumeDurationTracking();
                 
                 setTimeout(() => {
                     this.startProgressUpdates();
@@ -276,6 +315,7 @@ class Player {
 
                 if (!pythonPlayer.getStatus().playing) {
                     await pythonPlayer.play(url, 0);
+                    this._resumeDurationTracking();
                     setTimeout(() => {
                         this.startProgressUpdates();
                     }, 1500);
@@ -300,22 +340,28 @@ class Player {
     }
 
     stop() {
+        this._flushDuration();
+        this._currentHistoryRowId = null;
         this.pendingPlayRequest = null;
         this.stopProgressUpdates();
         pythonPlayer.stop();
     }
 
     destroy() {
+        this._flushDuration();
+        this._currentHistoryRowId = null;
         this.pendingPlayRequest = null;
         this.stopProgressUpdates();
         pythonPlayer.destroy();
     }
 
     pause() {
+        this._pauseDurationTracking();
         pythonPlayer.pause();
     }
 
     async resume() {
+        this._resumeDurationTracking();
         await pythonPlayer.resume();
     }
 

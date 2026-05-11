@@ -33,7 +33,8 @@
     "yourLibrary": "Kütüphanen",
     "createPlaylist": "Çalma Listesi Oluştur",
     "likedSongs": "Beğenilen Şarkılar",
-    "favorites": "Favoriler"
+    "favorites": "Favoriler",
+    "stats": "İstatistiklerim"
   },
   "search": {
     "title": "Ara",
@@ -179,5 +180,27 @@
     "notFound": "Şarkı sözleri bulunamadı",
     "tryManual": "Yukarıdaki arama çubuğunu kullanarak manuel aramayı dene",
     "syncNotFound": "Eşzamanlı şarkı sözü bulunamadı."
+  },
+  "stats": {
+    "title": "İstatistiklerim",
+    "subtitle": "Dinleme alışkanlıklarının özeti",
+    "loading": "İstatistikler yükleniyor...",
+    "totalPlays": "Toplam Çalma",
+    "uniqueTracks": "Eşsiz Şarkı",
+    "uniqueArtists": "Eşsiz Sanatçı",
+    "likedSongs": "Beğenilen Şarkı",
+    "favorites": "Favori Şarkı",
+    "playlists": "Çalma Listesi",
+    "listeningActivity": "Dinleme Aktivitesi",
+    "topTracks": "En Çok Dinlenen Şarkılar",
+    "topArtists": "En Çok Dinlenen Sanatçılar",
+    "plays": "çalma",
+    "noData": "Henüz veri yok",
+    "startListening": "İstatistiklerini görmek için müzik dinlemeye başla",
+    "noActivity": "Henüz dinleme aktivitesi yok",
+    "noTopTracks": "Henüz dinlenen şarkı yok",
+    "noTopArtists": "Henüz dinlenen sanatçı yok",
+    "error": "Hata Oluştu",
+    "errorMessage": "İstatistikler yüklenirken bir hata oluştu. Lütfen tekrar deneyin."
   }
 }

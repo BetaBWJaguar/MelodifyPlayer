@@ -8,6 +8,7 @@ const downloadModule = require('./backend/utils/downloadModule');
 const youtubeModule = require('./backend/utils/youtubeModule');
 const historyModule = require('./backend/utils/historyModule');
 const recommendationModule = require('./backend/utils/recommendationModule');
+const statsModule = require('./backend/utils/statsModule');
 
 let mainWindow;
 
@@ -472,6 +473,22 @@ ipcMain.handle('refresh-recommendations', async () => {
         console.error('Error refreshing recommendations:', error);
         return [];
     }
+});
+
+ipcMain.handle('get-stats-overview', () => {
+    return statsModule.getOverviewStats();
+});
+
+ipcMain.handle('get-stats-top-tracks', (event, limit) => {
+    return statsModule.getTopTracks(limit || 10);
+});
+
+ipcMain.handle('get-stats-top-artists', (event, limit) => {
+    return statsModule.getTopArtists(limit || 10);
+});
+
+ipcMain.handle('get-stats-listening-activity', (event, days) => {
+    return statsModule.getListeningActivity(days || 7);
 });
 
 app.on('before-quit', () => {

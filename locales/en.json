@@ -33,7 +33,8 @@
     "yourLibrary": "Your Library",
     "createPlaylist": "Create Playlist",
     "likedSongs": "Liked Songs",
-    "favorites": "Favorites"
+    "favorites": "Favorites",
+    "stats": "My Statistics"
   },
   "search": {
     "title": "Search",
@@ -179,5 +180,27 @@
     "notFound": "Lyrics not found",
     "tryManual": "Try searching manually using the search bar above",
     "syncNotFound": "Synchronized lyrics not found."
+  },
+  "stats": {
+    "title": "My Statistics",
+    "subtitle": "A summary of your listening habits",
+    "loading": "Loading statistics...",
+    "totalPlays": "Total Plays",
+    "uniqueTracks": "Unique Tracks",
+    "uniqueArtists": "Unique Artists",
+    "likedSongs": "Liked Songs",
+    "favorites": "Favorites",
+    "playlists": "Playlists",
+    "listeningActivity": "Listening Activity",
+    "topTracks": "Top Tracks",
+    "topArtists": "Top Artists",
+    "plays": "plays",
+    "noData": "No data yet",
+    "startListening": "Start listening to music to see your statistics",
+    "noActivity": "No listening activity yet",
+    "noTopTracks": "No tracks played yet",
+    "noTopArtists": "No artists listened to yet",
+    "error": "Error Occurred",
+    "errorMessage": "An error occurred while loading statistics. Please try again."
   }
 }

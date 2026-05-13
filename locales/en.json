@@ -210,6 +210,11 @@
     "hour": "hour",
     "minute": "minute",
     "hoursShort": "h",
-    "minutesShort": "m"
+    "minutesShort": "m",
+    "completionRate": "Song Completion Rate",
+    "completionHigh": "You mostly listen to songs all the way through!",
+    "completionMedium": "You have a balanced listening habit.",
+    "completionLow": "You tend to skip songs before they finish.",
+    "completionInfo": "{completed} out of {total} songs listened to completion (≥90%)"
   }
 }

@@ -5,16 +5,18 @@ let cachedTopTracks = null;
 let cachedTopArtists = null;
 let cachedActivity = null;
 let cachedDailyDuration = null;
+let cachedCompletionRate = null;
 let languageCallback = null;
 
 async function initStatsPage() {
     try {
-        const [overview, topTracks, topArtists, activity, dailyDuration] = await Promise.all([
+        const [overview, topTracks, topArtists, activity, dailyDuration, completionRate] = await Promise.all([
             ipcRenderer.invoke('get-stats-overview'),
             ipcRenderer.invoke('get-stats-top-tracks', 10),
             ipcRenderer.invoke('get-stats-top-artists', 10),
             ipcRenderer.invoke('get-stats-listening-activity', 7),
-            ipcRenderer.invoke('get-stats-daily-listening-duration', 7)
+            ipcRenderer.invoke('get-stats-daily-listening-duration', 7),
+            ipcRenderer.invoke('get-stats-completion-rate')
         ]);
 
         cachedOverview = overview;
@@ -22,11 +24,12 @@ async function initStatsPage() {
         cachedTopArtists = topArtists;
         cachedActivity = activity;
         cachedDailyDuration = dailyDuration;
+        cachedCompletionRate = completionRate;
 
-        renderStats(overview, topTracks, topArtists, activity, dailyDuration);
+        renderStats(overview, topTracks, topArtists, activity, dailyDuration, completionRate);
 
         languageCallback = () => {
-            renderStats(cachedOverview, cachedTopTracks, cachedTopArtists, cachedActivity, cachedDailyDuration);
+            renderStats(cachedOverview, cachedTopTracks, cachedTopArtists, cachedActivity, cachedDailyDuration, cachedCompletionRate);
         };
         window.language.onLanguageChange(languageCallback);
 
@@ -46,7 +49,7 @@ function cleanupStatsPage() {
     }
 }
 
-function renderStats(overview, topTracks, topArtists, activity, dailyDuration) {
+function renderStats(overview, topTracks, topArtists, activity, dailyDuration, completionRate) {
     const lang = window.language || { t: (k) => k };
     const container = document.getElementById('statsContent');
 
@@ -65,6 +68,7 @@ function renderStats(overview, topTracks, topArtists, activity, dailyDuration) {
 
     container.innerHTML = `
         ${renderOverviewCards(overview, lang)}
+        ${renderCompletionRate(completionRate, lang)}
         ${renderActivityChart(activity, lang)}
         ${renderDurationChart(dailyDuration, lang)}
         <div class="stats-grid">
@@ -141,6 +145,54 @@ function renderOverviewCards(overview, lang) {
                 </div>
                 <span class="stat-value">${formatNumber(overview.playlistsCount)}</span>
                 <span class="stat-label">${lang.t('stats.playlists')}</span>
+            </div>
+        </div>
+    `;
+}
+
+function renderCompletionRate(completionRate, lang) {
+    if (!completionRate || completionRate.totalTracks === 0) {
+        return '';
+    }
+
+    const percent = completionRate.avgCompletionPercent;
+    const circumference = 2 * Math.PI * 45;
+    const offset = circumference - (percent / 100) * circumference;
+
+    let statusText = '';
+    let statusClass = '';
+    if (percent >= 80) {
+        statusText = lang.t('stats.completionHigh');
+        statusClass = 'high';
+    } else if (percent >= 50) {
+        statusText = lang.t('stats.completionMedium');
+        statusClass = 'medium';
+    } else {
+        statusText = lang.t('stats.completionLow');
+        statusClass = 'low';
+    }
+
+    return `
+        <div class="stats-section completion-rate-section">
+            <div class="stats-section-header">
+                <h2>${lang.t('stats.completionRate')}</h2>
+            </div>
+            <div class="completion-rate-content">
+                <div class="completion-ring">
+                    <svg viewBox="0 0 100 100" class="completion-svg">
+                        <circle cx="50" cy="50" r="45" class="ring-bg"/>
+                        <circle cx="50" cy="50" r="45" class="ring-progress ${statusClass}"
+                            stroke-dasharray="${circumference}"
+                            stroke-dashoffset="${offset}"/>
+                    </svg>
+                    <div class="completion-percent">
+                        <span class="percent-value">${percent}%</span>
+                    </div>
+                </div>
+                <div class="completion-details">
+                    <p class="completion-status ${statusClass}">${statusText}</p>
+                    <p class="completion-info">${lang.t('stats.completionInfo').replace('{completed}', completionRate.completedTracks).replace('{total}', completionRate.totalTracks)}</p>
+                </div>
             </div>
         </div>
     `;

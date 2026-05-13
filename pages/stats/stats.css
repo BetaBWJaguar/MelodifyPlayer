@@ -397,3 +397,105 @@
     color: var(--text-secondary);
     max-width: 360px;
 }
+
+.completion-rate-section {
+    margin-bottom: 36px;
+}
+
+.completion-rate-content {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 32px;
+    display: flex;
+    align-items: center;
+    gap: 40px;
+}
+
+.completion-ring {
+    position: relative;
+    width: 130px;
+    height: 130px;
+    flex-shrink: 0;
+}
+
+.completion-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.ring-bg {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.08);
+    stroke-width: 8;
+}
+
+.ring-progress {
+    fill: none;
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ring-progress.high {
+    stroke: #43e97b;
+}
+
+.ring-progress.medium {
+    stroke: #fee140;
+}
+
+.ring-progress.low {
+    stroke: #e94560;
+}
+
+.completion-percent {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.percent-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.completion-details {
+    flex: 1;
+}
+
+.completion-status {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.completion-status.high {
+    color: #43e97b;
+}
+
+.completion-status.medium {
+    color: #fee140;
+}
+
+.completion-status.low {
+    color: #e94560;
+}
+
+.completion-info {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+@media (max-width: 600px) {
+    .completion-rate-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 24px;
+    }
+}

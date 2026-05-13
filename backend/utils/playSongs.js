@@ -83,16 +83,31 @@ class Player {
         this.stopProgressUpdates();
         let lastPosition = -1;
         let stuckCounter = 0;
+        let trackDurationUpdated = false;
+        let durationFetchAttempted = false;
 
         this.progressInterval = setInterval(async () => {
             if (!pythonPlayer.process) return;
             const status = pythonPlayer.getStatus();
 
             if (status.playing && !status.paused && this.currentTrack) {
+                if (!durationFetchAttempted && !status.actualDuration) {
+                    durationFetchAttempted = true;
+                    try {
+                        await pythonPlayer.getActualDuration();
+                    } catch (e) {}
+                }
+
                 const actualPosition = await pythonPlayer.getActualPosition();
 
                 if (actualPosition !== null) {
-                    const duration = status.actualDuration !== null ? status.actualDuration : (this.currentTrack.duration || 0);
+                    const freshStatus = pythonPlayer.getStatus();
+                    const duration = freshStatus.actualDuration !== null ? freshStatus.actualDuration : (this.currentTrack.duration || 0);
+
+                    if (!trackDurationUpdated && freshStatus.actualDuration && this._currentHistoryRowId) {
+                        historyModule.updateTrackDuration(this._currentHistoryRowId, freshStatus.actualDuration);
+                        trackDurationUpdated = true;
+                    }
 
                     if (actualPosition === lastPosition) {
                         stuckCounter++;
@@ -197,13 +212,16 @@ class Player {
                 } : {})
             });
             this.historyIndex = this.history.length - 1;
+        }
 
+        if (!fromHistory) {
             try {
                 const rowId = historyModule.addToHistory({
                     id: track.id || track.videoId,
                     name: track.name,
                     artist: track.artist,
-                    image: track.image || track.thumbnail
+                    image: track.image || track.thumbnail,
+                    duration: track.duration || null
                 });
                 this._currentHistoryRowId = rowId;
             } catch (e) {

@@ -210,6 +210,11 @@
     "hour": "saat",
     "minute": "dakika",
     "hoursShort": "sa",
-    "minutesShort": "dk"
+    "minutesShort": "dk",
+    "completionRate": "Şarkı Tamamlama Oranı",
+    "completionHigh": "Şarkıları genellikle sonuna kadar dinliyorsun!",
+    "completionMedium": "Dengeli bir dinleme alışkanlığın var.",
+    "completionLow": "Şarkıları bitirmeden atlama eğilimindesin.",
+    "completionInfo": "{total} şarkının {completed} tanesini sonuna kadar dinledin (≥%90)"
   }
 }

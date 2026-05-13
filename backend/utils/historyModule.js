@@ -17,6 +17,7 @@ function initDatabase() {
             artist_name TEXT,
             image TEXT,
             duration_seconds REAL DEFAULT 0,
+            track_duration REAL DEFAULT 0,
             played_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `);
@@ -39,6 +40,20 @@ function initDatabase() {
     console.log('History database initialized at:', dbPath);
 }
 
+let _hasTrackDurationColumn = null;
+
+function _checkTrackDurationColumn() {
+    if (_hasTrackDurationColumn !== null) return _hasTrackDurationColumn;
+    if (!db) initDatabase();
+    try {
+        const columns = db.prepare("PRAGMA table_info(play_history)").all();
+        _hasTrackDurationColumn = columns.some(col => col.name === 'track_duration');
+    } catch (e) {
+        _hasTrackDurationColumn = false;
+    }
+    return _hasTrackDurationColumn;
+}
+
 function addToHistory(track) {
     if (!db) initDatabase();
 
@@ -48,18 +63,35 @@ function addToHistory(track) {
         return null;
     }
 
-    const stmt = db.prepare(`
-        INSERT INTO play_history (track_id, track_name, artist_name, image, duration_seconds)
-        VALUES (?, ?, ?, ?, 0)
-    `);
-
     const image = track.image || track.thumbnail || null;
-    const result = stmt.run(
-        trackId,
-        track.name || track.title || null,
-        track.artist || track.artist_name || null,
-        image
-    );
+    const hasTrackDuration = _checkTrackDurationColumn();
+
+    let result;
+    if (hasTrackDuration) {
+        const trackDuration = track.duration || 0;
+        const stmt = db.prepare(`
+            INSERT INTO play_history (track_id, track_name, artist_name, image, duration_seconds, track_duration)
+            VALUES (?, ?, ?, ?, 0, ?)
+        `);
+        result = stmt.run(
+            trackId,
+            track.name || track.title || null,
+            track.artist || track.artist_name || null,
+            image,
+            trackDuration
+        );
+    } else {
+        const stmt = db.prepare(`
+            INSERT INTO play_history (track_id, track_name, artist_name, image, duration_seconds)
+            VALUES (?, ?, ?, ?, 0)
+        `);
+        result = stmt.run(
+            trackId,
+            track.name || track.title || null,
+            track.artist || track.artist_name || null,
+            image
+        );
+    }
 
     return result.lastInsertRowid || null;
 }
@@ -72,6 +104,18 @@ function updateListeningDuration(rowId, seconds) {
         UPDATE play_history SET duration_seconds = ? WHERE id = ?
     `);
     stmt.run(Math.round(seconds * 10) / 10, rowId);
+}
+
+function updateTrackDuration(rowId, trackDuration) {
+    if (!db) initDatabase();
+    if (!rowId || !trackDuration) return;
+
+    if (!_checkTrackDurationColumn()) return;
+
+    const stmt = db.prepare(`
+        UPDATE play_history SET track_duration = ? WHERE id = ?
+    `);
+    stmt.run(trackDuration, rowId);
 }
 
 function getRecentTracks(limit = 6) {
@@ -129,6 +173,7 @@ module.exports = {
     initDatabase,
     addToHistory,
     updateListeningDuration,
+    updateTrackDuration,
     getRecentTracks,
     getTopArtists,
     getHistory,

@@ -129,11 +129,35 @@ function getRecentTracks(limit = 10) {
     return stmt.all(limit);
 }
 
+function getCompletionRate() {
+    const database = getDb();
+
+    try {
+        const row = database.prepare(`
+            SELECT
+                COUNT(*) as totalTracks,
+                COALESCE(SUM(CASE WHEN duration_seconds >= track_duration * 0.9 THEN 1 ELSE 0 END), 0) as completedTracks,
+                COALESCE(AVG(CASE WHEN track_duration > 0 THEN MIN(duration_seconds, track_duration) * 100.0 / track_duration END), 0) as avgCompletionPercent
+            FROM play_history
+            WHERE track_duration > 0
+        `).get();
+
+        return {
+            totalTracks: row.totalTracks || 0,
+            completedTracks: row.completedTracks || 0,
+            avgCompletionPercent: Math.round((row.avgCompletionPercent || 0) * 10) / 10
+        };
+    } catch (e) {
+        return null;
+    }
+}
+
 module.exports = {
     getOverviewStats,
     getTopTracks,
     getTopArtists,
     getListeningActivity,
     getDailyListeningDuration,
-    getRecentTracks
+    getRecentTracks,
+    getCompletionRate
 };

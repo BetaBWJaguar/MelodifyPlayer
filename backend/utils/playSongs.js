@@ -83,7 +83,6 @@ class Player {
         this.stopProgressUpdates();
         let lastPosition = -1;
         let stuckCounter = 0;
-        let trackDurationUpdated = false;
         let durationFetchAttempted = false;
 
         this.progressInterval = setInterval(async () => {
@@ -102,11 +101,18 @@ class Player {
 
                 if (actualPosition !== null) {
                     const freshStatus = pythonPlayer.getStatus();
-                    const duration = freshStatus.actualDuration !== null ? freshStatus.actualDuration : (this.currentTrack.duration || 0);
 
-                    if (!trackDurationUpdated && freshStatus.actualDuration && this._currentHistoryRowId) {
-                        historyModule.updateTrackDuration(this._currentHistoryRowId, freshStatus.actualDuration);
-                        trackDurationUpdated = true;
+                    const duration = freshStatus.actualDuration !== null
+                        ? freshStatus.actualDuration
+                        : (this.currentTrack.duration || 0);
+
+                    if (!this._trackDurationUpdated && duration > 0 && this._currentHistoryRowId) {
+                        try {
+                            historyModule.updateTrackDuration(this._currentHistoryRowId, duration);
+                            this._trackDurationUpdated = true;
+                        } catch (e) {
+                            console.error('[Player] Failed to update track duration:', e);
+                        }
                     }
 
                     if (actualPosition === lastPosition) {
@@ -117,10 +123,9 @@ class Player {
                     }
 
                     if (duration > 0 && actualPosition >= (duration - 3) && stuckCounter >= 2) {
-                        console.log('[Player] WATCHDOG: Player stucked!');
+                        console.log('[Player] WATCHDOG: Player stuck!');
                         stuckCounter = 0;
                         pythonPlayer.isPlaying = false;
-
                         pythonPlayer.notifyListeners('stop', { reason: 'ended' });
                         return;
                     }
@@ -197,6 +202,7 @@ class Player {
         this._currentHistoryRowId = null;
         this._accumulatedDuration = 0;
         this._playStartTime = null;
+        this._trackDurationUpdated = false;
 
         if (addToHistory && !fromHistory) {
             this.history = this.history.slice(0, this.historyIndex + 1);
@@ -265,6 +271,14 @@ class Player {
                 image: track.image || video?.thumbnail || null
             };
 
+            if (this._currentHistoryRowId && this.currentTrack.duration) {
+                try {
+                    historyModule.updateTrackDuration(this._currentHistoryRowId, this.currentTrack.duration);
+                } catch (e) {
+                    console.error('[Player] Failed to update track duration after YouTube lookup:', e);
+                }
+            }
+
             if (this.historyIndex >= 0 && this.historyIndex < this.history.length) {
                 const historyEntry = this.history[this.historyIndex];
                 if (historyEntry) {
@@ -326,6 +340,14 @@ class Player {
                     thumbnail: this.currentTrack.image || video.thumbnail,
                     image: this.currentTrack.image || video.thumbnail
                 };
+
+                if (this._currentHistoryRowId && video.duration) {
+                    try {
+                        historyModule.updateTrackDuration(this._currentHistoryRowId, video.duration);
+                    } catch (e) {
+                        console.error('[Player] Failed to update track duration from background fetch:', e);
+                    }
+                }
 
                 if (this.pendingPlayRequest) {
                     return;
@@ -537,7 +559,8 @@ class Player {
                         match.artist.toLowerCase() !== artistName.toLowerCase())) {
                     matchedTracks.push({
                         ...match,
-                        match: similar.match
+                        match: similar.match,
+                        duration: match.duration || similar.duration
                     });
                 }
             }
@@ -595,6 +618,9 @@ class Player {
                 );
                 if (similar && similar.image) {
                     selectedTrack.image = similar.image;
+                }
+                if (similar && similar.duration && !selectedTrack.duration) {
+                    selectedTrack.duration = similar.duration;
                 }
             }
 
@@ -823,7 +849,8 @@ class Player {
                     id: track.id || track.videoId,
                     name: track.name,
                     artist: track.artist,
-                    image: track.image || track.thumbnail
+                    image: track.image || track.thumbnail,
+                    duration: track.duration || null
                 });
             } catch (e) {
                  console.error('Failed to save history to database:', e);
@@ -882,7 +909,8 @@ class Player {
                     id: track.id || track.videoId,
                     name: track.name,
                     artist: track.artist,
-                    image: track.image || track.thumbnail
+                    image: track.image || track.thumbnail,
+                    duration: track.duration || null
                 });
             } catch (e) {
                 console.error('Failed to save history to database:', e);

@@ -211,6 +211,7 @@
     "minute": "minute",
     "hoursShort": "h",
     "minutesShort": "m",
+    "secondsShort": "s",
     "completionRate": "Song Completion Rate",
     "completionHigh": "You mostly listen to songs all the way through!",
     "completionMedium": "You have a balanced listening habit.",

@@ -453,6 +453,7 @@ function formatDurationShort(totalSeconds, lang) {
 
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = Math.floor(totalSeconds % 60);
 
     if (hours > 0) {
         const hShort = lang.t('stats.hoursShort');
@@ -460,7 +461,11 @@ function formatDurationShort(totalSeconds, lang) {
         return `${hours}${hShort} ${minutes}${mShort}`;
     }
 
-    return `${minutes}${lang.t('stats.minutesShort')}`;
+    if (minutes > 0) {
+        return `${minutes}${lang.t('stats.minutesShort')}`;
+    }
+
+    return `${seconds}${lang.t('stats.secondsShort')}`;
 }
 
 function formatDateLabel(dateStr) {

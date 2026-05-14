@@ -211,6 +211,7 @@
     "minute": "dakika",
     "hoursShort": "sa",
     "minutesShort": "dk",
+    "secondsShort": "sn",
     "completionRate": "Şarkı Tamamlama Oranı",
     "completionHigh": "Şarkıları genellikle sonuna kadar dinliyorsun!",
     "completionMedium": "Dengeli bir dinleme alışkanlığın var.",

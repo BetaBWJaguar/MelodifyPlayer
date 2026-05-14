@@ -37,7 +37,9 @@ class Player {
             this.stopProgressUpdates();
             
             if (data.reason === 'ended') {
-                this._flushDuration();
+                if (!this._isSeeking) {
+                    this._flushDuration();
+                }
 
                 if (this._isSeeking) {
                     this.notifyListeners('stop', data);
@@ -431,10 +433,12 @@ class Player {
                 }, 2000);
             } else {
                 console.log('[Player] IPC seek failed, falling back to restart');
+                this._pauseDurationTracking();
                 this.stopProgressUpdates();
                 await pythonPlayer.stop();
                 await new Promise(r => setTimeout(r, 300));
                 await pythonPlayer.play(this.currentTrack.streamUrl, position);
+                this._resumeDurationTracking();
 
                 setTimeout(() => {
                     this.startProgressUpdates();

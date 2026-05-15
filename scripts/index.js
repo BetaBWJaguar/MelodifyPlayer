@@ -615,6 +615,163 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateFavoriteButton();
     }
 
+    const addToPlaylistPlayerBtn = document.getElementById('addToPlaylistPlayerBtn');
+    const playerPlaylistDropdown = document.getElementById('playerPlaylistDropdown');
+    const playerPlaylistDropdownList = document.getElementById('playerPlaylistDropdownList');
+    const playerPlaylistDropdownEmpty = document.getElementById('playerPlaylistDropdownEmpty');
+    const playerPlaylistDropdownTrack = document.getElementById('playerPlaylistDropdownTrack');
+    const closePlayerPlaylistDropdown = document.getElementById('closePlayerPlaylistDropdown');
+
+    function closePlayerPlaylistDropdownFn() {
+        if (playerPlaylistDropdown) {
+            playerPlaylistDropdown.classList.remove('active');
+        }
+    }
+
+    async function openPlayerPlaylistDropdown() {
+        if (!playerState.currentTrack) return;
+
+        const track = playerState.currentTrack;
+        const trackId = track.id || track.videoId;
+        if (!trackId) return;
+
+        if (playerPlaylistDropdownTrack) {
+            const imageUrl = track.image || track.thumbnail || '';
+            playerPlaylistDropdownTrack.innerHTML = `
+                <div class="player-playlist-dropdown-track-image">
+                    ${imageUrl ? `<img src="${imageUrl}" alt="">` : '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>'}
+                </div>
+                <div class="player-playlist-dropdown-track-info">
+                    <span class="player-playlist-dropdown-track-name">${track.name || ''}</span>
+                    <span class="player-playlist-dropdown-track-artist">${track.artist || ''}</span>
+                </div>
+            `;
+        }
+
+        try {
+            const playlists = await ipcRenderer.invoke('get-all-playlists');
+
+            if (playlists && playlists.length > 0) {
+                const lang = window.language || { t: (k) => k };
+                playerPlaylistDropdownList.innerHTML = playlists.map(pl => {
+                    const imageUrl = pl.cover_image || '';
+                    const trackCount = pl.song_count || 0;
+                    return `
+                        <div class="player-playlist-item" data-playlist-id="${pl.id}">
+                            <div class="player-playlist-item-image">
+                                ${imageUrl ? `<img src="${imageUrl}" alt="">` : '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>'}
+                            </div>
+                            <div class="player-playlist-item-info">
+                                <span class="player-playlist-item-name">${pl.name}</span>
+                                <span class="player-playlist-item-count">${trackCount} ${lang.t('library.tracks')}</span>
+                            </div>
+                            <button class="player-playlist-item-add">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+                playerPlaylistDropdownList.style.display = 'block';
+                playerPlaylistDropdownEmpty.style.display = 'none';
+
+                const items = playerPlaylistDropdownList.querySelectorAll('.player-playlist-item');
+                items.forEach(item => {
+                    item.addEventListener('click', async () => {
+                        const playlistId = item.dataset.playlistId;
+                        const lang = window.language || { t: (k) => k };
+                        try {
+                            const result = await ipcRenderer.invoke('add-song-to-playlist', playlistId, {
+                                id: trackId,
+                                videoId: track.videoId || trackId,
+                                name: track.name,
+                                artist: track.artist,
+                                image: track.image || track.thumbnail || '',
+                                duration: track.duration || null
+                            });
+                            if (!result) {
+                                showPlayerNotification(lang.t('search.alreadyInPlaylist'));
+                            } else {
+                                showPlayerNotification(lang.t('search.addedToPlaylist'));
+                            }
+                            console.log('Added to playlist:', playlistId);
+                        } catch (err) {
+                            console.error('Error adding to playlist:', err);
+                            showPlayerNotification(lang.t('search.errorAdding'));
+                        }
+                        closePlayerPlaylistDropdownFn();
+                    });
+                });
+            } else {
+                playerPlaylistDropdownList.style.display = 'none';
+                playerPlaylistDropdownEmpty.style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Error loading playlists:', error);
+        }
+
+        playerPlaylistDropdown.classList.add('active');
+    }
+
+    if (addToPlaylistPlayerBtn) {
+        addToPlaylistPlayerBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (playerPlaylistDropdown.classList.contains('active')) {
+                closePlayerPlaylistDropdownFn();
+            } else {
+                openPlayerPlaylistDropdown();
+            }
+        });
+    }
+
+    if (closePlayerPlaylistDropdown) {
+        closePlayerPlaylistDropdown.addEventListener('click', closePlayerPlaylistDropdownFn);
+    }
+
+    if (playerPlaylistDropdown) {
+        playerPlaylistDropdown.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+    }
+
+    document.addEventListener('click', (e) => {
+        if (playerPlaylistDropdown && playerPlaylistDropdown.classList.contains('active')) {
+            if (!playerPlaylistDropdown.contains(e.target) && e.target !== addToPlaylistPlayerBtn) {
+                closePlayerPlaylistDropdownFn();
+            }
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && playerPlaylistDropdown && playerPlaylistDropdown.classList.contains('active')) {
+            closePlayerPlaylistDropdownFn();
+        }
+    });
+
+    function showPlayerNotification(message) {
+        const existing = document.querySelector('.player-notification');
+        if (existing) existing.remove();
+
+        const notification = document.createElement('div');
+        notification.className = 'player-notification';
+        notification.textContent = message;
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.classList.add('show');
+        }, 10);
+
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 2500);
+    }
+
     const progress = document.querySelector('.progress');
     if (progress) {
         const handleProgressInteraction = (clientX) => {

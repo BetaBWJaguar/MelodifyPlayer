@@ -449,7 +449,7 @@ function formatDuration(totalSeconds, lang) {
 }
 
 function formatDurationShort(totalSeconds, lang) {
-    if (!totalSeconds || totalSeconds <= 0) return '0m';
+    if (!totalSeconds || totalSeconds <= 0) return `0${lang.t('stats.secondsShort')}`;
 
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -458,11 +458,14 @@ function formatDurationShort(totalSeconds, lang) {
     if (hours > 0) {
         const hShort = lang.t('stats.hoursShort');
         const mShort = lang.t('stats.minutesShort');
-        return `${hours}${hShort} ${minutes}${mShort}`;
+        const sShort = lang.t('stats.secondsShort');
+        return `${hours}${hShort} ${minutes}${mShort} ${seconds}${sShort}`;
     }
 
     if (minutes > 0) {
-        return `${minutes}${lang.t('stats.minutesShort')}`;
+        const mShort = lang.t('stats.minutesShort');
+        const sShort = lang.t('stats.secondsShort');
+        return `${minutes}${mShort} ${seconds}${sShort}`;
     }
 
     return `${seconds}${lang.t('stats.secondsShort')}`;

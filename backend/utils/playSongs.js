@@ -462,6 +462,7 @@ class Player {
         console.log('[Player] Repeat mode set to:', repeat);
     }
 
+
     async playNext() {
         if (this.playlistMode && this.playlistTracks.length > 0) {
             this.playlistIndex++;
@@ -551,30 +552,44 @@ class Player {
                 }))
             ];
 
-            const matchedTracks = [];
-            for (const similar of similarTracks) {
-                const match = allLocalTracks.find(t =>
-                    t.name.toLowerCase().includes(similar.name.toLowerCase()) ||
-                    similar.name.toLowerCase().includes(t.name.toLowerCase())
-                );
 
-                if (match &&
-                    (match.name.toLowerCase() !== trackName.toLowerCase() ||
-                        match.artist.toLowerCase() !== artistName.toLowerCase())) {
-                    matchedTracks.push({
-                        ...match,
-                        match: similar.match,
-                        duration: match.duration || similar.duration
+            const candidatePool = similarTracks
+                .filter(t => {
+                    const key = `${t.name.toLowerCase()}:${t.artist.toLowerCase()}`;
+                    return (t.name.toLowerCase() !== trackName.toLowerCase() ||
+                            t.artist.toLowerCase() !== artistName.toLowerCase()) &&
+                        !historySet.has(key);
+                })
+                .map(similar => {
+                    const localMatch = allLocalTracks.find(t => {
+                        const nameMatch = t.name.toLowerCase().trim() === similar.name.toLowerCase().trim();
+                        const artistMatch = t.artist.toLowerCase().trim() === similar.artist.toLowerCase().trim() ||
+                            t.artist.toLowerCase().includes(similar.artist.toLowerCase().trim()) ||
+                            similar.artist.toLowerCase().includes(t.artist.toLowerCase().trim());
+                        return nameMatch && artistMatch;
                     });
-                }
-            }
 
-            let candidatePool = matchedTracks.length > 0 ? matchedTracks : similarTracks;
+                    if (localMatch) {
+                        return {
+                            name: localMatch.name,
+                            artist: localMatch.artist,
+                            image: localMatch.image || similar.image,
+                            id: localMatch.id,
+                            duration: localMatch.duration || similar.duration,
+                            match: similar.match,
+                            isLocal: true
+                        };
+                    }
 
-            candidatePool = candidatePool.filter(t => {
-                const key = `${t.name.toLowerCase()}:${t.artist.toLowerCase()}`;
-                return !historySet.has(key);
-            });
+                    return {
+                        name: similar.name,
+                        artist: similar.artist,
+                        image: similar.image,
+                        duration: similar.duration,
+                        match: similar.match,
+                        isLocal: false
+                    };
+                });
 
             if (candidatePool.length === 0) {
                 const youtubeResult = await this.playRandomFromYouTube(addToHistory);
@@ -592,10 +607,9 @@ class Player {
                 const recentlyPlayed = this.recentHistory.includes(key);
                 const freshnessPenalty = recentlyPlayed ? -0.6 : 0;
 
-                const isLocal = track.id !== undefined;
-                const localBoost = isLocal ? 0.2 : 0;
+                const localBoost = track.isLocal ? 0.1 : 0;
 
-                const randomness = Math.random() * 0.3;
+                const randomness = Math.random() * 0.5;
 
                 const score = similarity + freshnessPenalty + localBoost + randomness;
 
@@ -607,12 +621,24 @@ class Player {
             let selectedTrack;
 
             if (this.shuffle) {
-                const topN = Math.max(3, Math.floor(scoredPool.length * 0.3));
+                const topN = Math.max(5, Math.floor(scoredPool.length * 0.4));
                 const topCandidates = scoredPool.slice(0, topN);
 
                 selectedTrack = topCandidates[Math.floor(Math.random() * topCandidates.length)].track;
             } else {
-                selectedTrack = scoredPool[0].track;
+                const topPick = Math.min(3, scoredPool.length);
+                selectedTrack = scoredPool[Math.floor(Math.random() * topPick)].track;
+            }
+
+
+            const localCount = candidatePool.filter(t => t.isLocal).length;
+            const localRatio = localCount / candidatePool.length;
+
+            if (localRatio > 0.6 && Math.random() < 0.4) {
+                const nonLocal = candidatePool.filter(t => !t.isLocal);
+                if (nonLocal.length > 0) {
+                    selectedTrack = nonLocal[Math.floor(Math.random() * nonLocal.length)];
+                }
             }
 
             if (!selectedTrack.image) {
@@ -635,6 +661,13 @@ class Player {
             if (this.recentHistory.length > 30) {
                 this.recentHistory.shift();
             }
+
+            console.log('[Player] Selected next track:', {
+                name: selectedTrack.name,
+                artist: selectedTrack.artist,
+                isLocal: selectedTrack.isLocal || false,
+                similarity: selectedTrack.match
+            });
 
             await this.play(selectedTrack, false, addToHistory);
 
@@ -701,12 +734,39 @@ class Player {
             const yts = require("yt-search");
 
             const randomQueries = [
-                "billboard hot 100 official music video",
-                "spotify global top 50 official audio",
-                "vevo hot this week official",
-                "top pop hit songs official video",
-                "best new music official audio",
-                "hit songs 2024 official vevo"
+                "underrated indie songs you should hear",
+                "hidden gem alternative rock",
+                "lesser known r&b tracks",
+                "obscure electronic music",
+                "underground hip hop tracks",
+                "deep cuts folk acoustic",
+                "soulful vocals lesser known",
+                "dreamy shoegaze atmospheric",
+                "lo-fi indie bedroom pop",
+                "post-punk revival tracks",
+                "jazz fusion instrumental",
+                "psychedelic rock modern",
+                "neo soul smooth vibes",
+                "synthwave retrowave track",
+                "latin indie alternative",
+                "afrobeat modern groove",
+                "bossa nova contemporary",
+                "k-pop b-side track",
+                "scandinavian indie pop",
+                "french electro house",
+                "melancholic beautiful song",
+                "upbeat feel good track",
+                "chill sunset vibe song",
+                "late night drive music",
+                "morning coffee acoustic",
+                "rainy day ambient song",
+                "energetic workout rock",
+                "nostalgic 2010s indie",
+                "new artist debut single",
+                "emerging musician original",
+                "independent artist official audio",
+                "bandcamp discovery track",
+                "fresh alternative release"
             ];
 
             const banned = [
@@ -718,7 +778,19 @@ class Player {
                 "songs that", "everyone knows", "mashup", "challenge", "dance",
                 "sped up", "speed up", "slowed", "reverb", "8d", "bass boosted",
                 "parody", "tutorial", "how to", "vlog", "type beat", "free beat",
-                "gaming", "montage", "amv", "edit", "ncs", "no copyright"
+                "gaming", "montage", "amv", "edit", "ncs", "no copyright",
+                "top 50", "top 100", "top 40", "top 10", "top 20",
+                "billboard", "hot 100", "charts", "chart",
+                "spotify top", "apple music top",
+                "most played", "most streamed",
+                "hits of", "best of", "greatest hits",
+                "summer hits", "hits playlist",
+                "number one", "no. 1", "#1 song",
+                "award winning", "grammy",
+                "vevo hot", "trending now",
+                "popular songs", "famous songs",
+                "everyone is listening", "viral songs",
+                "banger", "bangers"
             ];
             
             const randomQuery = randomQueries[Math.floor(Math.random() * randomQueries.length)];
@@ -734,25 +806,27 @@ class Player {
                 const title = video.title.toLowerCase();
                 const hasBannedWord = banned.some(word => title.includes(word));
                 const duration = video.seconds || 0;
-                const maxDuration = 600;
-                const minDuration = 60;
-                
+                const maxDuration = 480;
+                const minDuration = 90;
+
                 return !hasBannedWord && duration >= minDuration && duration <= maxDuration;
             });
             
             if (filteredVideos.length === 0) {
                 return false;
             }
-            
-            const randomVideo = filteredVideos[Math.floor(Math.random() * filteredVideos.length)];
-            
+
+            const poolSize = Math.min(5, filteredVideos.length);
+            const pool = filteredVideos.slice(0, poolSize);
+            const randomVideo = pool[Math.floor(Math.random() * pool.length)];
+
             const track = {
                 name: randomVideo.title,
                 artist: randomVideo.author?.name || 'Unknown',
                 image: randomVideo.thumbnail || null,
                 id: randomVideo.videoId
             };
-            
+
             await this.play(track, false, manual);
             return true;
         } catch (error) {

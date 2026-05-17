@@ -842,6 +842,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await updateLikeButton();
         await updateFavoriteButton();
         updatePrevButton();
+        updatePlaylistInfo();
 
         preFetchLyrics(data.name, data.artist);
     });
@@ -867,6 +868,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                     playerState.isPlaying = false;
                     playerState.isPaused = false;
                     playerState.currentTrack = null;
+
+                const addToPlaylistBtn = document.getElementById('addToPlaylistPlayerBtn');
+                const playerLeft = document.querySelector('.player-left');
+
+                if (addToPlaylistBtn) {
+                    addToPlaylistBtn.style.display = 'flex';
+                }
+                if (playerLeft) {
+                    playerLeft.classList.remove('has-playlist');
+                }
+
                     updatePlayButton();
                     updateLikeButton();
                     updateFavoriteButton();
@@ -951,10 +963,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const playlistInfo = document.getElementById('playlistInfo');
             const playlistNameEl = document.getElementById('playlistName');
             const playlistPositionEl = document.getElementById('playlistPosition');
-            
+            const addToPlaylistBtn = document.getElementById('addToPlaylistPlayerBtn');
+            const playerLeft = document.querySelector('.player-left');
+
             if (playerState.playlistMode && playerState.playlistName) {
                 if (playlistInfo) {
                     playlistInfo.style.display = 'flex';
+                    playlistInfo.classList.add('visible');
                 }
                 if (playlistNameEl) {
                     playlistNameEl.textContent = playerState.playlistName;
@@ -964,9 +979,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const total = playerState.totalTracks;
                     playlistPositionEl.textContent = `${currentIndex}/${total}`;
                 }
+
+                if (addToPlaylistBtn) {
+                    addToPlaylistBtn.style.display = 'none';
+                }
+
+                if (playerLeft) {
+                    playerLeft.classList.add('has-playlist');
+                }
             } else {
                 if (playlistInfo) {
                     playlistInfo.style.display = 'none';
+                    playlistInfo.classList.remove('visible');
+                }
+
+                if (addToPlaylistBtn) {
+                    addToPlaylistBtn.style.display = 'flex';
+                }
+
+                if (playerLeft) {
+                    playerLeft.classList.remove('has-playlist');
                 }
             }
         }

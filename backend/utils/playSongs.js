@@ -242,10 +242,11 @@ class Player {
         try {
             console.log('[Player] Requesting to play:', track.name, 'by', track.artist);
             
-            if (pythonPlayer.getStatus().playing) {
+            const currentStatus = pythonPlayer.getStatus();
+            if (currentStatus.playing || currentStatus.paused) {
                 pythonPlayer.stop();
                 let timeoutAttempts = 0;
-                while (pythonPlayer.getStatus().playing && timeoutAttempts < 15) {
+                while ((pythonPlayer.getStatus().playing || pythonPlayer.getStatus().paused) && timeoutAttempts < 15) {
                     await new Promise(r => setTimeout(r, 100));
                     timeoutAttempts++;
                 }
@@ -408,7 +409,8 @@ class Player {
     }
 
     async seek(position) {
-        if (!this.currentTrack || !pythonPlayer.getStatus().playing) {
+        const status = pythonPlayer.getStatus();
+        if (!this.currentTrack || (!status.playing && !status.paused)) {
             return;
         }
         

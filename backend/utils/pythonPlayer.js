@@ -155,9 +155,8 @@ class PythonPlayer {
                 try {
                     await this._sendMpvCommand({ command: loadCmd });
 
-                    if (this.isPaused) {
-                        await this._sendMpvCommand({ command: ["set_property", "pause", false] });
-                    }
+
+                    await this._sendMpvCommand({ command: ["set_property", "pause", false] });
 
                     this.isPlaying = true;
                     this.isPaused = false;
@@ -417,8 +416,8 @@ class PythonPlayer {
     }
 
     async seek(position) {
-        if (!this.isPlaying || !this.process) {
-            console.log('[PythonPlayer] Cannot seek - not playing');
+        if ((!this.isPlaying && !this.isPaused) || !this.process) {
+            console.log('[PythonPlayer] Cannot seek - not playing or paused');
             return false;
         }
 
@@ -428,7 +427,9 @@ class PythonPlayer {
             await this._sendMpvCommand({ command: ["seek", position, "absolute"] });
 
             this.basePosition = position;
-            this.playStartTime = Date.now();
+            if (this.isPlaying) {
+                this.playStartTime = Date.now();
+            }
 
             console.log('[PythonPlayer] Seek successful');
             return true;

@@ -25,8 +25,8 @@ class Player {
         this.playlistIndex = 0;
         this._isSeeking = false;
 
-        this._playStartTime = null;
-        this._accumulatedDuration = 0;
+        this._lastProgressPosition = null;
+        this._actualListeningSeconds = 0;
         this._currentHistoryRowId = null;
 
         pythonPlayer.on('play', (data) => {
@@ -83,6 +83,7 @@ class Player {
 
     startProgressUpdates() {
         this.stopProgressUpdates();
+        this._lastProgressPosition = null;
         let lastPosition = -1;
         let stuckCounter = 0;
         let durationFetchAttempted = false;
@@ -117,6 +118,14 @@ class Player {
                         }
                     }
 
+                    if (this._lastProgressPosition !== null) {
+                        const delta = actualPosition - this._lastProgressPosition;
+                        if (delta > 0 && delta <= 2) {
+                            this._actualListeningSeconds += delta;
+                        }
+                    }
+                    this._lastProgressPosition = actualPosition;
+
                     if (actualPosition === lastPosition) {
                         stuckCounter++;
                     } else {
@@ -149,29 +158,15 @@ class Player {
     }
 
     _flushDuration() {
-        if (this._playStartTime && this._currentHistoryRowId) {
-            const elapsed = (Date.now() - this._playStartTime) / 1000;
-            const totalDuration = this._accumulatedDuration + elapsed;
+        if (this._currentHistoryRowId && this._actualListeningSeconds > 0) {
             try {
-                historyModule.updateListeningDuration(this._currentHistoryRowId, totalDuration);
+                historyModule.updateListeningDuration(this._currentHistoryRowId, this._actualListeningSeconds);
             } catch (e) {
                 console.error('[Player] Failed to flush listening duration:', e);
             }
         }
-        this._playStartTime = null;
-        this._accumulatedDuration = 0;
-    }
-
-    _pauseDurationTracking() {
-        if (this._playStartTime) {
-            const elapsed = (Date.now() - this._playStartTime) / 1000;
-            this._accumulatedDuration += elapsed;
-            this._playStartTime = null;
-        }
-    }
-
-    _resumeDurationTracking() {
-        this._playStartTime = Date.now();
+        this._actualListeningSeconds = 0;
+        this._lastProgressPosition = null;
     }
 
     async play(track, fromHistory = false, addToHistory = true) {
@@ -202,8 +197,8 @@ class Player {
 
         this._flushDuration();
         this._currentHistoryRowId = null;
-        this._accumulatedDuration = 0;
-        this._playStartTime = null;
+        this._actualListeningSeconds = 0;
+        this._lastProgressPosition = null;
         this._trackDurationUpdated = false;
 
         if (addToHistory && !fromHistory) {
@@ -298,7 +293,6 @@ class Player {
             if (url) {
                 this.notifyListeners('play', this.currentTrack);
                 await pythonPlayer.play(url, 0);
-                this._resumeDurationTracking();
                 
                 setTimeout(() => {
                     this.startProgressUpdates();
@@ -358,7 +352,6 @@ class Player {
 
                 if (!pythonPlayer.getStatus().playing) {
                     await pythonPlayer.play(url, 0);
-                    this._resumeDurationTracking();
                     setTimeout(() => {
                         this.startProgressUpdates();
                     }, 1500);
@@ -399,12 +392,10 @@ class Player {
     }
 
     pause() {
-        this._pauseDurationTracking();
         pythonPlayer.pause();
     }
 
     async resume() {
-        this._resumeDurationTracking();
         await pythonPlayer.resume();
     }
 
@@ -416,6 +407,7 @@ class Player {
         
         console.log('[Player] Seeking to', position);
         this._isSeeking = true;
+        this._lastProgressPosition = null;
         
         try {
             const success = await pythonPlayer.seek(position);
@@ -435,12 +427,10 @@ class Player {
                 }, 2000);
             } else {
                 console.log('[Player] IPC seek failed, falling back to restart');
-                this._pauseDurationTracking();
                 this.stopProgressUpdates();
                 await pythonPlayer.stop();
                 await new Promise(r => setTimeout(r, 300));
                 await pythonPlayer.play(this.currentTrack.streamUrl, position);
-                this._resumeDurationTracking();
 
                 setTimeout(() => {
                     this.startProgressUpdates();

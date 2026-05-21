@@ -224,6 +224,25 @@
     "skipRateInfo": "{total} şarkının {skipped} tanesi atlandı (%50'den az dinlenilen)",
     "exportStats": "Dışa Aktar",
     "exportSuccess": "İstatistikler başarıyla dışa aktarıldı!",
-    "exportError": "İstatistikler dışa aktarılamadı."
+    "exportError": "İstatistikler dışa aktarılamadı.",
+    "firstPlayDate": "İlk Çalma",
+    "listeningStreak": "Dinleme Serisi",
+    "days": "gün",
+    "busiestDay": "En Yoğun Gün",
+    "avgPlaysPerDay": "Günlük Ort. Çalma",
+    "topGenres": "En Çok Dinlenen Türler",
+    "peakHour": "En Yoğun Saat",
+    "peakHourInfo": "Müziği en çok saat {hour}:00'te dinliyorsun",
+    "sunday": "Pazar",
+    "monday": "Pazartesi",
+    "tuesday": "Salı",
+    "wednesday": "Çarşamba",
+    "thursday": "Perşembe",
+    "friday": "Cuma",
+    "saturday": "Cumartesi",
+    "since": "Beri",
+    "day": "gün",
+    "noGenres": "Henüz tür verisi yok",
+    "listeningByHour": "Saate Göre Dinleme"
   }
 }

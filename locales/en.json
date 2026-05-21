@@ -224,6 +224,25 @@
     "skipRateInfo": "{skipped} out of {total} songs skipped (<50% listened)",
     "exportStats": "Export",
     "exportSuccess": "Statistics exported successfully!",
-    "exportError": "Failed to export statistics."
+    "exportError": "Failed to export statistics.",
+    "firstPlayDate": "First Play",
+    "listeningStreak": "Listening Streak",
+    "days": "days",
+    "busiestDay": "Busiest Day",
+    "avgPlaysPerDay": "Avg Plays/Day",
+    "topGenres": "Top Genres",
+    "peakHour": "Peak Hour",
+    "peakHourInfo": "You listen to music the most at {hour}:00",
+    "sunday": "Sunday",
+    "monday": "Monday",
+    "tuesday": "Tuesday",
+    "wednesday": "Wednesday",
+    "thursday": "Thursday",
+    "friday": "Friday",
+    "saturday": "Saturday",
+    "since": "Since",
+    "day": "day",
+    "noGenres": "No genre data yet",
+    "listeningByHour": "Listening by Hour"
   }
 }

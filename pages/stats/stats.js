@@ -7,18 +7,30 @@ let cachedActivity = null;
 let cachedDailyDuration = null;
 let cachedCompletionRate = null;
 let cachedSkipRate = null;
+let cachedFirstPlayDate = null;
+let cachedListeningStreak = null;
+let cachedBusiestDay = null;
+let cachedAvgPlaysPerDay = null;
+let cachedTopGenres = null;
+let cachedListeningByHour = null;
 let languageCallback = null;
 
 async function initStatsPage() {
     try {
-        const [overview, topTracks, topArtists, activity, dailyDuration, completionRate, skipRate] = await Promise.all([
+        const [overview, topTracks, topArtists, activity, dailyDuration, completionRate, skipRate, firstPlayDate, listeningStreak, busiestDay, avgPlaysPerDay, topGenres, listeningByHour] = await Promise.all([
             ipcRenderer.invoke('get-stats-overview'),
             ipcRenderer.invoke('get-stats-top-tracks', 10),
             ipcRenderer.invoke('get-stats-top-artists', 10),
             ipcRenderer.invoke('get-stats-listening-activity', 7),
             ipcRenderer.invoke('get-stats-daily-listening-duration', 7),
             ipcRenderer.invoke('get-stats-completion-rate'),
-            ipcRenderer.invoke('get-stats-skip-rate')
+            ipcRenderer.invoke('get-stats-skip-rate'),
+            ipcRenderer.invoke('get-stats-first-play-date'),
+            ipcRenderer.invoke('get-stats-listening-streak'),
+            ipcRenderer.invoke('get-stats-busiest-day'),
+            ipcRenderer.invoke('get-stats-avg-plays-per-day'),
+            ipcRenderer.invoke('get-stats-top-genres', 5),
+            ipcRenderer.invoke('get-stats-listening-time-by-hour')
         ]);
 
         cachedOverview = overview;
@@ -28,6 +40,12 @@ async function initStatsPage() {
         cachedDailyDuration = dailyDuration;
         cachedCompletionRate = completionRate;
         cachedSkipRate = skipRate;
+        cachedFirstPlayDate = firstPlayDate;
+        cachedListeningStreak = listeningStreak;
+        cachedBusiestDay = busiestDay;
+        cachedAvgPlaysPerDay = avgPlaysPerDay;
+        cachedTopGenres = topGenres;
+        cachedListeningByHour = listeningByHour;
 
         renderStats(overview, topTracks, topArtists, activity, dailyDuration, completionRate, skipRate);
 
@@ -493,6 +511,14 @@ function generateStatsCanvas(lang) {
     const topArtists = cachedTopArtists;
     const completionRate = cachedCompletionRate;
     const skipRate = cachedSkipRate;
+    const activity = cachedActivity;
+    const dailyDuration = cachedDailyDuration;
+    const firstPlayDate = cachedFirstPlayDate;
+    const listeningStreak = cachedListeningStreak;
+    const busiestDay = cachedBusiestDay;
+    const avgPlaysPerDay = cachedAvgPlaysPerDay;
+    const topGenres = cachedTopGenres;
+    const listeningByHour = cachedListeningByHour;
 
     const W = 800;
     const cardH = 180;
@@ -504,7 +530,16 @@ function generateStatsCanvas(lang) {
     const listBlockH = 40 + topTracksCount * rowH;
     const listBlock2H = 40 + topArtistsCount * rowH;
 
-    const totalH = padding + 50 + cardH + 20 + 60 + 20 + Math.max(listBlockH, listBlock2H) + padding;
+    const extraStatsH = 70;
+    const activityChartH = 160;
+    const durationChartH = 160;
+    const hourChartH = 160;
+    const genresH = topGenres && topGenres.length > 0 ? 40 + Math.min(topGenres.length, 5) * 28 : 0;
+
+    const totalH = padding + 50 + cardH + 20 + 60 + 20 + extraStatsH + 20 +
+        activityChartH + 20 + durationChartH + 20 + hourChartH + 20 +
+        (genresH > 0 ? genresH + 20 : 0) +
+        Math.max(listBlockH, listBlock2H) + padding;
 
     const canvas = document.createElement('canvas');
     canvas.width = W;
@@ -570,6 +605,196 @@ function generateStatsCanvas(lang) {
     }
 
     y += 60 + 20;
+    const extraCardW = (W - padding * 2 - 16 * 4) / 5;
+    const peakHour = getPeakHour(listeningByHour);
+    const extraCards = [
+        { label: lang.t('stats.firstPlayDate'), value: firstPlayDate ? formatDateShort(firstPlayDate, lang) : '-', color: '#764ba2' },
+        { label: lang.t('stats.listeningStreak'), value: listeningStreak + ' ' + lang.t('stats.days'), color: '#f5576c' },
+        { label: lang.t('stats.busiestDay'), value: busiestDay ? lang.t('stats.' + busiestDay.day) : '-', color: '#fee140' },
+        { label: lang.t('stats.avgPlaysPerDay'), value: avgPlaysPerDay.toString(), color: '#43e97b' },
+        { label: lang.t('stats.peakHour'), value: peakHour !== null ? peakHour + ':00' : '-', color: '#4facfe' }
+    ];
+
+    extraCards.forEach((card, i) => {
+        const cx = padding + i * (extraCardW + 16);
+        ctx.fillStyle = 'rgba(255,255,255,0.05)';
+        roundRect(ctx, cx, y, extraCardW, 60, 10);
+        ctx.fill();
+
+        ctx.fillStyle = card.color;
+        roundRectLeft(ctx, cx, y, 4, 60, 10);
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.font = '10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.fillText(truncateText(ctx, card.label, extraCardW - 20), cx + 14, y + 22);
+
+        ctx.fillStyle = card.color;
+        ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.fillText(truncateText(ctx, card.value, extraCardW - 20), cx + 14, y + 46);
+    });
+
+    y += 70 + 20;
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.fillText(lang.t('stats.listeningActivity'), padding, y + 16);
+
+    if (activity && activity.length > 0) {
+        const chartX = padding;
+        const chartY = y + 30;
+        const chartW = W - padding * 2;
+        const chartH = 100;
+        const barW = Math.max(Math.min((chartW - (activity.length - 1) * 8) / activity.length, 60), 20);
+        const totalBarsW = activity.length * barW + (activity.length - 1) * 8;
+        const startX = chartX + (chartW - totalBarsW) / 2;
+        const maxCount = Math.max(...activity.map(a => a.count), 1);
+
+        activity.forEach((day, i) => {
+            const bx = startX + i * (barW + 8);
+            const heightPercent = day.count / maxCount;
+            const barHeight = Math.max(heightPercent * chartH, 4);
+            const by = chartY + chartH - barHeight;
+
+            const barGrad = ctx.createLinearGradient(bx, by, bx, chartY + chartH);
+            barGrad.addColorStop(0, '#e94560');
+            barGrad.addColorStop(1, '#e9456060');
+            ctx.fillStyle = barGrad;
+            roundRect(ctx, bx, by, barW, barHeight, 4);
+            ctx.fill();
+
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.font = '10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(day.count.toString(), bx + barW / 2, by - 4);
+
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.font = '9px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.fillText(formatDateLabel(day.date), bx + barW / 2, chartY + chartH + 14);
+            ctx.textAlign = 'left';
+        });
+    } else {
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.font = '12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.fillText(lang.t('stats.noActivity'), padding, y + 50);
+    }
+
+    y += activityChartH + 20;
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.fillText(lang.t('stats.listeningDuration'), padding, y + 16);
+
+    if (dailyDuration && dailyDuration.length > 0) {
+        const chartX = padding;
+        const chartY = y + 30;
+        const chartW = W - padding * 2;
+        const chartH = 100;
+        const barW = Math.max(Math.min((chartW - (dailyDuration.length - 1) * 8) / dailyDuration.length, 60), 20);
+        const totalBarsW = dailyDuration.length * barW + (dailyDuration.length - 1) * 8;
+        const startX = chartX + (chartW - totalBarsW) / 2;
+        const maxSeconds = Math.max(...dailyDuration.map(d => d.total_seconds), 1);
+
+        dailyDuration.forEach((day, i) => {
+            const bx = startX + i * (barW + 8);
+            const heightPercent = day.total_seconds / maxSeconds;
+            const barHeight = Math.max(heightPercent * chartH, 4);
+            const by = chartY + chartH - barHeight;
+
+            const barGrad = ctx.createLinearGradient(bx, by, bx, chartY + chartH);
+            barGrad.addColorStop(0, '#43e97b');
+            barGrad.addColorStop(1, '#43e97b60');
+            ctx.fillStyle = barGrad;
+            roundRect(ctx, bx, by, barW, barHeight, 4);
+            ctx.fill();
+
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.font = '10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(formatDurationShort(day.total_seconds, lang), bx + barW / 2, by - 4);
+
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.font = '9px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.fillText(formatDateLabel(day.date), bx + barW / 2, chartY + chartH + 14);
+            ctx.textAlign = 'left';
+        });
+    } else {
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.font = '12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.fillText(lang.t('stats.noActivity'), padding, y + 50);
+    }
+
+    y += durationChartH + 20;
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.fillText(lang.t('stats.listeningByHour'), padding, y + 16);
+
+    if (listeningByHour && listeningByHour.length > 0) {
+        const chartX = padding;
+        const chartY = y + 30;
+        const chartW = W - padding * 2;
+        const chartH = 90;
+        const barW = Math.max((chartW - 23 * 4) / 24, 8);
+        const maxPlayCount = Math.max(...listeningByHour.map(h => h.playCount), 1);
+
+        const hourMap = {};
+        listeningByHour.forEach(h => { hourMap[h.hour] = h.playCount; });
+
+        for (let h = 0; h < 24; h++) {
+            const bx = chartX + h * (barW + 4);
+            const count = hourMap[h] || 0;
+            const heightPercent = count / maxPlayCount;
+            const barHeight = Math.max(heightPercent * chartH, count > 0 ? 3 : 0);
+            const by = chartY + chartH - barHeight;
+
+            if (count > 0) {
+                const isPeak = h === peakHour;
+                const barGrad = ctx.createLinearGradient(bx, by, bx, chartY + chartH);
+                barGrad.addColorStop(0, isPeak ? '#fee140' : '#667eea');
+                barGrad.addColorStop(1, isPeak ? '#fee14060' : '#667eea60');
+                ctx.fillStyle = barGrad;
+                roundRect(ctx, bx, by, barW, barHeight, 2);
+                ctx.fill();
+            }
+
+            if (h % 3 === 0) {
+                ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                ctx.font = '9px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(h.toString(), bx + barW / 2, chartY + chartH + 14);
+                ctx.textAlign = 'left';
+            }
+        }
+    } else {
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.font = '12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.fillText(lang.t('stats.noActivity'), padding, y + 50);
+    }
+
+    y += hourChartH + 20;
+    if (topGenres && topGenres.length > 0) {
+        const genreColors = ['#e94560', '#667eea', '#4facfe', '#f093fb', '#fa709a'];
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.fillText(lang.t('stats.topGenres'), padding, y + 16);
+
+        topGenres.slice(0, 5).forEach((genre, i) => {
+            const gy = y + 36 + i * 28;
+            ctx.fillStyle = genreColors[i % genreColors.length];
+            ctx.beginPath();
+            ctx.arc(padding + 8, gy + 4, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.fillText(truncateText(ctx, genre.genre, 300), padding + 22, gy + 8);
+
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.font = '12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.fillText(`${genre.playCount} ${lang.t('stats.plays')}`, padding + 340, gy + 8);
+        });
+
+        y += genresH + 20;
+    }
+
     const halfW = (W - padding * 2 - 16) / 2;
 
     ctx.fillStyle = '#ffffff';
@@ -791,6 +1016,29 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+function getPeakHour(listeningByHour) {
+    if (!listeningByHour || listeningByHour.length === 0) return null;
+    let maxHour = null;
+    let maxCount = 0;
+    listeningByHour.forEach(h => {
+        if (h.playCount > maxCount) {
+            maxCount = h.playCount;
+            maxHour = h.hour;
+        }
+    });
+    return maxHour;
+}
+
+function formatDateShort(dateStr, lang) {
+    try {
+        const date = new Date(dateStr);
+        const locale = lang.getCurrentLanguage ? lang.getCurrentLanguage() : 'en';
+        return date.toLocaleDateString(locale === 'tr' ? 'tr-TR' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch {
+        return dateStr;
+    }
 }
 
 export { initStatsPage, cleanupStatsPage };

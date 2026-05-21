@@ -177,6 +177,132 @@ function getSkipRate() {
     }
 }
 
+function getFirstPlayDate() {
+    const database = getDb();
+    try {
+        const row = database.prepare('SELECT MIN(played_at) as firstPlay FROM play_history').get();
+        return row.firstPlay || null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function getListeningStreak() {
+    const database = getDb();
+    try {
+        const rows = database.prepare(`
+            SELECT DISTINCT DATE(played_at) as date
+            FROM play_history
+            ORDER BY date DESC
+        `).all();
+
+        if (rows.length === 0) return 0;
+
+        let streak = 0;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        for (let i = 0; i < rows.length; i++) {
+            const rowDate = new Date(rows[i].date + 'T00:00:00');
+            const expectedDate = new Date(today);
+            expectedDate.setDate(expectedDate.getDate() - i);
+
+            if (rowDate.getTime() === expectedDate.getTime()) {
+                streak++;
+            } else {
+                break;
+            }
+        }
+
+        return streak;
+    } catch (e) {
+        return 0;
+    }
+}
+
+function getBusiestDay() {
+    const database = getDb();
+    try {
+        const row = database.prepare(`
+            SELECT 
+                CASE cast(strftime('%w', played_at) as integer)
+                    WHEN 0 THEN 'sunday'
+                    WHEN 1 THEN 'monday'
+                    WHEN 2 THEN 'tuesday'
+                    WHEN 3 THEN 'wednesday'
+                    WHEN 4 THEN 'thursday'
+                    WHEN 5 THEN 'friday'
+                    WHEN 6 THEN 'saturday'
+                END as dayName,
+                COUNT(*) as playCount
+            FROM play_history
+            GROUP BY dayName
+            ORDER BY playCount DESC
+            LIMIT 1
+        `).get();
+
+        if (!row) return null;
+        return { day: row.dayName, playCount: row.playCount };
+    } catch (e) {
+        return null;
+    }
+}
+
+function getAveragePlaysPerDay() {
+    const database = getDb();
+    try {
+        const row = database.prepare(`
+            SELECT 
+                COUNT(*) as totalPlays,
+                COUNT(DISTINCT DATE(played_at)) as totalDays
+            FROM play_history
+        `).get();
+
+        if (!row || row.totalDays === 0) return 0;
+        return Math.round((row.totalPlays / row.totalDays) * 10) / 10;
+    } catch (e) {
+        return 0;
+    }
+}
+
+function getTopGenres(limit = 5) {
+    const database = getDb();
+    try {
+        const rows = database.prepare(`
+            SELECT 
+                COALESCE(genre, 'Unknown') as genre,
+                COUNT(*) as playCount
+            FROM play_history
+            WHERE genre IS NOT NULL AND genre != ''
+            GROUP BY genre
+            ORDER BY playCount DESC
+            LIMIT ?
+        `).all(limit);
+
+        return rows;
+    } catch (e) {
+        return [];
+    }
+}
+
+function getListeningTimeByHour() {
+    const database = getDb();
+    try {
+        const rows = database.prepare(`
+            SELECT 
+                cast(strftime('%H', played_at) as integer) as hour,
+                COUNT(*) as playCount
+            FROM play_history
+            GROUP BY hour
+            ORDER BY hour ASC
+        `).all();
+
+        return rows;
+    } catch (e) {
+        return [];
+    }
+}
+
 module.exports = {
     getOverviewStats,
     getTopTracks,
@@ -185,5 +311,11 @@ module.exports = {
     getDailyListeningDuration,
     getRecentTracks,
     getCompletionRate,
-    getSkipRate
+    getSkipRate,
+    getFirstPlayDate,
+    getListeningStreak,
+    getBusiestDay,
+    getAveragePlaysPerDay,
+    getTopGenres,
+    getListeningTimeByHour
 };

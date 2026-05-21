@@ -504,6 +504,30 @@ ipcMain.handle('get-stats-skip-rate', () => {
     return statsModule.getSkipRate();
 });
 
+ipcMain.handle('get-stats-first-play-date', () => {
+    return statsModule.getFirstPlayDate();
+});
+
+ipcMain.handle('get-stats-listening-streak', () => {
+    return statsModule.getListeningStreak();
+});
+
+ipcMain.handle('get-stats-busiest-day', () => {
+    return statsModule.getBusiestDay();
+});
+
+ipcMain.handle('get-stats-avg-plays-per-day', () => {
+    return statsModule.getAveragePlaysPerDay();
+});
+
+ipcMain.handle('get-stats-top-genres', (event, limit) => {
+    return statsModule.getTopGenres(limit || 5);
+});
+
+ipcMain.handle('get-stats-listening-time-by-hour', () => {
+    return statsModule.getListeningTimeByHour();
+});
+
 ipcMain.handle('export-stats-image', async (event, imageDataUrl) => {
     try {
         const result = await dialog.showSaveDialog(mainWindow, {

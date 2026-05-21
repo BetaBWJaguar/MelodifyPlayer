@@ -216,6 +216,14 @@
     "completionHigh": "You mostly listen to songs all the way through!",
     "completionMedium": "You have a balanced listening habit.",
     "completionLow": "You tend to skip songs before they finish.",
-    "completionInfo": "{completed} out of {total} songs listened to completion (≥90%)"
+    "completionInfo": "{completed} out of {total} songs listened to completion (≥90%)",
+    "skipRate": "Skip Rate",
+    "skipRateLow": "You rarely skip songs, great listener!",
+    "skipRateMedium": "You sometimes skip songs.",
+    "skipRateHigh": "You tend to skip songs frequently.",
+    "skipRateInfo": "{skipped} out of {total} songs skipped (<50% listened)",
+    "exportStats": "Export",
+    "exportSuccess": "Statistics exported successfully!",
+    "exportError": "Failed to export statistics."
   }
 }

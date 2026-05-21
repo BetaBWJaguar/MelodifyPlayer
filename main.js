@@ -1,4 +1,5 @@
-const { app, BrowserWindow, ipcMain, globalShortcut } = require('electron');
+const { app, BrowserWindow, ipcMain, globalShortcut, dialog } = require('electron');
+const fs = require('fs');
 const { searchTrack,cancelActiveSearch } = require('./backend/utils/searchModule');
 const player = require('./backend/utils/playSongs');
 const likedSongs = require('./backend/utils/likedSongs');
@@ -497,6 +498,33 @@ ipcMain.handle('get-stats-daily-listening-duration', (event, days) => {
 
 ipcMain.handle('get-stats-completion-rate', () => {
     return statsModule.getCompletionRate();
+});
+
+ipcMain.handle('get-stats-skip-rate', () => {
+    return statsModule.getSkipRate();
+});
+
+ipcMain.handle('export-stats-image', async (event, imageDataUrl) => {
+    try {
+        const result = await dialog.showSaveDialog(mainWindow, {
+            title: 'Export Statistics',
+            defaultPath: 'melodify-stats.png',
+            filters: [
+                { name: 'PNG Image', extensions: ['png'] },
+                { name: 'All Files', extensions: ['*'] }
+            ]
+        });
+
+        if (!result.canceled && result.filePath) {
+            const base64Data = imageDataUrl.replace(/^data:image\/png;base64,/, '');
+            fs.writeFileSync(result.filePath, Buffer.from(base64Data, 'base64'));
+            return { success: true, path: result.filePath };
+        }
+        return { success: false, canceled: true };
+    } catch (error) {
+        console.error('Error exporting stats:', error);
+        return { success: false, error: error.message };
+    }
 });
 
 app.on('before-quit', () => {

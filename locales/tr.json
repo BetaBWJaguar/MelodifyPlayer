@@ -216,6 +216,14 @@
     "completionHigh": "Şarkıları genellikle sonuna kadar dinliyorsun!",
     "completionMedium": "Dengeli bir dinleme alışkanlığın var.",
     "completionLow": "Şarkıları bitirmeden atlama eğilimindesin.",
-    "completionInfo": "{total} şarkının {completed} tanesini sonuna kadar dinledin (≥%90)"
+    "completionInfo": "{total} şarkının {completed} tanesini sonuna kadar dinledin (≥%90)",
+    "skipRate": "Atlama Oranı",
+    "skipRateLow": "Şarkıları nadiren atlıyorsun, harika bir dinleyici!",
+    "skipRateMedium": "Bazen şarkıları atlıyorsun.",
+    "skipRateHigh": "Şarkıları sıkça atlama eğilimindesin.",
+    "skipRateInfo": "{total} şarkının {skipped} tanesi atlandı (%50'den az dinlenilen)",
+    "exportStats": "Dışa Aktar",
+    "exportSuccess": "İstatistikler başarıyla dışa aktarıldı!",
+    "exportError": "İstatistikler dışa aktarılamadı."
   }
 }

@@ -152,6 +152,31 @@ function getCompletionRate() {
     }
 }
 
+function getSkipRate() {
+    const database = getDb();
+
+    try {
+        const row = database.prepare(`
+            SELECT
+                COUNT(*) as totalTracks,
+                COALESCE(SUM(CASE WHEN duration_seconds < track_duration * 0.5 THEN 1 ELSE 0 END), 0) as skippedTracks,
+                COALESCE(AVG(CASE WHEN track_duration > 0 THEN 
+                    CASE WHEN duration_seconds < track_duration * 0.5 THEN 1 ELSE 0 END 
+                END), 0) * 100 as skipPercent
+            FROM play_history
+            WHERE track_duration > 0
+        `).get();
+
+        return {
+            totalTracks: row.totalTracks || 0,
+            skippedTracks: row.skippedTracks || 0,
+            skipPercent: Math.round((row.skipPercent || 0) * 10) / 10
+        };
+    } catch (e) {
+        return null;
+    }
+}
+
 module.exports = {
     getOverviewStats,
     getTopTracks,
@@ -159,5 +184,6 @@ module.exports = {
     getListeningActivity,
     getDailyListeningDuration,
     getRecentTracks,
-    getCompletionRate
+    getCompletionRate,
+    getSkipRate
 };

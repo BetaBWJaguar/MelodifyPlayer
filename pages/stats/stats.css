@@ -499,3 +499,124 @@
         gap: 24px;
     }
 }
+
+.page-header-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding-right: 120px;
+}
+
+.export-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.export-btn:hover {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.06));
+    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+}
+
+.export-btn:active {
+    transform: translateY(0);
+}
+
+.export-btn.exporting {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.export-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.stats-rate-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 36px;
+}
+
+.stats-rate-grid .completion-rate-section,
+.stats-rate-grid .skip-rate-section {
+    margin-bottom: 0;
+}
+
+@media (max-width: 900px) {
+    .stats-rate-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.skip-rate-section .ring-progress.skip-ring.high {
+    stroke: #e94560;
+}
+
+.skip-rate-section .ring-progress.skip-ring.medium {
+    stroke: #fee140;
+}
+
+.skip-rate-section .ring-progress.skip-ring.low {
+    stroke: #43e97b;
+}
+
+.skip-rate-section .completion-status.high {
+    color: #e94560;
+}
+
+.skip-rate-section .completion-status.medium {
+    color: #fee140;
+}
+
+.skip-rate-section .completion-status.low {
+    color: #43e97b;
+}
+
+.export-toast {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10000;
+    pointer-events: none;
+    backdrop-filter: blur(12px);
+}
+
+.export-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.export-toast.success {
+    background: rgba(67, 233, 123, 0.15);
+    border: 1px solid rgba(67, 233, 123, 0.3);
+    color: #43e97b;
+}
+
+.export-toast.error {
+    background: rgba(233, 69, 96, 0.15);
+    border: 1px solid rgba(233, 69, 96, 0.3);
+    color: #e94560;
+}

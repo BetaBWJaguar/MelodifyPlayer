@@ -6,17 +6,19 @@ let cachedTopArtists = null;
 let cachedActivity = null;
 let cachedDailyDuration = null;
 let cachedCompletionRate = null;
+let cachedSkipRate = null;
 let languageCallback = null;
 
 async function initStatsPage() {
     try {
-        const [overview, topTracks, topArtists, activity, dailyDuration, completionRate] = await Promise.all([
+        const [overview, topTracks, topArtists, activity, dailyDuration, completionRate, skipRate] = await Promise.all([
             ipcRenderer.invoke('get-stats-overview'),
             ipcRenderer.invoke('get-stats-top-tracks', 10),
             ipcRenderer.invoke('get-stats-top-artists', 10),
             ipcRenderer.invoke('get-stats-listening-activity', 7),
             ipcRenderer.invoke('get-stats-daily-listening-duration', 7),
-            ipcRenderer.invoke('get-stats-completion-rate')
+            ipcRenderer.invoke('get-stats-completion-rate'),
+            ipcRenderer.invoke('get-stats-skip-rate')
         ]);
 
         cachedOverview = overview;
@@ -25,11 +27,12 @@ async function initStatsPage() {
         cachedActivity = activity;
         cachedDailyDuration = dailyDuration;
         cachedCompletionRate = completionRate;
+        cachedSkipRate = skipRate;
 
-        renderStats(overview, topTracks, topArtists, activity, dailyDuration, completionRate);
+        renderStats(overview, topTracks, topArtists, activity, dailyDuration, completionRate, skipRate);
 
         languageCallback = () => {
-            renderStats(cachedOverview, cachedTopTracks, cachedTopArtists, cachedActivity, cachedDailyDuration, cachedCompletionRate);
+            renderStats(cachedOverview, cachedTopTracks, cachedTopArtists, cachedActivity, cachedDailyDuration, cachedCompletionRate, cachedSkipRate);
         };
         window.language.onLanguageChange(languageCallback);
 
@@ -49,9 +52,10 @@ function cleanupStatsPage() {
     }
 }
 
-function renderStats(overview, topTracks, topArtists, activity, dailyDuration, completionRate) {
+function renderStats(overview, topTracks, topArtists, activity, dailyDuration, completionRate, skipRate) {
     const lang = window.language || { t: (k) => k };
     const container = document.getElementById('statsContent');
+    const exportBtn = document.getElementById('exportBtn');
 
     if (overview.totalPlays === 0) {
         container.innerHTML = `
@@ -63,12 +67,18 @@ function renderStats(overview, topTracks, topArtists, activity, dailyDuration, c
                 <p>${lang.t('stats.startListening')}</p>
             </div>
         `;
+        if (exportBtn) exportBtn.style.display = 'none';
         return;
     }
 
+    if (exportBtn) exportBtn.style.display = 'flex';
+
     container.innerHTML = `
         ${renderOverviewCards(overview, lang)}
-        ${renderCompletionRate(completionRate, lang)}
+        <div class="stats-rate-grid">
+            ${renderCompletionRate(completionRate, lang)}
+            ${renderSkipRate(skipRate, lang)}
+        </div>
         ${renderActivityChart(activity, lang)}
         ${renderDurationChart(dailyDuration, lang)}
         <div class="stats-grid">
@@ -192,6 +202,54 @@ function renderCompletionRate(completionRate, lang) {
                 <div class="completion-details">
                     <p class="completion-status ${statusClass}">${statusText}</p>
                     <p class="completion-info">${lang.t('stats.completionInfo').replace('{completed}', completionRate.completedTracks).replace('{total}', completionRate.totalTracks)}</p>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderSkipRate(skipRate, lang) {
+    if (!skipRate || skipRate.totalTracks === 0) {
+        return '';
+    }
+
+    const percent = skipRate.skipPercent;
+    const circumference = 2 * Math.PI * 45;
+    const offset = circumference - (percent / 100) * circumference;
+
+    let statusText = '';
+    let statusClass = '';
+    if (percent <= 20) {
+        statusText = lang.t('stats.skipRateLow');
+        statusClass = 'low';
+    } else if (percent <= 50) {
+        statusText = lang.t('stats.skipRateMedium');
+        statusClass = 'medium';
+    } else {
+        statusText = lang.t('stats.skipRateHigh');
+        statusClass = 'high';
+    }
+
+    return `
+        <div class="stats-section skip-rate-section">
+            <div class="stats-section-header">
+                <h2>${lang.t('stats.skipRate')}</h2>
+            </div>
+            <div class="completion-rate-content">
+                <div class="completion-ring">
+                    <svg viewBox="0 0 100 100" class="completion-svg">
+                        <circle cx="50" cy="50" r="45" class="ring-bg"/>
+                        <circle cx="50" cy="50" r="45" class="ring-progress skip-ring ${statusClass}"
+                            stroke-dasharray="${circumference}"
+                            stroke-dashoffset="${offset}"/>
+                    </svg>
+                    <div class="completion-percent">
+                        <span class="percent-value">${percent}%</span>
+                    </div>
+                </div>
+                <div class="completion-details">
+                    <p class="completion-status ${statusClass}">${statusText}</p>
+                    <p class="completion-info">${lang.t('stats.skipRateInfo').replace('{skipped}', skipRate.skippedTracks).replace('{total}', skipRate.totalTracks)}</p>
                 </div>
             </div>
         </div>
@@ -401,6 +459,252 @@ function playTrack(element) {
             image: image
         });
     }
+}
+
+async function exportStats() {
+    const lang = window.language || { t: (k) => k };
+    const exportBtn = document.getElementById('exportBtn');
+
+    try {
+        exportBtn.classList.add('exporting');
+
+        const canvas = generateStatsCanvas(lang);
+        const dataUrl = canvas.toDataURL('image/png');
+
+        const result = await ipcRenderer.invoke('export-stats-image', dataUrl);
+
+        exportBtn.classList.remove('exporting');
+
+        if (result.success) {
+            showExportToast(lang.t('stats.exportSuccess'), 'success');
+        } else if (!result.canceled) {
+            showExportToast(lang.t('stats.exportError'), 'error');
+        }
+    } catch (error) {
+        console.error('Export error:', error);
+        if (exportBtn) exportBtn.classList.remove('exporting');
+        showExportToast(lang.t('stats.exportError'), 'error');
+    }
+}
+
+function generateStatsCanvas(lang) {
+    const overview = cachedOverview;
+    const topTracks = cachedTopTracks;
+    const topArtists = cachedTopArtists;
+    const completionRate = cachedCompletionRate;
+    const skipRate = cachedSkipRate;
+
+    const W = 800;
+    const cardH = 180;
+    const padding = 32;
+    const rowH = 32;
+
+    const topTracksCount = Math.min(topTracks ? topTracks.length : 0, 5);
+    const topArtistsCount = Math.min(topArtists ? topArtists.length : 0, 5);
+    const listBlockH = 40 + topTracksCount * rowH;
+    const listBlock2H = 40 + topArtistsCount * rowH;
+
+    const totalH = padding + 50 + cardH + 20 + 60 + 20 + Math.max(listBlockH, listBlock2H) + padding;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = totalH;
+    const ctx = canvas.getContext('2d');
+
+    const bgGrad = ctx.createLinearGradient(0, 0, W, totalH);
+    bgGrad.addColorStop(0, '#1a1a2e');
+    bgGrad.addColorStop(1, '#16213e');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, W, totalH);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.fillText('🎵 Melodify Stats', padding, padding + 30);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = '13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    const dateStr = new Date().toLocaleDateString(lang.getCurrentLanguage ? (lang.getCurrentLanguage() === 'tr' ? 'tr-TR' : 'en-US') : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    ctx.fillText(dateStr, padding, padding + 50);
+
+    let y = padding + 70;
+    const cardW = (W - padding * 2 - 16 * 6) / 7;
+    const cards = [
+        { label: lang.t('stats.totalPlays'), value: formatNumber(overview.totalPlays), color: '#e94560' },
+        { label: lang.t('stats.totalListeningTime'), value: formatDuration(overview.totalListeningSeconds || 0, lang), color: '#43e97b' },
+        { label: lang.t('stats.uniqueTracks'), value: formatNumber(overview.uniqueTracks), color: '#4facfe' },
+        { label: lang.t('stats.uniqueArtists'), value: formatNumber(overview.uniqueArtists), color: '#667eea' },
+        { label: lang.t('stats.likedSongs'), value: formatNumber(overview.likedCount), color: '#f093fb' },
+        { label: lang.t('stats.favorites'), value: formatNumber(overview.favoritesCount), color: '#fa709a' },
+        { label: lang.t('stats.playlists'), value: formatNumber(overview.playlistsCount), color: '#00f2fe' }
+    ];
+
+    cards.forEach((card, i) => {
+        const cx = padding + i * (cardW + 16);
+        ctx.fillStyle = 'rgba(255,255,255,0.05)';
+        roundRect(ctx, cx, y, cardW, cardH, 12);
+        ctx.fill();
+
+        ctx.fillStyle = card.color;
+        ctx.beginPath();
+        ctx.arc(cx + 16, y + 20, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.fillText(truncateText(ctx, card.value, cardW - 20), cx + 12, y + 55);
+
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.fillText(truncateText(ctx, card.label, cardW - 20), cx + 12, y + 78);
+    });
+
+    y += cardH + 20;
+    const rateW = (W - padding * 2 - 16) / 2;
+
+    if (completionRate && completionRate.totalTracks > 0) {
+        drawRateCard(ctx, padding, y, rateW, 50, lang.t('stats.completionRate'), completionRate.avgCompletionPercent + '%', completionRate.avgCompletionPercent >= 80 ? '#43e97b' : completionRate.avgCompletionPercent >= 50 ? '#fee140' : '#e94560');
+    }
+
+    if (skipRate && skipRate.totalTracks > 0) {
+        drawRateCard(ctx, padding + rateW + 16, y, rateW, 50, lang.t('stats.skipRate'), skipRate.skipPercent + '%', skipRate.skipPercent <= 20 ? '#43e97b' : skipRate.skipPercent <= 50 ? '#fee140' : '#e94560');
+    }
+
+    y += 60 + 20;
+    const halfW = (W - padding * 2 - 16) / 2;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.fillText(lang.t('stats.topTracks'), padding, y + 16);
+
+    if (topTracks && topTracks.length > 0) {
+        topTracks.slice(0, 5).forEach((track, i) => {
+            const ty = y + 40 + i * rowH;
+            ctx.fillStyle = i < 3 ? ['#FFD700', '#C0C0C0', '#CD7F32'][i] : 'rgba(255,255,255,0.4)';
+            ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.fillText(`${i + 1}`, padding, ty + 12);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            const name = truncateText(ctx, track.name, halfW - 80);
+            ctx.fillText(name, padding + 24, ty + 12);
+
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.font = '12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.fillText(`${track.playCount} ${lang.t('stats.plays')}`, padding + halfW - 70, ty + 12);
+        });
+    }
+
+    const ax = padding + halfW + 16;
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.fillText(lang.t('stats.topArtists'), ax, y + 16);
+
+    if (topArtists && topArtists.length > 0) {
+        const colors = ['#e94560', '#667eea', '#4facfe', '#f093fb', '#fa709a'];
+        topArtists.slice(0, 5).forEach((artist, i) => {
+            const ty = y + 40 + i * rowH;
+            ctx.fillStyle = i < 3 ? ['#FFD700', '#C0C0C0', '#CD7F32'][i] : 'rgba(255,255,255,0.4)';
+            ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.fillText(`${i + 1}`, ax, ty + 12);
+
+            ctx.fillStyle = colors[i % colors.length];
+            ctx.beginPath();
+            ctx.arc(ax + 20, ty + 8, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            const name = truncateText(ctx, artist.name, halfW - 90);
+            ctx.fillText(name, ax + 32, ty + 12);
+
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.font = '12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.fillText(`${artist.playCount} ${lang.t('stats.plays')}`, ax + halfW - 70, ty + 12);
+        });
+    }
+
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('Melodify Player', W - padding, totalH - 12);
+    ctx.textAlign = 'left';
+
+    return canvas;
+}
+
+function drawRateCard(ctx, x, y, w, h, label, value, color) {
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    roundRect(ctx, x, y, w, h, 10);
+    ctx.fill();
+
+    ctx.fillStyle = color;
+    roundRectLeft(ctx, x, y, 4, h, 10);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.fillText(label, x + 14, y + 20);
+
+    ctx.fillStyle = color;
+    ctx.font = 'bold 20px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.fillText(value, x + 14, y + 42);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+}
+
+function roundRectLeft(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w, y);
+    ctx.lineTo(x + w, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+}
+
+function truncateText(ctx, text, maxWidth) {
+    if (!text) return '';
+    if (ctx.measureText(text).width <= maxWidth) return text;
+    let truncated = text;
+    while (truncated.length > 0 && ctx.measureText(truncated + '...').width > maxWidth) {
+        truncated = truncated.slice(0, -1);
+    }
+    return truncated + '...';
+}
+window.exportStats = exportStats;
+window.playTrack = playTrack;
+
+function showExportToast(message, type) {
+    const existing = document.querySelector('.export-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.className = `export-toast ${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    requestAnimationFrame(() => {
+        toast.classList.add('show');
+    });
+
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
 }
 
 function renderError() {

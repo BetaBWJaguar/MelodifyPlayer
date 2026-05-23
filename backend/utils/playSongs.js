@@ -227,6 +227,14 @@ class Player {
                     duration: track.duration || null
                 });
                 this._currentHistoryRowId = rowId;
+
+                if (track.name && track.artist) {
+                    lastfmModule.getTrackGenre(track.name, track.artist).then(genre => {
+                        if (genre && rowId) {
+                            historyModule.updateGenre(rowId, genre);
+                        }
+                    }).catch(() => {});
+                }
             } catch (e) {
                 console.error('Failed to save history to database:', e);
             }
@@ -915,13 +923,20 @@ class Player {
                 const track = this.history[this.historyIndex];
 
             try {
-                historyModule.addToHistory({
+                const rowId = historyModule.addToHistory({
                     id: track.id || track.videoId,
                     name: track.name,
                     artist: track.artist,
                     image: track.image || track.thumbnail,
                     duration: track.duration || null
                 });
+                if (track.name && track.artist) {
+                    lastfmModule.getTrackGenre(track.name, track.artist).then(genre => {
+                        if (genre && rowId) {
+                            historyModule.updateGenre(rowId, genre);
+                        }
+                    }).catch(() => {});
+                }
             } catch (e) {
                  console.error('Failed to save history to database:', e);
             }
@@ -975,13 +990,20 @@ class Player {
             }
 
             try {
-                historyModule.addToHistory({
+                const rowId = historyModule.addToHistory({
                     id: track.id || track.videoId,
                     name: track.name,
                     artist: track.artist,
                     image: track.image || track.thumbnail,
                     duration: track.duration || null
                 });
+                if (track.name && track.artist) {
+                    lastfmModule.getTrackGenre(track.name, track.artist).then(genre => {
+                        if (genre && rowId) {
+                            historyModule.updateGenre(rowId, genre);
+                        }
+                    }).catch(() => {});
+                }
             } catch (e) {
                 console.error('Failed to save history to database:', e);
             }

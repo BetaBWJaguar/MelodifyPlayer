@@ -528,6 +528,10 @@ ipcMain.handle('get-stats-listening-time-by-hour', () => {
     return statsModule.getListeningTimeByHour();
 });
 
+ipcMain.handle('get-stats-recent-tracks', (event, limit) => {
+    return statsModule.getRecentTracks(limit || 10);
+});
+
 ipcMain.handle('export-stats-image', async (event, imageDataUrl) => {
     try {
         const result = await dialog.showSaveDialog(mainWindow, {

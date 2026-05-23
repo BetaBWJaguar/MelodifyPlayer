@@ -243,6 +243,9 @@
     "since": "Beri",
     "day": "gün",
     "noGenres": "Henüz tür verisi yok",
-    "listeningByHour": "Saate Göre Dinleme"
+    "listeningByHour": "Saate Göre Dinleme",
+    "recentTracks": "Son Çalınanlar",
+    "noRecentTracks": "Henüz son çalınan şarkı yok",
+    "recentTracksInfo": "Dinlediğin son {count} şarkı"
   }
 }

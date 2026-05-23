@@ -13,11 +13,12 @@ let cachedBusiestDay = null;
 let cachedAvgPlaysPerDay = null;
 let cachedTopGenres = null;
 let cachedListeningByHour = null;
+let cachedRecentTracks = null;
 let languageCallback = null;
 
 async function initStatsPage() {
     try {
-        const [overview, topTracks, topArtists, activity, dailyDuration, completionRate, skipRate, firstPlayDate, listeningStreak, busiestDay, avgPlaysPerDay, topGenres, listeningByHour] = await Promise.all([
+        const [overview, topTracks, topArtists, activity, dailyDuration, completionRate, skipRate, firstPlayDate, listeningStreak, busiestDay, avgPlaysPerDay, topGenres, listeningByHour, recentTracks] = await Promise.all([
             ipcRenderer.invoke('get-stats-overview'),
             ipcRenderer.invoke('get-stats-top-tracks', 10),
             ipcRenderer.invoke('get-stats-top-artists', 10),
@@ -30,7 +31,8 @@ async function initStatsPage() {
             ipcRenderer.invoke('get-stats-busiest-day'),
             ipcRenderer.invoke('get-stats-avg-plays-per-day'),
             ipcRenderer.invoke('get-stats-top-genres', 5),
-            ipcRenderer.invoke('get-stats-listening-time-by-hour')
+            ipcRenderer.invoke('get-stats-listening-time-by-hour'),
+            ipcRenderer.invoke('get-stats-recent-tracks', 10)
         ]);
 
         cachedOverview = overview;
@@ -46,11 +48,12 @@ async function initStatsPage() {
         cachedAvgPlaysPerDay = avgPlaysPerDay;
         cachedTopGenres = topGenres;
         cachedListeningByHour = listeningByHour;
+        cachedRecentTracks = recentTracks;
 
-        renderStats(overview, topTracks, topArtists, activity, dailyDuration, completionRate, skipRate);
+        renderStats(overview, topTracks, topArtists, activity, dailyDuration, completionRate, skipRate, firstPlayDate, listeningStreak, busiestDay, avgPlaysPerDay, topGenres, listeningByHour, recentTracks);
 
         languageCallback = () => {
-            renderStats(cachedOverview, cachedTopTracks, cachedTopArtists, cachedActivity, cachedDailyDuration, cachedCompletionRate, cachedSkipRate);
+            renderStats(cachedOverview, cachedTopTracks, cachedTopArtists, cachedActivity, cachedDailyDuration, cachedCompletionRate, cachedSkipRate, cachedFirstPlayDate, cachedListeningStreak, cachedBusiestDay, cachedAvgPlaysPerDay, cachedTopGenres, cachedListeningByHour, cachedRecentTracks);
         };
         window.language.onLanguageChange(languageCallback);
 
@@ -70,7 +73,7 @@ function cleanupStatsPage() {
     }
 }
 
-function renderStats(overview, topTracks, topArtists, activity, dailyDuration, completionRate, skipRate) {
+function renderStats(overview, topTracks, topArtists, activity, dailyDuration, completionRate, skipRate, firstPlayDate, listeningStreak, busiestDay, avgPlaysPerDay, topGenres, listeningByHour, recentTracks) {
     const lang = window.language || { t: (k) => k };
     const container = document.getElementById('statsContent');
     const exportBtn = document.getElementById('exportBtn');
@@ -93,16 +96,20 @@ function renderStats(overview, topTracks, topArtists, activity, dailyDuration, c
 
     container.innerHTML = `
         ${renderOverviewCards(overview, lang)}
+        ${renderExtraStats(firstPlayDate, listeningStreak, busiestDay, avgPlaysPerDay, listeningByHour, lang)}
         <div class="stats-rate-grid">
             ${renderCompletionRate(completionRate, lang)}
             ${renderSkipRate(skipRate, lang)}
         </div>
         ${renderActivityChart(activity, lang)}
         ${renderDurationChart(dailyDuration, lang)}
+        ${renderListeningByHour(listeningByHour, lang)}
+        ${renderTopGenres(topGenres, lang)}
         <div class="stats-grid">
             ${renderTopTracks(topTracks, lang)}
             ${renderTopArtists(topArtists, lang)}
         </div>
+        ${renderRecentTracks(recentTracks, lang)}
     `;
 }
 
@@ -460,6 +467,237 @@ function renderTopArtists(artists, lang) {
             </div>
         </div>
     `;
+}
+
+function renderExtraStats(firstPlayDate, listeningStreak, busiestDay, avgPlaysPerDay, listeningByHour, lang) {
+    const peakHour = getPeakHour(listeningByHour);
+
+    const cards = [
+        {
+            icon: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>`,
+            label: lang.t('stats.firstPlayDate'),
+            value: firstPlayDate ? formatDateShort(firstPlayDate, lang) : '-',
+            color: '#764ba2',
+            iconClass: 'first-play'
+        },
+        {
+            icon: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z"/></svg>`,
+            label: lang.t('stats.listeningStreak'),
+            value: `${listeningStreak} ${lang.t('stats.days')}`,
+            color: '#f5576c',
+            iconClass: 'streak'
+        },
+        {
+            icon: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg>`,
+            label: lang.t('stats.busiestDay'),
+            value: busiestDay ? lang.t('stats.' + busiestDay.day) : '-',
+            color: '#fee140',
+            iconClass: 'busiest'
+        },
+        {
+            icon: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`,
+            label: lang.t('stats.avgPlaysPerDay'),
+            value: avgPlaysPerDay.toString(),
+            color: '#43e97b',
+            iconClass: 'avg-plays'
+        },
+        {
+            icon: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>`,
+            label: lang.t('stats.peakHour'),
+            value: peakHour !== null ? `${peakHour}:00` : '-',
+            color: '#4facfe',
+            iconClass: 'peak-hour'
+        }
+    ];
+
+    const cardsHtml = cards.map(card => `
+        <div class="extra-stat-card">
+            <div class="extra-stat-icon" style="background: ${card.color}15; color: ${card.color};">
+                ${card.icon}
+            </div>
+            <div class="extra-stat-info">
+                <span class="extra-stat-label">${card.label}</span>
+                <span class="extra-stat-value" style="color: ${card.color};">${card.value}</span>
+            </div>
+        </div>
+    `).join('');
+
+    return `
+        <div class="extra-stats-grid">
+            ${cardsHtml}
+        </div>
+    `;
+}
+
+function renderListeningByHour(listeningByHour, lang) {
+    if (!listeningByHour || listeningByHour.length === 0) {
+        return `
+            <div class="stats-section">
+                <div class="stats-section-header">
+                    <h2>${lang.t('stats.listeningByHour')}</h2>
+                </div>
+                <div class="activity-chart">
+                    <div class="activity-empty">${lang.t('stats.noActivity')}</div>
+                </div>
+            </div>
+        `;
+    }
+
+    const maxPlayCount = Math.max(...listeningByHour.map(h => h.playCount), 1);
+    const peakHour = getPeakHour(listeningByHour);
+
+    const hourMap = {};
+    listeningByHour.forEach(h => { hourMap[h.hour] = h.playCount; });
+
+    const bars = [];
+    for (let h = 0; h < 24; h++) {
+        const count = hourMap[h] || 0;
+        const heightPercent = (count / maxPlayCount) * 100;
+        const isPeak = h === peakHour;
+        bars.push(`
+            <div class="hour-bar-wrapper">
+                <div class="hour-bar ${isPeak ? 'peak' : ''} ${count === 0 ? 'empty' : ''}" style="height: ${Math.max(heightPercent, count > 0 ? 3 : 0)}%">
+                    ${count > 0 ? `<span class="bar-tooltip">${count}</span>` : ''}
+                </div>
+                ${h % 3 === 0 ? `<span class="hour-bar-label">${h}</span>` : '<span class="hour-bar-label"></span>'}
+            </div>
+        `);
+    }
+
+    return `
+        <div class="stats-section">
+            <div class="stats-section-header">
+                <h2>${lang.t('stats.listeningByHour')}</h2>
+                ${peakHour !== null ? `<span class="stats-section-subtitle">${lang.t('stats.peakHourInfo').replace('{hour}', peakHour)}</span>` : ''}
+            </div>
+            <div class="activity-chart">
+                <div class="hour-bars">
+                    ${bars.join('')}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderTopGenres(topGenres, lang) {
+    if (!topGenres || topGenres.length === 0) {
+        return `
+            <div class="stats-section">
+                <div class="stats-section-header">
+                    <h2>${lang.t('stats.topGenres')}</h2>
+                </div>
+                <div class="activity-chart">
+                    <div class="activity-empty">${lang.t('stats.noGenres')}</div>
+                </div>
+            </div>
+        `;
+    }
+
+    const genreColors = ['#e94560', '#667eea', '#4facfe', '#f093fb', '#fa709a'];
+    const maxCount = Math.max(...topGenres.map(g => g.playCount), 1);
+
+    const items = topGenres.map((genre, index) => {
+        const color = genreColors[index % genreColors.length];
+        const barWidth = (genre.playCount / maxCount) * 100;
+
+        return `
+            <div class="genre-item">
+                <div class="genre-info">
+                    <span class="genre-dot" style="background: ${color};"></span>
+                    <span class="genre-name">${escapeHtml(genre.genre)}</span>
+                </div>
+                <div class="genre-bar-container">
+                    <div class="genre-bar" style="width: ${barWidth}%; background: ${color};"></div>
+                </div>
+                <span class="genre-count">${genre.playCount} ${lang.t('stats.plays')}</span>
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <div class="stats-section">
+            <div class="stats-section-header">
+                <h2>${lang.t('stats.topGenres')}</h2>
+            </div>
+            <div class="activity-chart">
+                <div class="genre-list">
+                    ${items}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderRecentTracks(recentTracks, lang) {
+    if (!recentTracks || recentTracks.length === 0) {
+        return `
+            <div class="stats-section">
+                <div class="stats-section-header">
+                    <h2>${lang.t('stats.recentTracks')}</h2>
+                </div>
+                <div class="activity-chart">
+                    <div class="activity-empty">${lang.t('stats.noRecentTracks')}</div>
+                </div>
+            </div>
+        `;
+    }
+
+    const items = recentTracks.map((track, index) => {
+        const timeAgo = formatTimeAgo(track.played_at, lang);
+
+        return `
+            <div class="stats-list-item" data-track-id="${track.id}" onclick="playTrack(this)">
+                <div class="stats-list-image">
+                    ${track.image ? `<img src="${track.image}" alt="${escapeHtml(track.name)}">` : '<div class="stats-list-image artist-avatar" style="width:100%;height:100%;border-radius:8px;">♪</div>'}
+                </div>
+                <div class="stats-list-info">
+                    <div class="stats-list-name">${escapeHtml(track.name)}</div>
+                    <div class="stats-list-sub">${escapeHtml(track.artist || '')}</div>
+                </div>
+                <div class="stats-list-count recent-time">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+                    </svg>
+                    ${timeAgo}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <div class="stats-section">
+            <div class="stats-section-header">
+                <h2>${lang.t('stats.recentTracks')}</h2>
+            </div>
+            <div class="stats-list">
+                ${items}
+            </div>
+        </div>
+    `;
+}
+
+function formatTimeAgo(dateStr, lang) {
+    try {
+        const now = new Date();
+        const date = new Date(dateStr);
+        const diffMs = now - date;
+        const diffSeconds = Math.floor(diffMs / 1000);
+        const diffMinutes = Math.floor(diffSeconds / 60);
+        const diffHours = Math.floor(diffMinutes / 60);
+        const diffDays = Math.floor(diffHours / 24);
+
+        if (diffDays > 0) {
+            return `${diffDays} ${diffDays === 1 ? lang.t('stats.day') : lang.t('stats.days')}`;
+        } else if (diffHours > 0) {
+            return `${diffHours} ${diffHours === 1 ? lang.t('stats.hour') : lang.t('stats.hours')}`;
+        } else if (diffMinutes > 0) {
+            return `${diffMinutes} ${diffMinutes === 1 ? lang.t('stats.minute') : lang.t('stats.minutes')}`;
+        } else {
+            return lang.t('stats.seconds');
+        }
+    } catch {
+        return '';
+    }
 }
 
 function playTrack(element) {

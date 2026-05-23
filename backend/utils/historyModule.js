@@ -18,6 +18,7 @@ function initDatabase() {
             image TEXT,
             duration_seconds REAL DEFAULT 0,
             track_duration REAL DEFAULT 0,
+            genre TEXT DEFAULT NULL,
             played_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `);
@@ -36,6 +37,17 @@ function initDatabase() {
         CREATE INDEX IF NOT EXISTS idx_play_history_artist_name
         ON play_history(artist_name)
     `);
+
+    try {
+        const columns = db.prepare("PRAGMA table_info(play_history)").all();
+        const hasGenre = columns.some(col => col.name === 'genre');
+        if (!hasGenre) {
+            db.exec(`ALTER TABLE play_history ADD COLUMN genre TEXT DEFAULT NULL`);
+            console.log('Added genre column to play_history table');
+        }
+    } catch (e) {
+        console.error('Failed to add genre column:', e);
+    }
 
     console.log('History database initialized at:', dbPath);
 }
@@ -118,6 +130,24 @@ function updateTrackDuration(rowId, trackDuration) {
     stmt.run(trackDuration, rowId);
 }
 
+function updateGenre(rowId, genre) {
+    if (!db) initDatabase();
+    if (!rowId || !genre) return;
+
+    try {
+        const columns = db.prepare("PRAGMA table_info(play_history)").all();
+        const hasGenre = columns.some(col => col.name === 'genre');
+        if (!hasGenre) return;
+    } catch (e) {
+        return;
+    }
+
+    const stmt = db.prepare(`
+        UPDATE play_history SET genre = ? WHERE id = ?
+    `);
+    stmt.run(genre, rowId);
+}
+
 function getRecentTracks(limit = 6) {
     if (!db) initDatabase();
 
@@ -174,6 +204,7 @@ module.exports = {
     addToHistory,
     updateListeningDuration,
     updateTrackDuration,
+    updateGenre,
     getRecentTracks,
     getTopArtists,
     getHistory,

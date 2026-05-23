@@ -243,6 +243,9 @@
     "since": "Since",
     "day": "day",
     "noGenres": "No genre data yet",
-    "listeningByHour": "Listening by Hour"
+    "listeningByHour": "Listening by Hour",
+    "recentTracks": "Recently Played",
+    "noRecentTracks": "No recently played tracks",
+    "recentTracksInfo": "Last {count} tracks you listened to"
   }
 }

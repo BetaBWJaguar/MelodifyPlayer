@@ -4,7 +4,9 @@ const API_KEY = "1b8e4518708251c43d83bb70451f3e28";
 const BASE_URL = "https://ws.audioscrobbler.com/2.0/";
 
 const similarCache = new Map();
+const genreCache = new Map();
 const CACHE_TTL = 10 * 60 * 1000;
+const GENRE_CACHE_TTL = 60 * 60 * 1000;
 
 const recentHistory = [];
 const HISTORY_LIMIT = 10;
@@ -212,6 +214,70 @@ async function getSimilarTracks(trackName, artistName, limit = 50) {
     }
 }
 
+async function getTrackGenre(trackName, artistName) {
+    if (!trackName || !artistName) return null;
+
+    const cacheKey = `${trackName.toLowerCase()}:${artistName.toLowerCase()}`;
+    const cached = genreCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < GENRE_CACHE_TTL) {
+        return cached.genre;
+    }
+
+    try {
+        const url = `${BASE_URL}?method=track.gettoptags&api_key=${API_KEY}&artist=${encodeURIComponent(artistName)}&track=${encodeURIComponent(trackName)}&format=json&autocorrect=1`;
+        const json = await httpGetJson(url, 5000);
+
+        if (json?.toptags?.tag) {
+            const tags = Array.isArray(json.toptags.tag) ? json.toptags.tag : [json.toptags.tag];
+            const ignoreTags = ['seen live', 'favorites', 'favourite', 'awesome', 'amazing', 'good', 'great', 'love', 'liked', 'best', 'cool', 'nice', 'beautiful', 'perfect'];
+            const genreTag = tags.find(tag => {
+                const name = tag.name.toLowerCase();
+                return tag.count > 0 && !ignoreTags.some(ignore => name.includes(ignore));
+            });
+
+            if (genreTag) {
+                const genre = genreTag.name.charAt(0).toUpperCase() + genreTag.name.slice(1);
+                genreCache.set(cacheKey, { genre, timestamp: Date.now() });
+                return genre;
+            }
+
+            const anyTag = tags.find(tag => {
+                const name = tag.name.toLowerCase();
+                return tag.count > 0 && !ignoreTags.some(ignore => name.includes(ignore)) && tag.name.length < 30;
+            });
+            if (anyTag) {
+                const genre = anyTag.name.charAt(0).toUpperCase() + anyTag.name.slice(1);
+                genreCache.set(cacheKey, { genre, timestamp: Date.now() });
+                return genre;
+            }
+        }
+
+        const artistUrl = `${BASE_URL}?method=artist.gettoptags&api_key=${API_KEY}&artist=${encodeURIComponent(artistName)}&format=json&autocorrect=1`;
+        const artistJson = await httpGetJson(artistUrl, 5000);
+
+        if (artistJson?.toptags?.tag) {
+            const tags = Array.isArray(artistJson.toptags.tag) ? artistJson.toptags.tag : [artistJson.toptags.tag];
+            const ignoreTags = ['seen live', 'favorites', 'favourite', 'awesome', 'amazing', 'good', 'great', 'love', 'liked', 'best', 'cool', 'nice', 'beautiful', 'perfect'];
+            const genreTag = tags.find(tag => {
+                const name = tag.name.toLowerCase();
+                return tag.count > 0 && !ignoreTags.some(ignore => name.includes(ignore)) && tag.name.length < 30;
+            });
+
+            if (genreTag) {
+                const genre = genreTag.name.charAt(0).toUpperCase() + genreTag.name.slice(1);
+                genreCache.set(cacheKey, { genre, timestamp: Date.now() });
+                return genre;
+            }
+        }
+
+        genreCache.set(cacheKey, { genre: null, timestamp: Date.now() });
+        return null;
+    } catch (error) {
+        return null;
+    }
+}
+
 module.exports = {
-    getSimilarTracks
+    getSimilarTracks,
+    getTrackGenre
 };

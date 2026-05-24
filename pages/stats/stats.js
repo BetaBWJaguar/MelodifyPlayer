@@ -30,7 +30,7 @@ async function initStatsPage() {
             ipcRenderer.invoke('get-stats-listening-streak'),
             ipcRenderer.invoke('get-stats-busiest-day'),
             ipcRenderer.invoke('get-stats-avg-plays-per-day'),
-            ipcRenderer.invoke('get-stats-top-genres', 5),
+            ipcRenderer.invoke('get-stats-top-categories', 5),
             ipcRenderer.invoke('get-stats-listening-time-by-hour'),
             ipcRenderer.invoke('get-stats-recent-tracks', 10)
         ]);
@@ -579,15 +579,24 @@ function renderListeningByHour(listeningByHour, lang) {
     `;
 }
 
+function translateCategory(categoryKey, lang) {
+    const key = `categories.${categoryKey}`;
+    const translated = lang.t(key);
+    if (translated === key) {
+        return categoryKey.charAt(0).toUpperCase() + categoryKey.slice(1);
+    }
+    return translated;
+}
+
 function renderTopGenres(topGenres, lang) {
     if (!topGenres || topGenres.length === 0) {
         return `
             <div class="stats-section">
                 <div class="stats-section-header">
-                    <h2>${lang.t('stats.topGenres')}</h2>
+                    <h2>${lang.t('stats.topCategories')}</h2>
                 </div>
                 <div class="activity-chart">
-                    <div class="activity-empty">${lang.t('stats.noGenres')}</div>
+                    <div class="activity-empty">${lang.t('stats.noCategories')}</div>
                 </div>
             </div>
         `;
@@ -599,12 +608,14 @@ function renderTopGenres(topGenres, lang) {
     const items = topGenres.map((genre, index) => {
         const color = genreColors[index % genreColors.length];
         const barWidth = (genre.playCount / maxCount) * 100;
+        const categoryKey = genre.category || genre.genre || 'other';
+        const displayName = translateCategory(categoryKey, lang);
 
         return `
             <div class="genre-item">
                 <div class="genre-info">
                     <span class="genre-dot" style="background: ${color};"></span>
-                    <span class="genre-name">${escapeHtml(genre.genre)}</span>
+                    <span class="genre-name">${escapeHtml(displayName)}</span>
                 </div>
                 <div class="genre-bar-container">
                     <div class="genre-bar" style="width: ${barWidth}%; background: ${color};"></div>
@@ -617,7 +628,7 @@ function renderTopGenres(topGenres, lang) {
     return `
         <div class="stats-section">
             <div class="stats-section-header">
-                <h2>${lang.t('stats.topGenres')}</h2>
+                <h2>${lang.t('stats.topCategories')}</h2>
             </div>
             <div class="activity-chart">
                 <div class="genre-list">
@@ -679,7 +690,7 @@ function renderRecentTracks(recentTracks, lang) {
 function formatTimeAgo(dateStr, lang) {
     try {
         const now = new Date();
-        const date = new Date(dateStr);
+        const date = new Date(dateStr + 'Z');
         const diffMs = now - date;
         const diffSeconds = Math.floor(diffMs / 1000);
         const diffMinutes = Math.floor(diffSeconds / 60);
@@ -693,7 +704,7 @@ function formatTimeAgo(dateStr, lang) {
         } else if (diffMinutes > 0) {
             return `${diffMinutes} ${diffMinutes === 1 ? lang.t('stats.minute') : lang.t('stats.minutes')}`;
         } else {
-            return lang.t('stats.seconds');
+            return lang.t('stats.justNow');
         }
     } catch {
         return '';
@@ -1012,7 +1023,7 @@ function generateStatsCanvas(lang) {
         const genreColors = ['#e94560', '#667eea', '#4facfe', '#f093fb', '#fa709a'];
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-        ctx.fillText(lang.t('stats.topGenres'), padding, y + 16);
+        ctx.fillText(lang.t('stats.topCategories'), padding, y + 16);
 
         topGenres.slice(0, 5).forEach((genre, i) => {
             const gy = y + 36 + i * 28;
@@ -1021,9 +1032,12 @@ function generateStatsCanvas(lang) {
             ctx.arc(padding + 8, gy + 4, 5, 0, Math.PI * 2);
             ctx.fill();
 
+            const categoryKey = genre.category || genre.genre || 'other';
+            const displayName = translateCategory(categoryKey, lang);
+
             ctx.fillStyle = '#ffffff';
             ctx.font = '13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-            ctx.fillText(truncateText(ctx, genre.genre, 300), padding + 22, gy + 8);
+            ctx.fillText(truncateText(ctx, displayName, 300), padding + 22, gy + 8);
 
             ctx.fillStyle = 'rgba(255,255,255,0.4)';
             ctx.font = '12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';

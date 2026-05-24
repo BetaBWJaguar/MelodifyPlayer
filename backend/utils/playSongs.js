@@ -229,9 +229,9 @@ class Player {
                 this._currentHistoryRowId = rowId;
 
                 if (track.name && track.artist) {
-                    lastfmModule.getTrackGenre(track.name, track.artist).then(genre => {
-                        if (genre && rowId) {
-                            historyModule.updateGenre(rowId, genre);
+                    lastfmModule.getTrackCategory(track.name, track.artist).then(category => {
+                        if (category && rowId) {
+                            historyModule.updateCategory(rowId, category);
                         }
                     }).catch(() => {});
                 }
@@ -931,9 +931,9 @@ class Player {
                     duration: track.duration || null
                 });
                 if (track.name && track.artist) {
-                    lastfmModule.getTrackGenre(track.name, track.artist).then(genre => {
-                        if (genre && rowId) {
-                            historyModule.updateGenre(rowId, genre);
+                    lastfmModule.getTrackCategory(track.name, track.artist).then(category => {
+                        if (category && rowId) {
+                            historyModule.updateCategory(rowId, category);
                         }
                     }).catch(() => {});
                 }
@@ -998,9 +998,9 @@ class Player {
                     duration: track.duration || null
                 });
                 if (track.name && track.artist) {
-                    lastfmModule.getTrackGenre(track.name, track.artist).then(genre => {
-                        if (genre && rowId) {
-                            historyModule.updateGenre(rowId, genre);
+                    lastfmModule.getTrackCategory(track.name, track.artist).then(category => {
+                        if (category && rowId) {
+                            historyModule.updateCategory(rowId, category);
                         }
                     }).catch(() => {});
                 }

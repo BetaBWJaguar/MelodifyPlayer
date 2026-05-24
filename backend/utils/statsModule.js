@@ -90,11 +90,11 @@ function getListeningActivity(days = 7) {
     const database = getDb();
 
     const stmt = database.prepare(`
-        SELECT DATE(played_at) as date, COUNT(*) as count,
+        SELECT DATE(played_at, 'localtime') as date, COUNT(*) as count,
                COALESCE(SUM(duration_seconds), 0) as total_seconds
         FROM play_history
-        WHERE played_at >= datetime('now', '-' || ? || ' days')
-        GROUP BY DATE(played_at)
+        WHERE played_at >= datetime('now', 'localtime', '-' || ? || ' days')
+        GROUP BY DATE(played_at, 'localtime')
         ORDER BY date ASC
     `);
 
@@ -105,11 +105,11 @@ function getDailyListeningDuration(days = 7) {
     const database = getDb();
 
     const stmt = database.prepare(`
-        SELECT DATE(played_at) as date,
+        SELECT DATE(played_at, 'localtime') as date,
                COALESCE(SUM(duration_seconds), 0) as total_seconds
         FROM play_history
-        WHERE played_at >= datetime('now', '-' || ? || ' days')
-        GROUP BY DATE(played_at)
+        WHERE played_at >= datetime('now', 'localtime', '-' || ? || ' days')
+        GROUP BY DATE(played_at, 'localtime')
         ORDER BY date ASC
     `);
 
@@ -120,8 +120,9 @@ function getRecentTracks(limit = 10) {
     const database = getDb();
 
     const stmt = database.prepare(`
-        SELECT track_id as id, track_name as name, artist_name as artist, image, played_at
+        SELECT track_id as id, track_name as name, artist_name as artist, image, MAX(played_at) as played_at
         FROM play_history
+        GROUP BY track_id
         ORDER BY played_at DESC
         LIMIT ?
     `);
@@ -180,7 +181,7 @@ function getSkipRate() {
 function getFirstPlayDate() {
     const database = getDb();
     try {
-        const row = database.prepare('SELECT MIN(played_at) as firstPlay FROM play_history').get();
+        const row = database.prepare("SELECT MIN(datetime(played_at, 'localtime')) as firstPlay FROM play_history").get();
         return row.firstPlay || null;
     } catch (e) {
         return null;
@@ -191,7 +192,7 @@ function getListeningStreak() {
     const database = getDb();
     try {
         const rows = database.prepare(`
-            SELECT DISTINCT DATE(played_at) as date
+            SELECT DISTINCT DATE(played_at, 'localtime') as date
             FROM play_history
             ORDER BY date DESC
         `).all();
@@ -224,8 +225,8 @@ function getBusiestDay() {
     const database = getDb();
     try {
         const row = database.prepare(`
-            SELECT 
-                CASE cast(strftime('%w', played_at) as integer)
+            SELECT
+                CASE cast(strftime('%w', played_at, 'localtime') as integer)
                     WHEN 0 THEN 'sunday'
                     WHEN 1 THEN 'monday'
                     WHEN 2 THEN 'tuesday'
@@ -252,9 +253,9 @@ function getAveragePlaysPerDay() {
     const database = getDb();
     try {
         const row = database.prepare(`
-            SELECT 
+            SELECT
                 COUNT(*) as totalPlays,
-                COUNT(DISTINCT DATE(played_at)) as totalDays
+                COUNT(DISTINCT DATE(played_at, 'localtime')) as totalDays
             FROM play_history
         `).get();
 
@@ -265,16 +266,20 @@ function getAveragePlaysPerDay() {
     }
 }
 
-function getTopGenres(limit = 5) {
+
+
+function getTopCategories(limit = 5) {
     const database = getDb();
     try {
+        const columns = database.prepare("PRAGMA table_info(play_history)").all();
+        const hasCategory = columns.some(col => col.name === 'category');
+
         const rows = database.prepare(`
-            SELECT 
-                COALESCE(genre, 'Unknown') as genre,
+            SELECT
+                COALESCE(category, 'other') as category,
                 COUNT(*) as playCount
             FROM play_history
-            WHERE genre IS NOT NULL AND genre != ''
-            GROUP BY genre
+            GROUP BY category
             ORDER BY playCount DESC
             LIMIT ?
         `).all(limit);
@@ -289,8 +294,8 @@ function getListeningTimeByHour() {
     const database = getDb();
     try {
         const rows = database.prepare(`
-            SELECT 
-                cast(strftime('%H', played_at) as integer) as hour,
+            SELECT
+                cast(strftime('%H', played_at, 'localtime') as integer) as hour,
                 COUNT(*) as playCount
             FROM play_history
             GROUP BY hour
@@ -316,6 +321,6 @@ module.exports = {
     getListeningStreak,
     getBusiestDay,
     getAveragePlaysPerDay,
-    getTopGenres,
+    getTopCategories,
     getListeningTimeByHour
 };

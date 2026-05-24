@@ -520,8 +520,9 @@ ipcMain.handle('get-stats-avg-plays-per-day', () => {
     return statsModule.getAveragePlaysPerDay();
 });
 
-ipcMain.handle('get-stats-top-genres', (event, limit) => {
-    return statsModule.getTopGenres(limit || 5);
+
+ipcMain.handle('get-stats-top-categories', (event, limit) => {
+    return statsModule.getTopCategories(limit || 5);
 });
 
 ipcMain.handle('get-stats-listening-time-by-hour', () => {

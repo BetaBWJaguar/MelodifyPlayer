@@ -207,6 +207,7 @@
     "hours": "hours",
     "minutes": "minutes",
     "seconds": "seconds",
+    "justNow": "just now",
     "hour": "hour",
     "minute": "minute",
     "hoursShort": "h",
@@ -231,6 +232,8 @@
     "busiestDay": "Busiest Day",
     "avgPlaysPerDay": "Avg Plays/Day",
     "topGenres": "Top Genres",
+    "topCategories": "Top Categories",
+    "noCategories": "No category data yet",
     "peakHour": "Peak Hour",
     "peakHourInfo": "You listen to music the most at {hour}:00",
     "sunday": "Sunday",
@@ -247,5 +250,25 @@
     "recentTracks": "Recently Played",
     "noRecentTracks": "No recently played tracks",
     "recentTracksInfo": "Last {count} tracks you listened to"
+  },
+  "categories": {
+    "pop": "Pop",
+    "rock": "Rock",
+    "hiphop": "Hip-Hop",
+    "electronic": "Electronic",
+    "rnb": "R&B",
+    "jazz": "Jazz",
+    "classical": "Classical",
+    "metal": "Metal",
+    "country": "Country",
+    "latin": "Latin",
+    "indie": "Indie",
+    "folk": "Folk",
+    "reggae": "Reggae",
+    "blues": "Blues",
+    "punk": "Punk",
+    "soundtrack": "Soundtrack",
+    "alternative": "Alternative",
+    "other": "Other"
   }
 }

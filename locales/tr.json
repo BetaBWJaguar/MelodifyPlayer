@@ -207,6 +207,7 @@
     "hours": "saat",
     "minutes": "dakika",
     "seconds": "saniye",
+    "justNow": "az önce",
     "hour": "saat",
     "minute": "dakika",
     "hoursShort": "sa",
@@ -231,6 +232,8 @@
     "busiestDay": "En Yoğun Gün",
     "avgPlaysPerDay": "Günlük Ort. Çalma",
     "topGenres": "En Çok Dinlenen Türler",
+    "topCategories": "En Çok Dinlenen Kategoriler",
+    "noCategories": "Henüz kategori verisi yok",
     "peakHour": "En Yoğun Saat",
     "peakHourInfo": "Müziği en çok saat {hour}:00'te dinliyorsun",
     "sunday": "Pazar",
@@ -247,5 +250,25 @@
     "recentTracks": "Son Çalınanlar",
     "noRecentTracks": "Henüz son çalınan şarkı yok",
     "recentTracksInfo": "Dinlediğin son {count} şarkı"
+  },
+  "categories": {
+    "pop": "Pop",
+    "rock": "Rock",
+    "hiphop": "Hip-Hop",
+    "electronic": "Elektronik",
+    "rnb": "R&B",
+    "jazz": "Caz",
+    "classical": "Klasik",
+    "metal": "Metal",
+    "country": "Country",
+    "latin": "Latin",
+    "indie": "Indie",
+    "folk": "Folk",
+    "reggae": "Reggae",
+    "blues": "Blues",
+    "punk": "Punk",
+    "soundtrack": "Film Müziği",
+    "alternative": "Alternatif",
+    "other": "Diğer"
   }
 }

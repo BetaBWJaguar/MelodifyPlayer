@@ -18,7 +18,7 @@ function initDatabase() {
             image TEXT,
             duration_seconds REAL DEFAULT 0,
             track_duration REAL DEFAULT 0,
-            genre TEXT DEFAULT NULL,
+            category TEXT DEFAULT 'other',
             played_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `);
@@ -40,13 +40,13 @@ function initDatabase() {
 
     try {
         const columns = db.prepare("PRAGMA table_info(play_history)").all();
-        const hasGenre = columns.some(col => col.name === 'genre');
-        if (!hasGenre) {
-            db.exec(`ALTER TABLE play_history ADD COLUMN genre TEXT DEFAULT NULL`);
-            console.log('Added genre column to play_history table');
+        const hasCategory = columns.some(col => col.name === 'category');
+        if (!hasCategory) {
+            db.exec(`ALTER TABLE play_history ADD COLUMN category TEXT DEFAULT 'other'`);
+            console.log('Added category column to play_history table');
         }
     } catch (e) {
-        console.error('Failed to add genre column:', e);
+        console.error('Failed to add category column:', e);
     }
 
     console.log('History database initialized at:', dbPath);
@@ -130,22 +130,22 @@ function updateTrackDuration(rowId, trackDuration) {
     stmt.run(trackDuration, rowId);
 }
 
-function updateGenre(rowId, genre) {
+function updateCategory(rowId, category) {
     if (!db) initDatabase();
-    if (!rowId || !genre) return;
+    if (!rowId || !category) return;
 
     try {
         const columns = db.prepare("PRAGMA table_info(play_history)").all();
-        const hasGenre = columns.some(col => col.name === 'genre');
-        if (!hasGenre) return;
+        const hasCategory = columns.some(col => col.name === 'category');
+        if (!hasCategory) return;
     } catch (e) {
         return;
     }
 
     const stmt = db.prepare(`
-        UPDATE play_history SET genre = ? WHERE id = ?
+        UPDATE play_history SET category = ? WHERE id = ?
     `);
-    stmt.run(genre, rowId);
+    stmt.run(category, rowId);
 }
 
 function getRecentTracks(limit = 6) {
@@ -184,7 +184,7 @@ function getHistory(limit = 50) {
         SELECT track_id as id, track_name as name, artist_name as artist, image, played_at
         FROM play_history
         ORDER BY played_at DESC
-        LIMIT ?
+            LIMIT ?
     `);
 
     return stmt.all(limit);
@@ -204,7 +204,7 @@ module.exports = {
     addToHistory,
     updateListeningDuration,
     updateTrackDuration,
-    updateGenre,
+    updateCategory,
     getRecentTracks,
     getTopArtists,
     getHistory,

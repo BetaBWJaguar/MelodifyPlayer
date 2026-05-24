@@ -1,10 +1,12 @@
 const https = require("https");
+const { mapTagsToCategory } = require('./genreCategories');
 
 const API_KEY = "1b8e4518708251c43d83bb70451f3e28";
 const BASE_URL = "https://ws.audioscrobbler.com/2.0/";
 
 const similarCache = new Map();
 const genreCache = new Map();
+const categoryCache = new Map();
 const CACHE_TTL = 10 * 60 * 1000;
 const GENRE_CACHE_TTL = 60 * 60 * 1000;
 
@@ -277,7 +279,47 @@ async function getTrackGenre(trackName, artistName) {
     }
 }
 
+
+async function getTrackCategory(trackName, artistName) {
+    if (!trackName || !artistName) return 'other';
+
+    const cacheKey = `${trackName.toLowerCase()}:${artistName.toLowerCase()}`;
+    const cached = categoryCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < GENRE_CACHE_TTL) {
+        return cached.category;
+    }
+
+    try {
+        let allTags = [];
+
+        const trackUrl = `${BASE_URL}?method=track.gettoptags&api_key=${API_KEY}&artist=${encodeURIComponent(artistName)}&track=${encodeURIComponent(trackName)}&format=json&autocorrect=1`;
+        const trackJson = await httpGetJson(trackUrl, 5000);
+
+        if (trackJson?.toptags?.tag) {
+            const tags = Array.isArray(trackJson.toptags.tag) ? trackJson.toptags.tag : [trackJson.toptags.tag];
+            allTags = tags.filter(t => t.count > 0).map(t => t.name);
+        }
+
+        if (allTags.length === 0) {
+            const artistUrl = `${BASE_URL}?method=artist.gettoptags&api_key=${API_KEY}&artist=${encodeURIComponent(artistName)}&format=json&autocorrect=1`;
+            const artistJson = await httpGetJson(artistUrl, 5000);
+
+            if (artistJson?.toptags?.tag) {
+                const tags = Array.isArray(artistJson.toptags.tag) ? artistJson.toptags.tag : [artistJson.toptags.tag];
+                allTags = tags.filter(t => t.count > 0).map(t => t.name);
+            }
+        }
+
+        const category = mapTagsToCategory(allTags);
+        categoryCache.set(cacheKey, { category, timestamp: Date.now() });
+        return category;
+    } catch (error) {
+        return 'other';
+    }
+}
+
 module.exports = {
     getSimilarTracks,
-    getTrackGenre
+    getTrackGenre,
+    getTrackCategory
 };

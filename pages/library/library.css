@@ -36,6 +36,7 @@
     display: flex;
     align-items: center;
     justify-content: flex-start;
+    gap: 20px;
     max-width: 1400px;
     margin: 0 auto;
 }
@@ -195,7 +196,7 @@
 .library-content {
     flex: 1;
     overflow-y: auto;
-    padding: 24px 32px;
+    padding: 24px 32px 120px 32px;
 }
 
 .library-content::-webkit-scrollbar {
@@ -1034,103 +1035,57 @@
 
 @media (max-width: 900px) {
     .library-filters {
-        display: none !important;
-    }
-}
-
-@media (max-width: 768px) {
-    .library-header {
-        padding: 24px 24px 20px 24px;
+        padding: 12px 24px;
     }
 
-    .library-header-content {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 16px;
-    }
-
-    .library-header-left {
-        width: 100%;
-    }
-
-    .library-icon {
-        width: 56px;
-        height: 56px;
-    }
-
-    .library-icon svg {
-        width: 28px;
-        height: 28px;
-    }
-
-    .library-header-info h1 {
-        font-size: 24px;
-    }
-
-    .library-filters {
-        padding: 16px 24px;
-    }
-
-    .library-content {
-        padding: 20px 24px;
-    }
-
-    .playlist-card {
-        padding: 12px;
-    }
-
-    .playlist-card-image {
-        width: 56px;
-        height: 56px;
+    .search-container {
+        max-width: 100%;
     }
 
     .playlist-card-actions {
         opacity: 1;
     }
 
-    .modal-container {
-        width: 95%;
-        max-height: 95vh;
-    }
-
-    .modal-header,
-    .modal-body,
-    .modal-footer {
-        padding: 16px 20px;
-    }
-
-    .playlist-view-header {
-        flex-direction: column;
-        text-align: center;
-    }
-
-    .playlist-view-image {
-        width: 80px;
-        height: 80px;
+    .playlist-track-remove-btn {
+        opacity: 1;
     }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
     .library-header {
         padding: 20px 20px 16px 20px;
     }
 
+    .library-header-content {
+        gap: 16px;
+    }
+
     .library-icon {
-        width: 48px;
-        height: 48px;
+        width: 52px;
+        height: 52px;
+        border-radius: 12px;
     }
 
     .library-icon svg {
-        width: 24px;
-        height: 24px;
+        width: 26px;
+        height: 26px;
     }
 
     .library-header-info h1 {
-        font-size: 22px;
+        font-size: 24px;
     }
 
     .library-header-info p {
         font-size: 13px;
+    }
+
+    .library-filters {
+        padding: 12px 20px;
+    }
+
+    .search-container input {
+        padding: 10px 44px 10px 44px;
+        font-size: 14px;
     }
 
     .library-content {
@@ -1138,12 +1093,13 @@
     }
 
     .playlist-card {
+        padding: 12px;
         gap: 12px;
     }
 
     .playlist-card-image {
-        width: 48px;
-        height: 48px;
+        width: 52px;
+        height: 52px;
     }
 
     .playlist-card-name {
@@ -1155,12 +1111,514 @@
     }
 
     .playlist-card-meta {
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .playlist-card-actions {
+        opacity: 1;
+        flex-shrink: 0;
+    }
+
+    .modal-container {
+        width: 95%;
+        max-height: 95vh;
+        border-radius: 16px;
+    }
+
+    .modal-container.modal-large {
+        max-width: 100%;
+    }
+
+    .modal-container.modal-small {
+        max-width: 340px;
+    }
+
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+        padding: 16px 20px;
+    }
+
+    .modal-header h2 {
+        font-size: 18px;
+    }
+
+    .playlist-view-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 16px;
+    }
+
+    .playlist-view-image {
+        width: 80px;
+        height: 80px;
+    }
+
+    .playlist-view-info h2 {
+        font-size: 20px;
+    }
+
+    .playlist-tracks-header {
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 10px 14px;
+    }
+
+    .bulk-actions {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .playlist-track-item {
+        padding: 10px 12px;
+        gap: 10px;
+    }
+
+    .playlist-track-image {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+    }
+
+    .playlist-track-name {
+        font-size: 13px;
+    }
+
+    .playlist-track-artist {
+        font-size: 11px;
+    }
+
+    .playlist-track-duration {
+        font-size: 12px;
+        min-width: 38px;
+    }
+
+    .btn {
+        padding: 10px 18px;
+        font-size: 13px;
+    }
+
+    .empty-state {
+        padding: 48px 16px;
+    }
+
+    .empty-state svg {
+        width: 56px;
+        height: 56px;
+    }
+
+    .empty-state h2 {
+        font-size: 18px;
+    }
+
+    .empty-state p {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 600px) {
+    .library-header {
+        padding: 16px 16px 12px 16px;
+    }
+
+    .library-header-content {
         gap: 12px;
+    }
+
+    .library-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+    }
+
+    .library-icon svg {
+        width: 22px;
+        height: 22px;
+    }
+
+    .library-header-info h1 {
+        font-size: 20px;
+        letter-spacing: -0.5px;
+    }
+
+    .library-header-info p {
+        font-size: 12px;
+        margin-top: 4px;
+    }
+
+    .library-filters {
+        padding: 10px 16px;
+    }
+
+    .search-container input {
+        padding: 9px 40px 9px 40px;
+        font-size: 13px;
+    }
+
+    .search-icon {
+        left: 12px;
+        width: 16px;
+        height: 16px;
+    }
+
+    .clear-search-btn {
+        right: 10px;
+        width: 18px;
+        height: 18px;
+    }
+
+    .library-content {
+        padding: 12px 16px;
+    }
+
+    .playlists-grid {
+        gap: 6px;
+    }
+
+    .playlist-card {
+        padding: 10px;
+        gap: 10px;
+        border-radius: 10px;
+    }
+
+    .playlist-card:hover {
+        transform: none;
+    }
+
+    .playlist-card-image {
+        width: 44px;
+        height: 44px;
+        border-radius: 6px;
+    }
+
+    .playlist-card-image.no-image svg {
+        width: 22px;
+        height: 22px;
+    }
+
+    .playlist-card-info {
+        gap: 3px;
+    }
+
+    .playlist-card-name {
+        font-size: 13px;
+    }
+
+    .playlist-card-desc {
+        font-size: 11px;
+    }
+
+    .playlist-card-count {
+        font-size: 11px;
+    }
+
+    .playlist-card-meta {
+        gap: 8px;
+    }
+
+    .edit-playlist-btn,
+    .delete-playlist-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: 5px;
+    }
+
+    .edit-playlist-btn svg,
+    .delete-playlist-btn svg {
+        width: 12px;
+        height: 12px;
+    }
+
+    .modal-overlay {
+        align-items: flex-end;
+    }
+
+    .modal-container {
+        width: 100%;
+        max-width: 100%;
+        max-height: 90vh;
+        border-radius: 16px 16px 0 0;
+    }
+
+    .modal-container.modal-small {
+        max-width: 100%;
+    }
+
+    .modal-header {
+        padding: 14px 16px;
+        border-radius: 16px 16px 0 0;
+    }
+
+    .modal-header h2 {
+        font-size: 16px;
+    }
+
+    .modal-body {
+        padding: 14px 16px;
+    }
+
+    .modal-footer {
+        padding: 14px 16px;
+        flex-wrap: wrap;
+    }
+
+    .modal-footer .btn {
+        flex: 1;
+        min-width: 0;
+        text-align: center;
+    }
+
+    .playlist-input-container {
+        margin-bottom: 16px;
+        gap: 8px;
+    }
+
+    .playlist-input-container label {
+        font-size: 12px;
+    }
+
+    .playlist-input-container input,
+    .playlist-input-container textarea {
+        padding: 12px 14px;
+        font-size: 13px;
+        border-radius: 10px;
+    }
+
+    .playlist-view-header {
+        gap: 12px;
+    }
+
+    .playlist-view-image {
+        width: 64px;
+        height: 64px;
+        border-radius: 12px;
+    }
+
+    .playlist-view-image svg {
+        width: 32px;
+        height: 32px;
+    }
+
+    .playlist-view-info h2 {
+        font-size: 18px;
+    }
+
+    .playlist-view-info p {
+        font-size: 13px;
+    }
+
+    .playlist-tracks-header {
+        padding: 8px 12px;
+        border-radius: 10px;
+    }
+
+    .select-all-checkbox {
+        font-size: 12px;
+    }
+
+    .select-all-checkbox input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+    }
+
+    .bulk-action-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: 5px;
+    }
+
+    .playlist-track-item {
+        padding: 8px 10px;
+        gap: 8px;
+        border-radius: 10px;
+    }
+
+    .playlist-track-item:hover {
+        transform: none;
+    }
+
+    .playlist-track-item .track-checkbox {
+        width: 16px;
+        height: 16px;
+    }
+
+    .playlist-track-drag-handle {
+        width: 16px;
+        height: 16px;
+    }
+
+    .playlist-track-remove-btn {
+        width: 24px;
+        height: 24px;
+        opacity: 1;
+    }
+
+    .playlist-track-download-btn {
+        width: 24px;
+        height: 24px;
+        opacity: 1;
+    }
+
+    .playlist-track-image {
+        width: 36px;
+        height: 36px;
+        border-radius: 6px;
+    }
+
+    .playlist-track-image svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .playlist-track-name {
+        font-size: 12px;
+    }
+
+    .playlist-track-artist {
+        font-size: 10px;
+    }
+
+    .playlist-track-duration {
+        font-size: 11px;
+        min-width: 32px;
+    }
+
+    .btn {
+        padding: 9px 14px;
+        font-size: 12px;
+        border-radius: 8px;
+    }
+
+    .empty-state {
+        padding: 36px 12px;
+    }
+
+    .empty-state svg {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 16px;
+    }
+
+    .empty-state h2 {
+        font-size: 16px;
+        margin-bottom: 8px;
+    }
+
+    .empty-state p {
+        font-size: 13px;
+    }
+
+    .loading-state {
+        padding: 48px 16px;
+    }
+
+    .spinner {
+        width: 32px;
+        height: 32px;
+    }
+
+    .playlist-select {
+        padding: 10px 14px;
+        font-size: 13px;
+    }
+
+    .playlist-char-count {
+        font-size: 11px;
+    }
+
+    .selected-count-info {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 380px) {
+    .library-header {
+        padding: 12px 12px 10px 12px;
+    }
+
+    .library-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+    }
+
+    .library-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .library-header-info h1 {
+        font-size: 18px;
+    }
+
+    .library-filters {
+        padding: 8px 12px;
+    }
+
+    .library-content {
+        padding: 10px 12px;
+    }
+
+    .playlist-card {
+        padding: 8px;
+        gap: 8px;
+    }
+
+    .playlist-card-image {
+        width: 40px;
+        height: 40px;
+    }
+
+    .playlist-card-actions {
+        gap: 4px;
+    }
+
+    .edit-playlist-btn,
+    .delete-playlist-btn {
+        width: 26px;
+        height: 26px;
+    }
+
+    .playlist-track-item {
+        padding: 6px 8px;
+        gap: 6px;
+    }
+
+    .playlist-track-image {
+        width: 32px;
+        height: 32px;
+    }
+
+    .playlist-track-duration {
+        display: none;
     }
 }
 
 @media (hover: none) {
     .playlist-card-actions {
         opacity: 1;
+    }
+
+    .playlist-track-remove-btn {
+        opacity: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .library-content {
+        padding: 16px 20px 100px 20px;
+    }
+}
+
+@media (max-width: 600px) {
+    .library-content {
+        padding: 12px 16px 90px 16px;
+    }
+}
+
+@media (max-width: 380px) {
+    .library-content {
+        padding: 10px 12px 80px 12px;
     }
 }

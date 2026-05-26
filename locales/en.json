@@ -179,7 +179,8 @@
     "searching": "Searching for lyrics...",
     "notFound": "Lyrics not found",
     "tryManual": "Try searching manually using the search bar above",
-    "syncNotFound": "Synchronized lyrics not found."
+    "syncNotFound": "Synchronized lyrics not found.",
+    "syncWarning": "Some songs' lyrics may not be perfectly synchronized with the playback."
   },
   "stats": {
     "title": "My Statistics",

@@ -179,7 +179,8 @@
     "searching": "Şarkı sözleri aranıyor...",
     "notFound": "Şarkı sözleri bulunamadı",
     "tryManual": "Yukarıdaki arama çubuğunu kullanarak manuel aramayı dene",
-    "syncNotFound": "Eşzamanlı şarkı sözü bulunamadı."
+    "syncNotFound": "Eşzamanlı şarkı sözü bulunamadı.",
+    "syncWarning": "Bazı şarkılarda sözler, çalma süresiyle senkronize olmayabilir."
   },
   "stats": {
     "title": "İstatistiklerim",

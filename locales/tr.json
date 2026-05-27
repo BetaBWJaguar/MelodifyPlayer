@@ -54,7 +54,8 @@
     "noPlaylists": "Çalma listesi bulunamadı",
     "createPlaylist": "Çalma Listesi Oluştur",
     "alreadyInPlaylist": "Bu şarkı zaten listede var",
-    "addedToPlaylist": "Listeye eklendi"
+    "addedToPlaylist": "Listeye eklendi",
+    "errorAdding": "Şarkı listeye eklenirken hata oluştu"
   },
   "likedSongs": {
     "title": "Beğenilen Şarkılar",
@@ -108,7 +109,14 @@
   },
   "player": {
     "selectSong": "Bir şarkı seç",
-    "startListening": "dinlemeye başlamak için"
+    "startListening": "dinlemeye başlamak için",
+    "history": "Geçmiş",
+    "lyrics": "Şarkı Sözleri",
+    "refresh": "Yenile",
+    "addToPlaylist": "Çalma listesine ekle",
+    "play": "Oynat",
+    "unknownTrack": "Bilinmeyen Parça",
+    "unknownArtist": "Bilinmeyen Sanatçı"
   },
   "history": {
     "title": "Geçmiş",
@@ -151,7 +159,15 @@
     "copy": "Kopyala",
     "moveSingleTrack": "Bu parçayı taşımak istediğine emin misin?",
     "moveMultipleTracks": "{count} parçayı taşımak istediğine emin misin?",
-    "selectedCount": "{count} parça seçildi"
+    "selectedCount": "{count} parça seçildi",
+    "errorLoadingTracks": "Parçalar yüklenirken hata oluştu",
+    "selectPlaylist": "Lütfen bir çalma listesi seçin",
+    "errorSaving": "Çalma listesi kaydedilirken hata oluştu",
+    "errorDeleting": "Çalma listesi silinirken hata oluştu",
+    "errorRemovingTracks": "Parçalar kaldırılırken hata oluştu",
+    "errorMovingTracks": "Parçalar taşınırken hata oluştu",
+    "errorCopyingTracks": "Parçalar kopyalanırken hata oluştu",
+    "errorRemovingTrack": "Parça kaldırılırken hata oluştu"
   },
   "download": {
     "download": "İndir",

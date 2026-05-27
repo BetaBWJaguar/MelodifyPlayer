@@ -54,7 +54,8 @@
     "noPlaylists": "No playlists found",
     "createPlaylist": "Create Playlist",
     "alreadyInPlaylist": "This song is already in the playlist",
-    "addedToPlaylist": "Added to playlist"
+    "addedToPlaylist": "Added to playlist",
+    "errorAdding": "Error adding track to playlist"
   },
   "likedSongs": {
     "title": "Liked Songs",
@@ -108,7 +109,14 @@
   },
   "player": {
     "selectSong": "Select a song",
-    "startListening": "to start listening"
+    "startListening": "to start listening",
+    "history": "History",
+    "lyrics": "Lyrics",
+    "refresh": "Refresh",
+    "addToPlaylist": "Add to playlist",
+    "play": "Play",
+    "unknownTrack": "Unknown Track",
+    "unknownArtist": "Unknown Artist"
   },
   "history": {
     "title": "History",
@@ -151,7 +159,15 @@
     "copy": "Copy",
     "moveSingleTrack": "Are you sure you want to move this track?",
     "moveMultipleTracks": "Are you sure you want to move {count} tracks?",
-    "selectedCount": "{count} track(s) selected"
+    "selectedCount": "{count} track(s) selected",
+    "errorLoadingTracks": "Error loading tracks",
+    "selectPlaylist": "Please select a playlist",
+    "errorSaving": "Error saving playlist",
+    "errorDeleting": "Error deleting playlist",
+    "errorRemovingTracks": "Error removing tracks",
+    "errorMovingTracks": "Error moving tracks",
+    "errorCopyingTracks": "Error copying tracks",
+    "errorRemovingTrack": "Error removing track"
   },
   "download": {
     "download": "Download",

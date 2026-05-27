@@ -7,24 +7,54 @@ let allFavorites = [];
 let currentFilter = 'all';
 let searchTerm = '';
 
-ipcRenderer.on("player-play", (event, data) => {
-    isPlaying = true;
-});
+let playerPlayListener = null;
+let playerStopListener = null;
+let playerErrorListener = null;
 
-ipcRenderer.on("player-stop", (event, data) => {
-    isPlaying = false;
-});
+function setupListeners() {
+    cleanupListeners();
 
-ipcRenderer.on("player-error", (event, data) => {
-    alert(`Playback error: ${data.error}`);
-    isPlaying = false;
-});
+    playerPlayListener = (event, data) => {
+        isPlaying = true;
+    };
+    playerStopListener = (event, data) => {
+        isPlaying = false;
+    };
+    playerErrorListener = (event, data) => {
+        console.error('Playback error:', data.error);
+        isPlaying = false;
+    };
+
+    ipcRenderer.on("player-play", playerPlayListener);
+    ipcRenderer.on("player-stop", playerStopListener);
+    ipcRenderer.on("player-error", playerErrorListener);
+}
+
+function cleanupListeners() {
+    if (playerPlayListener) {
+        ipcRenderer.removeListener("player-play", playerPlayListener);
+        playerPlayListener = null;
+    }
+    if (playerStopListener) {
+        ipcRenderer.removeListener("player-stop", playerStopListener);
+        playerStopListener = null;
+    }
+    if (playerErrorListener) {
+        ipcRenderer.removeListener("player-error", playerErrorListener);
+        playerErrorListener = null;
+    }
+}
 
 async function initFavoritesPage() {
     console.log('Initializing favorites page...');
+    setupListeners();
     setupNotesModal();
     setupFilters();
     await loadFavorites();
+}
+
+function cleanupFavoritesPage() {
+    cleanupListeners();
 }
 
 function setupFilters() {
@@ -471,4 +501,4 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-export { initFavoritesPage as initFavoritesPage };
+export { initFavoritesPage, cleanupFavoritesPage };

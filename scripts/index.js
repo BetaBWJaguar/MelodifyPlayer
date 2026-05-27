@@ -82,14 +82,6 @@ async function loadPage(page) {
         if (module) {
             const pascalPage = toPascalCase(page);
 
-            if (module.cleanupLyricsPage) {
-                currentPageCleanup = module.cleanupLyricsPage;
-            }
-
-            if (module.cleanupSearchPage) {
-                currentPageCleanup = module.cleanupSearchPage;
-            }
-
             const cleanupName = `cleanup${pascalPage}Page`;
             if (module[cleanupName]) {
                 currentPageCleanup = module[cleanupName];
@@ -1039,11 +1031,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 const name = document.createElement('div');
                 name.className = 'history-item-name';
-                name.textContent = track.name || 'Unknown Track';
+                const lang = window.language || { t: (k) => k };
+                name.textContent = track.name || lang.t('player.unknownTrack');
                 
                 const artist = document.createElement('div');
                 artist.className = 'history-item-artist';
-                artist.textContent = track.artist || 'Unknown Artist';
+                artist.textContent = track.artist || lang.t('player.unknownArtist');
                 
                 info.appendChild(name);
                 info.appendChild(artist);

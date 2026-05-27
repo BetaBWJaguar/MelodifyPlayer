@@ -308,7 +308,8 @@ function setupEditModal() {
             await loadPlaylists();
         } catch (error) {
             console.error('Error saving playlist:', error);
-            alert('Error saving playlist: ' + error.message);
+            const lang = window.language || { t: (k) => k };
+            showNotification(`${lang.t('library.errorSaving')}: ${error.message}`);
         }
     });
 
@@ -372,7 +373,8 @@ function setupDeleteModal() {
             await loadPlaylists();
         } catch (error) {
             console.error('Error deleting playlist:', error);
-            alert('Error deleting playlist: ' + error.message);
+            const lang = window.language || { t: (k) => k };
+            showNotification(`${lang.t('library.errorDeleting')}: ${error.message}`);
         }
     });
 
@@ -506,7 +508,8 @@ function setupViewModal() {
                 await openViewModal(currentViewingPlaylistId);
             } catch (error) {
                 console.error('Error removing selected tracks:', error);
-                alert('Error removing tracks: ' + error.message);
+                const lang = window.language || { t: (k) => k };
+                showNotification(`${lang.t('library.errorRemovingTracks')}: ${error.message}`);
             }
         }
     });
@@ -573,7 +576,7 @@ async function openViewModal(playlistId) {
         console.error('Error loading playlist tracks:', error);
         playlistTracksList.innerHTML = `
             <div class="error-state" style="padding: 40px 20px;">
-                <p>Error loading tracks</p>
+                <p>${lang.t('library.errorLoadingTracks')}</p>
             </div>
         `;
         playlistTracksHeader.style.display = 'none';
@@ -623,7 +626,8 @@ function setupMoveModal() {
     confirmBtn.addEventListener('click', async () => {
         const targetPlaylistId = playlistSelect.value;
         if (!targetPlaylistId) {
-            alert('Please select a playlist');
+            const lang = window.language || { t: (k) => k };
+            showNotification(lang.t('library.selectPlaylist'));
             return;
         }
         
@@ -657,7 +661,8 @@ function setupMoveModal() {
                 await openViewModal(currentViewingPlaylistId);
             } catch (error) {
                 console.error('Error moving tracks:', error);
-                alert('Error moving tracks: ' + error.message);
+                const lang = window.language || { t: (k) => k };
+                showNotification(`${lang.t('library.errorMovingTracks')}: ${error.message}`);
             }
         }
     });
@@ -707,7 +712,8 @@ function setupCopyModal() {
     confirmBtn.addEventListener('click', async () => {
         const targetPlaylistId = playlistSelect.value;
         if (!targetPlaylistId) {
-            alert('Please select a playlist');
+            const lang = window.language || { t: (k) => k };
+            showNotification(lang.t('library.selectPlaylist'));
             return;
         }
         
@@ -731,7 +737,8 @@ function setupCopyModal() {
             await openViewModal(currentViewingPlaylistId);
         } catch (error) {
             console.error('Error copying tracks:', error);
-            alert('Error copying tracks: ' + error.message);
+            const lang = window.language || { t: (k) => k };
+            showNotification(`${lang.t('library.errorCopyingTracks')}: ${error.message}`);
         }
     });
 
@@ -1034,7 +1041,8 @@ async function removeTrackFromPlaylist(trackId) {
         await openViewModal(currentViewingPlaylistId);
     } catch (error) {
         console.error('Error removing track from playlist:', error);
-        alert('Error removing track: ' + error.message);
+        const lang = window.language || { t: (k) => k };
+        showNotification(`${lang.t('library.errorRemovingTrack')}: ${error.message}`);
     }
 }
 

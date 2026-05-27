@@ -41,7 +41,7 @@ function initSearchPage() {
     ipcRenderer.on("player-stop", playerStopListener);
 
     playerErrorListener = (event, data) => {
-        alert(`Playback error: ${data.error}`);
+        console.error('Playback error:', data.error);
         isPlaying = false;
     };
     ipcRenderer.on("player-error", playerErrorListener);
@@ -323,6 +323,7 @@ function addNewTrack(track) {
 function createTrackCard(track, index) {
     const imageUrl = track.image || '';
     const trackId = track.id || track.videoId || '';
+    const lang = window.language || { t: (k) => k };
 
     if (imageUrl) {
         return `
@@ -339,7 +340,7 @@ function createTrackCard(track, index) {
                     <span class="track-card-name" title="${escapeHtml(track.name)}">${escapeHtml(track.name)}</span>
                     <span class="track-card-artist" title="${escapeHtml(track.artist)}">${escapeHtml(track.artist)}</span>
                 </div>
-                <button class="add-to-playlist-btn" title="Add to playlist" data-track-index="${index}">
+                <button class="add-to-playlist-btn" title="${lang.t('player.addToPlaylist')}" data-track-index="${index}">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
                     </svg>
@@ -363,7 +364,7 @@ function createTrackCard(track, index) {
                     <span class="track-card-name" title="${escapeHtml(track.name)}">${escapeHtml(track.name)}</span>
                     <span class="track-card-artist" title="${escapeHtml(track.artist)}">${escapeHtml(track.artist)}</span>
                 </div>
-                <button class="add-to-playlist-btn" title="Add to playlist" data-track-index="${index}">
+                <button class="add-to-playlist-btn" title="${lang.t('player.addToPlaylist')}" data-track-index="${index}">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
                     </svg>

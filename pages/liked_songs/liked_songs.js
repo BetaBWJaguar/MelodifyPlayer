@@ -2,23 +2,55 @@ const { ipcRenderer } = require('electron');
 
 let isPlaying = false;
 
-ipcRenderer.on("player-play", (event, data) => {
-    isPlaying = true;
-});
+let playerPlayListener = null;
+let playerStopListener = null;
+let playerErrorListener = null;
 
-ipcRenderer.on("player-stop", (event, data) => {
-    isPlaying = false;
-});
+function setupListeners() {
+    cleanupListeners();
 
-ipcRenderer.on("player-error", (event, data) => {
-    alert(`Playback error: ${data.error}`);
-    isPlaying = false;
-});
+    playerPlayListener = (event, data) => {
+        isPlaying = true;
+    };
+    playerStopListener = (event, data) => {
+        isPlaying = false;
+    };
+    playerErrorListener = (event, data) => {
+        console.error('Playback error:', data.error);
+        isPlaying = false;
+    };
+
+    ipcRenderer.on("player-play", playerPlayListener);
+    ipcRenderer.on("player-stop", playerStopListener);
+    ipcRenderer.on("player-error", playerErrorListener);
+}
+
+function cleanupListeners() {
+    if (playerPlayListener) {
+        ipcRenderer.removeListener("player-play", playerPlayListener);
+        playerPlayListener = null;
+    }
+    if (playerStopListener) {
+        ipcRenderer.removeListener("player-stop", playerStopListener);
+        playerStopListener = null;
+    }
+    if (playerErrorListener) {
+        ipcRenderer.removeListener("player-error", playerErrorListener);
+        playerErrorListener = null;
+    }
+}
 
 async function initLikedSongsPage() {
     console.log('Initializing liked songs page...');
+    setupListeners();
     await loadLikedSongs();
 }
+
+function cleanupLikedSongsPage() {
+    cleanupListeners();
+}
+
+export {initLikedSongsPage, cleanupLikedSongsPage};
 
 async function loadLikedSongs() {
     const likedSongsContent = document.getElementById('likedSongsContent');

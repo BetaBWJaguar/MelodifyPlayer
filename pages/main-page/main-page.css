@@ -255,9 +255,12 @@
 }
 
 @media (max-width: 400px) {
+    .main-page {
+        padding-bottom: 92px;
+    }
+
     .greeting-section {
         padding: 24px 16px;
-        padding-bottom: 92px;
     }
 
     .greeting-title {
@@ -784,12 +787,6 @@
     border-top-color: #e94560;
     border-radius: 50%;
     animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
 }
 
 .empty-state {

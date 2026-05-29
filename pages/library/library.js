@@ -40,6 +40,15 @@ ipcRenderer.on("download-error", (event, data) => {
 
 async function initLibraryPage() {
     console.log('Initializing library page...');
+
+    const libraryPageEl = document.querySelector('.library-page');
+    if (libraryPageEl) {
+        libraryPageEl.classList.add('page-enter');
+        libraryPageEl.addEventListener('animationend', () => {
+            libraryPageEl.classList.remove('page-enter');
+        }, { once: true });
+    }
+
     setupSearch();
     setupEditModal();
     setupDeleteModal();

@@ -7,6 +7,14 @@ let discoverRecommendations = [];
 
 
 export function initMainPage() {
+    const mainPageEl = document.querySelector('.main-page');
+    if (mainPageEl) {
+        mainPageEl.classList.add('page-enter');
+        mainPageEl.addEventListener('animationend', () => {
+            mainPageEl.classList.remove('page-enter');
+        }, { once: true });
+    }
+
     updateGreeting();
     const elements = document.querySelectorAll('[data-i18n]');
     elements.forEach(el => {

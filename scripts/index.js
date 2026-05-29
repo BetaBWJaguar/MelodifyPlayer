@@ -67,6 +67,19 @@ async function loadPage(page) {
         currentPageCleanup = null;
     }
 
+    const currentContent = pageContainer.firstElementChild;
+    if (currentContent) {
+        currentContent.classList.add('page-exit');
+        await new Promise(resolve => {
+            const handler = () => {
+                currentContent.removeEventListener('animationend', handler);
+                resolve();
+            };
+            currentContent.addEventListener('animationend', handler, { once: true });
+            setTimeout(resolve, 350);
+        });
+    }
+
     try {
         const html = await fetch(`../pages/${page}/${page}.html`)
             .then(res => {

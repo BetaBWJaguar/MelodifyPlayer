@@ -300,10 +300,22 @@
 .playlist-card-meta {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 6px;
 }
 
 .playlist-card-count {
+    font-size: 12px;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.playlist-card-separator {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 400;
+}
+
+.playlist-card-duration {
     font-size: 12px;
     color: #94a3b8;
     font-weight: 500;

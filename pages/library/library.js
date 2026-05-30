@@ -192,7 +192,17 @@ function renderPlaylists(playlists) {
 function createPlaylistCard(playlist, index) {
     const imageUrl = playlist.cover_image || '';
     const trackCount = playlist.song_count || 0;
+    const totalDuration = playlist.total_duration || 0;
+    const durationText = formatDuration(totalDuration);
     const lang = window.language || { t: (k) => k };
+
+    const metaHTML = durationText
+        ? `<div class="playlist-card-meta">
+                <span class="playlist-card-count">${trackCount} ${lang.t('library.tracks')}</span>
+                <span class="playlist-card-separator">•</span>
+                <span class="playlist-card-duration">${durationText}</span>
+           </div>`
+        : `<span class="playlist-card-count">${trackCount} ${lang.t('library.tracks')}</span>`;
 
     if (imageUrl) {
         return `
@@ -212,7 +222,7 @@ function createPlaylistCard(playlist, index) {
                 <div class="playlist-card-info">
                     <span class="playlist-card-name" title="${escapeHtml(playlist.name)}">${escapeHtml(playlist.name)}</span>
                     <span class="playlist-card-desc" title="${escapeHtml(playlist.description || '')}">${escapeHtml(playlist.description || '')}</span>
-                    <span class="playlist-card-count">${trackCount} ${lang.t('library.tracks')}</span>
+                    ${metaHTML}
                 </div>
                 <div class="playlist-card-actions">
                     <button class="edit-playlist-btn" data-playlist-id="${escapeHtml(playlist.id)}" title="${lang.t('library.editPlaylist')}">
@@ -248,7 +258,7 @@ function createPlaylistCard(playlist, index) {
                 <div class="playlist-card-info">
                     <span class="playlist-card-name" title="${escapeHtml(playlist.name)}">${escapeHtml(playlist.name)}</span>
                     <span class="playlist-card-desc" title="${escapeHtml(playlist.description || '')}">${escapeHtml(playlist.description || '')}</span>
-                    <span class="playlist-card-count">${trackCount} ${lang.t('library.tracks')}</span>
+                    ${metaHTML}
                 </div>
                 <div class="playlist-card-actions">
                     <button class="edit-playlist-btn" data-playlist-id="${escapeHtml(playlist.id)}" title="${lang.t('library.editPlaylist')}">
@@ -550,7 +560,8 @@ async function openViewModal(playlistId) {
     
     playlistViewName.textContent = playlist.name;
     playlistViewDesc.textContent = playlist.description || '';
-    playlistViewCount.textContent = `${playlist.song_count || 0} ${lang.t('library.tracks')}`;
+    const durationText = formatDuration(playlist.total_duration || 0);
+    playlistViewCount.textContent = `${playlist.song_count || 0} ${lang.t('library.tracks')}${durationText ? ' • ' + durationText : ''}`;
 
     if (playlist.cover_image) {
         playlistViewImage.innerHTML = `<img src="${escapeHtml(playlist.cover_image)}" alt="">`;
@@ -611,7 +622,8 @@ function updateViewModalLanguage() {
     if (playlistViewCount && currentViewingPlaylistId) {
         const playlist = allPlaylists.find(p => p.id == currentViewingPlaylistId);
         if (playlist) {
-            playlistViewCount.textContent = `${playlist.song_count || 0} ${lang.t('library.tracks')}`;
+            const durationText = formatDuration(playlist.total_duration || 0);
+            playlistViewCount.textContent = `${playlist.song_count || 0} ${lang.t('library.tracks')}${durationText ? ' • ' + durationText : ''}`;
         }
     }
 }
@@ -843,11 +855,20 @@ function createPlaylistTrackItem(track) {
     }
 }
 
-function formatDuration(seconds) {
-    if (!seconds) return '';
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+function formatDuration(totalSeconds) {
+    if (!totalSeconds || totalSeconds <= 0) return '';
+    const seconds = Math.floor(totalSeconds);
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+
+    if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+    } else if (minutes > 0) {
+        return `${minutes}m ${secs}s`;
+    } else {
+        return `${secs}s`;
+    }
 }
 
 function setupTrackDragAndDrop() {

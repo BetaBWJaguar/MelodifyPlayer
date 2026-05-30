@@ -37,7 +37,16 @@ function initDatabase() {
             UNIQUE(playlist_id, track_id)
         )
     `);
-    
+
+    try {
+        const columns = db.prepare("PRAGMA table_info(playlist_songs)").all();
+        const hasDuration = columns.some(col => col.name === 'duration');
+        if (!hasDuration) {
+            db.exec('ALTER TABLE playlist_songs ADD COLUMN duration INTEGER');
+        }
+    } catch (e) {
+        console.error('Migration error (duration column):', e.message);
+    }
 }
 
 function createPlaylist(playlistData) {
@@ -64,16 +73,27 @@ function createPlaylist(playlistData) {
 function getAllPlaylists() {
     if (!db) initDatabase();
     
-    const stmt = db.prepare(`
-        SELECT 
-            p.*,
-            (SELECT COUNT(*) FROM playlist_songs WHERE playlist_id = p.id) as song_count
-        FROM playlists p
-        ORDER BY p.created_at DESC
-    `);
-    const playlists = stmt.all();
-    
-    return playlists;
+    try {
+        const stmt = db.prepare(`
+            SELECT
+                p.*,
+                (SELECT COUNT(*) FROM playlist_songs WHERE playlist_id = p.id) as song_count,
+                (SELECT COALESCE(SUM(duration), 0) FROM playlist_songs WHERE playlist_id = p.id) as total_duration
+            FROM playlists p
+            ORDER BY p.created_at DESC
+        `);
+        return stmt.all();
+    } catch (e) {
+        console.error('Error in getAllPlaylists with duration:', e.message);
+        const stmt = db.prepare(`
+            SELECT
+                p.*,
+                (SELECT COUNT(*) FROM playlist_songs WHERE playlist_id = p.id) as song_count
+            FROM playlists p
+            ORDER BY p.created_at DESC
+        `);
+        return stmt.all();
+    }
 }
 
 function getPlaylistById(playlistId) {

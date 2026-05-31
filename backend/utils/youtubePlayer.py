@@ -14,8 +14,23 @@ class YouTubeAudioPlayer:
     def __init__(self):
         self.mpv_process = None
         self.is_playing = False
-        self.mpv_path = r"T:\TunaRP\MelodifyPlayer\ffmpeg\mpv\mpv.exe"
+        self.mpv_path = None
+        self.ytdlp_path = None
         self.ipc_path = None
+
+        if '--mpv-path' in sys.argv:
+            idx = sys.argv.index('--mpv-path')
+            if idx + 1 < len(sys.argv):
+                self.mpv_path = sys.argv[idx + 1]
+
+        if '--ytdlp-path' in sys.argv:
+            idx = sys.argv.index('--ytdlp-path')
+            if idx + 1 < len(sys.argv):
+                self.ytdlp_path = sys.argv[idx + 1]
+
+        if not self.mpv_path:
+            print("[Python Player] ERROR: --mpv-path is required", flush=True)
+            sys.exit(1)
 
         self._setup_signal_handlers()
 

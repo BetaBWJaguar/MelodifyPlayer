@@ -702,7 +702,7 @@ function openMoveModal() {
     const lang = window.language || { t: (k) => k };
 
     const otherPlaylists = allPlaylists.filter(p => p.id != currentViewingPlaylistId);
-    playlistSelect.innerHTML = '<option value="">-- Select Playlist --</option>' +
+    playlistSelect.innerHTML = `<option value="">${lang.t('library.selectPlaylistPlaceholder')}</option>` +
         otherPlaylists.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
 
     countInfo.textContent = lang.t('library.selectedCount').replace('{count}', selectedTrackIds.size);
@@ -771,11 +771,11 @@ function setupCopyModal() {
 }
 
 function openCopyModal() {
-    const lang = window.language?.t?.bind(window.language) || ((k) => k);
+    const lang = window.language || { t: (k) => k };
     document.getElementById('copyPlaylistSelect').innerHTML =
-        '<option value="">-- Select Playlist --</option>' +
+        `<option value="">${lang.t('library.selectPlaylistPlaceholder')}</option>` +
         allPlaylists.filter(p => p.id != currentViewingPlaylistId).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
-    document.getElementById('copyCountInfo').textContent = lang('library.selectedCount').replace('{count}', selectedTrackIds.size);
+    document.getElementById('copyCountInfo').textContent = lang.t('library.selectedCount').replace('{count}', selectedTrackIds.size);
     document.getElementById('copyToPlaylistModal').classList.add('active');
 }
 
@@ -857,17 +857,22 @@ function createPlaylistTrackItem(track) {
 
 function formatDuration(totalSeconds) {
     if (!totalSeconds || totalSeconds <= 0) return '';
+    const lang = window.language || { t: (k) => k };
     const seconds = Math.floor(totalSeconds);
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
 
+    const h = lang.t('stats.hoursShort');
+    const m = lang.t('stats.minutesShort');
+    const s = lang.t('stats.secondsShort');
+
     if (hours > 0) {
-        return `${hours}h ${minutes}m`;
+        return `${hours}${h} ${minutes}${m}`;
     } else if (minutes > 0) {
-        return `${minutes}m ${secs}s`;
+        return `${minutes}${m} ${secs}${s}`;
     } else {
-        return `${secs}s`;
+        return `${secs}${s}`;
     }
 }
 

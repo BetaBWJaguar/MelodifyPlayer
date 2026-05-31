@@ -1,12 +1,11 @@
 const Database = require('better-sqlite3');
-const path = require('path');
+const { getDbPath } = require('./dbPath');
 
 let db;
 
 
 function initDatabase() {
-    const projectDir = path.join(__dirname, '../../');
-    const dbPath = path.join(projectDir, 'melodify.db');
+    const dbPath = getDbPath();
     
     db = new Database(dbPath);
     

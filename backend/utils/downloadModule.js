@@ -21,8 +21,10 @@ function sanitizeFilename(name) {
 }
 
 function getYtDlpPath() {
-    const ytDlpPath = path.join(__dirname, '../../ffmpeg/yt-dlp/yt-dlp.exe');
-    return ytDlpPath;
+    if (app && app.isPackaged) {
+        return path.join(process.resourcesPath, 'ffmpeg', 'yt-dlp', 'yt-dlp.exe');
+    }
+    return path.join(__dirname, '../../ffmpeg/yt-dlp/yt-dlp.exe');
 }
 
 function checkYtDlp() {

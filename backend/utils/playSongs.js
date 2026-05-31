@@ -5,6 +5,7 @@ const likedSongs = require('./likedSongs');
 const favorites = require('./favorites');
 const historyModule = require('./historyModule');
 const playlist = require('./playlist');
+const { log } = require('./logger');
 
 class Player {
     constructor() {
@@ -60,7 +61,7 @@ class Player {
                     return;
                 }
                 
-                console.log('[Player] Song ended, playing next...');
+                log('[Player] Song ended (stop reason: ended), playing next...');
                 this.playNext();
                 return;
             }
@@ -170,7 +171,10 @@ class Player {
     }
 
     async play(track, fromHistory = false, addToHistory = true) {
+        log('[Player] play() called: ' + track.name + ' by ' + track.artist + ' id=' + (track.id || track.videoId || 'null'));
+
         if (!track.id && !track.videoId) {
+            log('[Player] No videoId, searching YouTube...');
             try {
                 const videoData = await youtubeModule.getVideoForTrack(track.name, track.artist);
                 if (videoData) {
@@ -181,9 +185,12 @@ class Player {
                     track.duration = videoData.duration || track.duration;
 
                     track.youtube = videoData;
+                    log('[Player] YouTube found: videoId=' + videoData.videoId);
+                } else {
+                    log('[Player] YouTube search returned no results');
                 }
             } catch (err) {
-                console.error('[Player] Youtube ID Error:', err.message);
+                log('[Player] Youtube ID Error: ' + err.message);
             }
         }
 
@@ -299,13 +306,20 @@ class Player {
             }
 
             if (url) {
+                log('[Player] Playing URL: ' + url);
                 this.notifyListeners('play', this.currentTrack);
-                await pythonPlayer.play(url, 0);
+                try {
+                    await pythonPlayer.play(url, 0);
+                    log('[Player] pythonPlayer.play() resolved successfully');
+                } catch (playErr) {
+                    log('[Player] pythonPlayer.play() REJECTED: ' + playErr.message);
+                }
                 
                 setTimeout(() => {
                     this.startProgressUpdates();
                 }, 1500);
             } else {
+                log('[Player] No URL found, fetching in background');
                 this.fetchVideoInBackground(track);
             }
 
@@ -317,7 +331,7 @@ class Player {
             }
 
         } catch (error) {
-            console.error('[Player] Play error:', error);
+            log('[Player] Play error: ' + error.message + '\n' + error.stack);
             this.notifyListeners('error', { error: error.message });
             this.notifyListeners('stop', { reason: 'error' });
 
@@ -464,6 +478,7 @@ class Player {
 
 
     async playNext() {
+        log('[Player] playNext() called. playlistMode=' + this.playlistMode + ' historyIndex=' + this.historyIndex + ' history.length=' + this.history.length);
         if (this.playlistMode && this.playlistTracks.length > 0) {
             this.playlistIndex++;
 

@@ -162,6 +162,7 @@
     "selectedCount": "{count} parça seçildi",
     "errorLoadingTracks": "Parçalar yüklenirken hata oluştu",
     "selectPlaylist": "Lütfen bir çalma listesi seçin",
+    "selectPlaylistPlaceholder": "-- Oynatma Listesi Seçin --",
     "errorSaving": "Çalma listesi kaydedilirken hata oluştu",
     "errorDeleting": "Çalma listesi silinirken hata oluştu",
     "errorRemovingTracks": "Parçalar kaldırılırken hata oluştu",

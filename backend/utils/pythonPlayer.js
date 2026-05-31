@@ -2,6 +2,16 @@ const { spawn, execSync } = require('child_process');
 const path = require('path');
 const os = require('os');
 const net = require('net');
+const fs = require('fs');
+const { app } = require('electron');
+const { log } = require('./logger');
+
+function getResourcePath(...segments) {
+    if (app && app.isPackaged) {
+        return path.join(process.resourcesPath, ...segments);
+    }
+    return path.join(__dirname, '..', '..', ...segments);
+}
 
 function killAllMpvProcesses() {
     try {
@@ -201,17 +211,27 @@ class PythonPlayer {
 
             await new Promise((resolve, reject) => {
                 const pythonCmd = os.platform() === 'win32' ? 'python' : 'python3';
-                const scriptPath = path.join(__dirname, 'youtubePlayer.py');
+                const isPackaged = app && app.isPackaged;
+                const scriptPath = isPackaged
+                    ? path.join(process.resourcesPath, 'backend', 'utils', 'youtubePlayer.py')
+                    : path.join(__dirname, 'youtubePlayer.py');
+                const mpvPath = getResourcePath('ffmpeg', 'mpv', 'mpv.exe');
+                const ytdlpPath = getResourcePath('ffmpeg', 'yt-dlp', 'yt-dlp.exe');
 
-                const args = [scriptPath, url];
+                const args = [scriptPath, url, '--mpv-path', mpvPath, '--ytdlp-path', ytdlpPath];
                 if (startTime > 0) {
                     args.push('--start-time', startTime.toFixed(3));
                 }
 
-                console.log('[PythonPlayer] Spawn:', pythonCmd, args.join(' '));
+                const cwd = isPackaged ? process.resourcesPath : __dirname;
+                log('[PythonPlayer] Spawn: ' + pythonCmd + ' ' + args.join(' '));
+                log('[PythonPlayer] cwd: ' + cwd);
+                log('[PythonPlayer] scriptPath exists: ' + fs.existsSync(scriptPath));
+                log('[PythonPlayer] mpvPath exists: ' + fs.existsSync(mpvPath));
+                log('[PythonPlayer] ytdlpPath exists: ' + fs.existsSync(ytdlpPath));
 
                 const proc = spawn(pythonCmd, args, {
-                    cwd: __dirname,
+                    cwd: cwd,
                     stdio: ['ignore', 'pipe', 'pipe']
                 });
 
@@ -223,6 +243,7 @@ class PythonPlayer {
 
                 proc.stdout.on('data', async (d) => {
                     const msg = d.toString();
+                    log('[PythonPlayer] stdout: ' + msg.trim());
                     if (msg.includes('IPC Socket:')) {
                         const match = msg.match(/IPC Socket: (.+)/);
                         if (match) {
@@ -233,10 +254,16 @@ class PythonPlayer {
                 });
 
                 proc.stderr.on('data', d => {
-                    errorBuffer += d.toString();
+                    const errText = d.toString();
+                    errorBuffer += errText;
+                    log('[PythonPlayer] stderr: ' + errText.trim());
                 });
 
                 proc.on('close', (code, signal) => {
+                    log('[PythonPlayer] Process closed. code=' + code + ' signal=' + signal + ' reason=' + proc._exitReason);
+                    if (errorBuffer) {
+                        log('[PythonPlayer] errorBuffer: ' + errorBuffer);
+                    }
                     const wasCurrent = this.process === proc;
                     if (wasCurrent) {
                         this.process = null;
@@ -249,6 +276,7 @@ class PythonPlayer {
                 });
 
                 proc.on('error', err => {
+                    log('[PythonPlayer] Process error: ' + err.message);
                     if (!resolvedOrRejected) {
                         resolvedOrRejected = true;
                         reject(err);
@@ -256,10 +284,12 @@ class PythonPlayer {
                 });
 
                 proc.on('spawn', () => {
+                    log('[PythonPlayer] Process spawned successfully, pid=' + proc.pid);
                     if (resolvedOrRejected) return;
 
                     setTimeout(() => {
                         if (!proc || proc.killed) {
+                            log('[PythonPlayer] Process died immediately after spawn');
                             if (!resolvedOrRejected) {
                                 resolvedOrRejected = true;
                                 reject(new Error('Process exited immediately'));
@@ -275,6 +305,7 @@ class PythonPlayer {
                         this.actualDuration = null;
 
                         resolvedOrRejected = true;
+                        log('[PythonPlayer] Play resolved successfully');
                         resolve(true);
 
                         setTimeout(() => this.setVolume(this.volume), 500);

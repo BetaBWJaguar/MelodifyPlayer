@@ -6,7 +6,9 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
-    "build": "echo Build step not configured yet"
+    "rebuild": "electron-rebuild",
+    "build": "electron-builder --win",
+    "build:dir": "electron-builder --win --dir"
   },
   "keywords": [
     "music-player",
@@ -15,8 +17,71 @@
   ],
   "author": "Tuna Rasim OCAK",
   "license": "ISC",
+  "build": {
+    "afterPack": "build/afterPack.js",
+    "appId": "com.melodify.player",
+    "productName": "MelodifyPlayer",
+    "icon": "MelodifyPlayer2.png",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "scripts/**",
+      "styles/**",
+      "pages/**",
+      "locales/**",
+      "backend/**",
+      "MelodifyPlayer2.png",
+      "package.json",
+      "node_modules/**",
+      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme,CHANGELOG}",
+      "!**/node_modules/.cache",
+      "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
+      "!**/node_modules/*.d.ts",
+      "!**/node_modules/*.map",
+      "!**/*.{o,h,obj,lib,a}"
+    ],
+    "extraResources": [
+      {
+        "from": "melodify.db",
+        "to": "melodify.db"
+      },
+      {
+        "from": "ffmpeg/mpv/mpv.exe",
+        "to": "ffmpeg/mpv/mpv.exe"
+      },
+      {
+        "from": "ffmpeg/yt-dlp/yt-dlp.exe",
+        "to": "ffmpeg/yt-dlp/yt-dlp.exe"
+      },
+      {
+        "from": "backend/utils/youtubePlayer.py",
+        "to": "backend/utils/youtubePlayer.py"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "asar": true
+  },
   "devDependencies": {
-    "electron": "^40.8.0"
+    "electron": "^40.8.0",
+    "electron-builder": "^26.8.1",
+    "electron-rebuild": "^3.2.9"
   },
   "dependencies": {
     "better-sqlite3": "^12.8.0",

@@ -1,15 +1,83 @@
 const { app, BrowserWindow, ipcMain, globalShortcut, dialog } = require('electron');
 const fs = require('fs');
-const { searchTrack,cancelActiveSearch } = require('./backend/utils/searchModule');
-const player = require('./backend/utils/playSongs');
-const likedSongs = require('./backend/utils/likedSongs');
-const favorites = require('./backend/utils/favorites');
-const playlist = require('./backend/utils/playlist');
-const downloadModule = require('./backend/utils/downloadModule');
-const youtubeModule = require('./backend/utils/youtubeModule');
-const historyModule = require('./backend/utils/historyModule');
-const recommendationModule = require('./backend/utils/recommendationModule');
-const statsModule = require('./backend/utils/statsModule');
+const path = require('path');
+
+const logFilePath = path.join(app.getPath('userData'), 'melodify-debug.log');
+
+function log(msg) {
+    const timestamp = new Date().toISOString();
+    const line = `[${timestamp}] ${msg}\n`;
+    try { fs.appendFileSync(logFilePath, line); } catch (e) { }
+}
+
+process.on('uncaughtException', (error) => {
+    log('Uncaught Exception: ' + error.message + '\n' + error.stack);
+    try { dialog.showErrorBox('MelodifyPlayer Error', error.message + '\n\n' + error.stack); } catch (e) { }
+});
+
+log('[Main] App starting...');
+log('[Main] app.isPackaged: ' + (app ? app.isPackaged : 'undefined'));
+log('[Main] __dirname: ' + __dirname);
+
+if (!app) {
+    dialog.showErrorBox('MelodifyPlayer', 'Failed to initialize Application. Please restart the application.');
+    process.exit(1);
+}
+
+let searchTrack, cancelActiveSearch, player, likedSongs, favorites, playlist;
+let downloadModule, youtubeModule, historyModule, recommendationModule, statsModule;
+
+try {
+    ({ searchTrack, cancelActiveSearch } = require('./backend/utils/searchModule'));
+    log('[Main] searchModule loaded');
+} catch (e) { log('[Main] Failed to load searchModule: ' + e.message); }
+
+try {
+    player = require('./backend/utils/playSongs');
+    log('[Main] playSongs loaded');
+} catch (e) { log('[Main] Failed to load playSongs: ' + e.message); }
+
+try {
+    likedSongs = require('./backend/utils/likedSongs');
+    log('[Main] likedSongs loaded');
+} catch (e) { log('[Main] Failed to load likedSongs: ' + e.message); }
+
+try {
+    favorites = require('./backend/utils/favorites');
+    log('[Main] favorites loaded');
+} catch (e) { log('[Main] Failed to load favorites: ' + e.message); }
+
+try {
+    playlist = require('./backend/utils/playlist');
+    log('[Main] playlist loaded');
+} catch (e) { log('[Main] Failed to load playlist: ' + e.message); }
+
+try {
+    downloadModule = require('./backend/utils/downloadModule');
+    log('[Main] downloadModule loaded');
+} catch (e) { log('[Main] Failed to load downloadModule: ' + e.message); }
+
+try {
+    youtubeModule = require('./backend/utils/youtubeModule');
+    log('[Main] youtubeModule loaded');
+} catch (e) { log('[Main] Failed to load youtubeModule: ' + e.message); }
+
+try {
+    historyModule = require('./backend/utils/historyModule');
+    log('[Main] historyModule loaded');
+} catch (e) { log('[Main] Failed to load historyModule: ' + e.message); }
+
+try {
+    recommendationModule = require('./backend/utils/recommendationModule');
+    log('[Main] recommendationModule loaded');
+} catch (e) { log('[Main] Failed to load recommendationModule: ' + e.message); }
+
+try {
+    statsModule = require('./backend/utils/statsModule');
+    log('[Main] statsModule loaded');
+} catch (e) { log('[Main] Failed to load statsModule: ' + e.message); }
+
+log('[Main] All modules loaded');
 
 let mainWindow;
 
@@ -22,6 +90,7 @@ function createWindow() {
         frame: false,
         titleBarStyle: 'hidden',
         autoHideMenuBar: true,
+        icon: path.join(__dirname, 'MelodifyPlayer.png'),
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false

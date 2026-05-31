@@ -162,6 +162,7 @@
     "selectedCount": "{count} track(s) selected",
     "errorLoadingTracks": "Error loading tracks",
     "selectPlaylist": "Please select a playlist",
+    "selectPlaylistPlaceholder": "-- Select Playlist --",
     "errorSaving": "Error saving playlist",
     "errorDeleting": "Error deleting playlist",
     "errorRemovingTracks": "Error removing tracks",

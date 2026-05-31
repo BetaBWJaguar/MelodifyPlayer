@@ -87,8 +87,8 @@ async function loadPage(page) {
                 return res.text();
             });
 
+        await loadCSS(page);
         pageContainer.innerHTML = html;
-        loadCSS(page);
 
         const module = await loadJS(page);
 
@@ -112,11 +112,15 @@ function loadCSS(page) {
     const existing = document.getElementById("page-css");
     if (existing) existing.remove();
 
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = `../pages/${page}/${page}.css`;
-    link.id = "page-css";
-    document.head.appendChild(link);
+    return new Promise((resolve) => {
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = `../pages/${page}/${page}.css`;
+        link.id = "page-css";
+        link.onload = () => resolve();
+        link.onerror = () => resolve();
+        document.head.appendChild(link);
+    });
 }
 
 async function loadJS(page) {
